@@ -3,7 +3,7 @@ set -euo pipefail
 
 service="${1:-}"
 if [[ -z "${service}" ]]; then
-  echo "Usage: dev-command.sh <mobile|club|companion|directus|video-studio|docs> -- <command...> [--kill-allowed]" >&2
+  echo "Usage: dev-command.sh <mobile|club|companion|directus|video-studio|docs|links-api> -- <command...> [--kill-allowed]" >&2
   exit 2
 fi
 shift
@@ -156,6 +156,9 @@ case "${service}" in
   docs)
     port="${argument_port:-${DOCS_PORT:-3000}}"
     ;;
+  links-api)
+    port="${argument_port:-${LINKS_API_PORT:-8788}}"
+    ;;
   *)
     echo "Unknown development service: ${service}" >&2
     exit 2
@@ -196,6 +199,9 @@ if [[ "${KILL_BUSY_PORTS}" == "true" ]]; then
       export EXPO_WEB_PORT="${port}"
       ;;
     club)
+      export PORT="${port}"
+      ;;
+    links-api)
       export PORT="${port}"
       ;;
     directus)

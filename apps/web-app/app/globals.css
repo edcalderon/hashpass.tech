@@ -89,37 +89,6 @@
   --nav-border: rgba(21, 101, 192, 0.18);
 }
 
-/* ─── System preference fallback ────────────────────────────── */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    color-scheme: light;
-    --bg-canvas: #fafbff;
-    --bg-canvas-alt: #f0f2f8;
-    --bg-surface: #ffffff;
-    --bg-surface-raised: #f6f8fd;
-    --bg-overlay: rgba(0, 0, 0, 0.03);
-    --border: rgba(100, 120, 180, 0.18);
-    --border-strong: rgba(80, 100, 160, 0.28);
-    --text-primary: #0d1728;
-    --text-secondary: #4a5568;
-    --text-faint: #94a3b8;
-    --accent: #1565c0;
-    --accent-soft: rgba(21, 101, 192, 0.12);
-    --accent-glow: rgba(21, 101, 192, 0.25);
-    --accent-blue: #1976d2;
-    --accent-blue-soft: rgba(25, 118, 210, 0.12);
-    --accent-warm: #c2185b;
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.16);
-    --nav-bg: rgba(250, 251, 255, 0.88);
-    --nav-border: rgba(21, 101, 192, 0.18);
-  }
-}
-
 /* ─── Base reset ─────────────────────────────────────────────── */
 *,
 *::before,

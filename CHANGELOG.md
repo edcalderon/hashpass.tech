@@ -1,3 +1,54 @@
+## [1.9.180](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.178...v1.9.180) (2026-10-29)
+
+
+### Bug Fixes
+
+* **lukas:** keep testnet CTA in the current tab ([3268100](https://github.com/hashpass-tech/hashpass.tech/commit/32681006071604c86f99f11bf774d6acb28b24f0))
+* **lukas:** replace default share favicon ([f009ad4](https://github.com/hashpass-tech/hashpass.tech/commit/f009ad4b0164007434e1ba18ead74a8ec0545741))
+* resolve release regressions and localized artwork ([0f43103](https://github.com/hashpass-tech/hashpass.tech/commit/0f4310328353f2bed32645735d8797ec4612b5d4))
+
+
+### Features
+
+* **club:** add personal artwork creator ([8fb7006](https://github.com/hashpass-tech/hashpass.tech/commit/8fb7006228a628a590a243fed424e411141f7380))
+* **club:** refine BSL artwork template ([b784e5a](https://github.com/hashpass-tech/hashpass.tech/commit/b784e5a7e0920fb70387e404c76836a9862aed31))
+* **club:** support artwork for custom events ([1c2d584](https://github.com/hashpass-tech/hashpass.tech/commit/1c2d584fa9850a1c077967579631679b3d9356ab))
+* **lukas:** add localized testnet CTA ([19410c9](https://github.com/hashpass-tech/hashpass.tech/commit/19410c9a301731006ba71901f51f3f64ab26567d))
+### Release Highlights
+- support artwork for custom events; refine attendance artwork themes; refine BSL artwork template; add personal artwork creator; add localized testnet CTA; keep local attendance links local; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon
+
+### Release scope
+- Compared with: `v1.9.178` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- QR links API
+- Release tooling
+
+## [1.9.179](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.178...v1.9.179) (2026-10-29)
+
+
+### Bug Fixes
+
+* **lukas:** keep testnet CTA in the current tab ([3268100](https://github.com/hashpass-tech/hashpass.tech/commit/32681006071604c86f99f11bf774d6acb28b24f0))
+* **lukas:** replace default share favicon ([f009ad4](https://github.com/hashpass-tech/hashpass.tech/commit/f009ad4b0164007434e1ba18ead74a8ec0545741))
+* resolve release regressions and localized artwork ([0f43103](https://github.com/hashpass-tech/hashpass.tech/commit/0f4310328353f2bed32645735d8797ec4612b5d4))
+
+
+### Features
+
+* **club:** add personal artwork creator ([8fb7006](https://github.com/hashpass-tech/hashpass.tech/commit/8fb7006228a628a590a243fed424e411141f7380))
+* **club:** refine BSL artwork template ([b784e5a](https://github.com/hashpass-tech/hashpass.tech/commit/b784e5a7e0920fb70387e404c76836a9862aed31))
+* **lukas:** add localized testnet CTA ([19410c9](https://github.com/hashpass-tech/hashpass.tech/commit/19410c9a301731006ba71901f51f3f64ab26567d))
+### Release Highlights
+- refine BSL artwork template; add personal artwork creator; add localized testnet CTA; resolve release regressions and localized artwork; keep testnet CTA in the current tab; replace default share favicon
+
+### Release scope
+- Compared with: `v1.9.178` (the previous global release tag)
+
+### Affected products & packages
+- Shared repository changes only
+
 ## [1.9.178](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.177...v1.9.178) (2026-10-29)
 
 

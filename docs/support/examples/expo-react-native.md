@@ -1,3 +1,6 @@
+# Expo / React Native controller
+
+```ts
 import * as SecureStore from "expo-secure-store";
 import { NativeSupportController } from "@hashpass/support-react-native";
 
@@ -9,3 +12,4 @@ export const support = new NativeSupportController({
     deleteItem: SecureStore.deleteItemAsync,
   },
 });
+```

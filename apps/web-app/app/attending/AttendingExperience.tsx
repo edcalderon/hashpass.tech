@@ -9,7 +9,8 @@ import { SettingsToggle } from '@hashpass/ui/settings-menu';
 import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, Instagram, MapPin, Share2, UserRound } from 'lucide-react';
 import { drawAttendingArtwork } from '../../lib/attending-artwork';
 import { formatAttendingEventDate } from '../../lib/attending-date';
-import { getAttendingEventUrl, getAttendingLandingUrl } from '../../lib/attending-url';
+import { getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
+import { getLinksApiOrigin } from '../../lib/links-api-origin';
 import { removePersonBackground } from '../../lib/remove-person-background';
 import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
 import { useSession } from '../components/SessionProvider';
@@ -29,7 +30,6 @@ import type {
 import styles from './attending.module.css';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-const LINKS_API_ORIGIN = (process.env.NEXT_PUBLIC_LINKS_API_BASE_URL || '').replace(/\/+$/, '');
 const MAX_PUBLIC_ARTWORK_BYTES = 4 * 1024 * 1024;
 
 function metadataText(metadata: Record<string, unknown>, keys: string[]): string {
@@ -86,20 +86,38 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export function AttendingExperience({ event, generic = false }: AttendingExperienceProps) {
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read image file.'));
+    reader.onload = () => typeof reader.result === 'string'
+      ? resolve(reader.result)
+      : reject(new Error('Could not read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function AttendingExperience({ event: baseEvent, customEvent = false }: AttendingExperienceProps) {
   const { t } = useTranslation('attending');
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
+  const linksApiOrigin = getLinksApiOrigin();
   const { user, isLoading: sessionLoading } = useSession();
   const toast = useToast();
   const mode = resolvedTheme;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
+  const customEventLogoInputRef = useRef<HTMLInputElement | null>(null);
   const uploadedPhotoRef = useRef<string | null>(null);
   const previousUserIdRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
+  const [customEventName, setCustomEventName] = useState('');
+  const [customEventDate, setCustomEventDate] = useState('');
+  const [customEventLocation, setCustomEventLocation] = useState('');
+  const [customEventLogo, setCustomEventLogo] = useState<string | null>(null);
+  const [customEventTouched, setCustomEventTouched] = useState({ name: false, date: false, location: false });
   const [role, setRole] = useState('');
   const [xProfile, setXProfile] = useState('');
   const [instagramProfile, setInstagramProfile] = useState('');
@@ -122,6 +140,22 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [isPublishingArtwork, setIsPublishingArtwork] = useState(false);
   const [publishedShare, setPublishedShare] = useState<AttendingPublicShare | null>(null);
+
+  const event = useMemo<AttendingEventData>(() => {
+    if (!customEvent) return baseEvent;
+    const nameValue = customEventName.trim();
+    return {
+      ...baseEvent,
+      name: nameValue || t('customEventNamePlaceholder'),
+      shortName: nameValue || t('customEventCardEyebrow'),
+      city: customEventLocation.trim(),
+      country: '',
+      startDate: customEventDate || null,
+      endDate: customEventDate || null,
+      dateFallback: null,
+      logoSrc: customEventLogo || baseEvent.logoSrc,
+    };
+  }, [baseEvent, customEvent, customEventDate, customEventLocation, customEventLogo, customEventName, t]);
 
   useEffect(() => {
     setHasHydrated(true);
@@ -182,19 +216,33 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   const nameError = nameTouched && !isNameValid
     ? normalizedName ? t('nameInvalidFeedback') : t('nameRequiredFeedback')
     : undefined;
-  const eventName = generic ? t('genericArtworkTitle') : event.name || event.shortName;
+  const normalizedEventName = customEventName.trim().replace(/\s+/gu, ' ');
+  const normalizedEventLocation = customEventLocation.trim().replace(/\s+/gu, ' ');
+  const isCustomEventValid = !customEvent || (
+    Array.from(normalizedEventName).length >= 2
+      && /^\d{4}-\d{2}-\d{2}$/.test(customEventDate)
+      && Array.from(normalizedEventLocation).length >= 2
+  );
+  const customEventNameError = customEventTouched.name && Array.from(normalizedEventName).length < 2
+    ? t('customEventNameRequired')
+    : undefined;
+  const customEventDateError = customEventTouched.date && !/^\d{4}-\d{2}-\d{2}$/.test(customEventDate)
+    ? t('customEventDateRequired')
+    : undefined;
+  const customEventLocationError = customEventTouched.location && Array.from(normalizedEventLocation).length < 2
+    ? t('customEventLocationRequired')
+    : undefined;
+  const eventName = event.name || event.shortName;
   const location = [event.city, event.country].filter(Boolean).join(', ');
   const dateLabel = formatAttendingEventDate(event, locale);
   const displayName = isNameValid ? normalizedName : t('yourName');
-  const shareUrl = generic ? 'https://hashpass.club/attendings/' : getAttendingEventUrl(event.slug);
-  const artUpcoming = generic ? t('genericArtUpcoming') : t('artUpcoming');
+  const shareUrl = customEvent ? getGenericAttendingUrl() : getAttendingEventUrl(event.slug);
+  const artUpcoming = t('artUpcoming');
   const artPast = t('artPast');
-  const intentionLabel = generic ? artUpcoming : pastEvent ? artPast : artUpcoming;
+  const intentionLabel = pastEvent ? artPast : artUpcoming;
   const artEmptyName = t('yourName');
   const artPoweredBy = t('poweredBy');
-  const shareText = generic
-    ? t('genericShareCaption')
-    : `${intentionLabel} ${eventName}\n${event.artworkTemplate.hashtags.join(' ')}`;
+  const shareText = `${intentionLabel} ${eventName}\n${event.artworkTemplate.hashtags.join(' ')}`;
 
   useEffect(() => {
     setPastEvent(!!event.endDate && event.endDate.slice(0, 10) < new Date().toISOString().slice(0, 10));
@@ -270,9 +318,9 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   }, [currentPhoto, removePhotoBackground]);
 
   const artOptions = useMemo(() => ({
+    themeMode: mode,
     eventName,
     shortName: event.shortName,
-    genericArtwork: generic,
     location,
     venue: event.venue,
     dateLabel,
@@ -293,7 +341,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
       past: artPast,
       emptyName: artEmptyName,
     },
-  }), [eventName, event.shortName, generic, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+  }), [mode, eventName, event.shortName, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
 
   useEffect(() => {
     setPublishedShare(null);
@@ -348,11 +396,35 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
     setPhotoSource('upload');
   }
 
+  async function handleCustomEventLogoUpload(changeEvent: ChangeEvent<HTMLInputElement>) {
+    const file = changeEvent.currentTarget.files?.[0];
+    changeEvent.currentTarget.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error(t('uploadInvalid'));
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast.error(t('uploadTooLarge'));
+      return;
+    }
+    try {
+      setCustomEventLogo(await fileToDataUrl(file));
+    } catch {
+      toast.error(t('uploadInvalid'));
+    }
+  }
+
+  function clearCustomEventLogo() {
+    setCustomEventLogo(null);
+    if (customEventLogoInputRef.current) customEventLogoInputRef.current.value = '';
+  }
+
   async function getArtFile(): Promise<File> {
     const canvas = canvasRef.current;
     if (!canvas || !artReady) throw new Error(t('artNotReady'));
     const blob = await canvasBlob(canvas);
-    return new File([blob], generic ? 'hashpass-personal-artwork.png' : `${event.slug}-attending.png`, { type: 'image/png' });
+    return new File([blob], `${customEvent ? 'event' : event.slug}-attending.png`, { type: 'image/png' });
   }
 
   function saveFile(file: File) {
@@ -366,7 +438,15 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function requireValidEventDetails(): boolean {
+    if (isCustomEventValid) return true;
+    setCustomEventTouched({ name: true, date: true, location: true });
+    toast.error(t('customEventRequiredFeedback'));
+    return false;
+  }
+
   function requireValidName(): boolean {
+    if (!requireValidEventDetails()) return false;
     if (isNameValid) return true;
     setNameTouched(true);
     toast.error(normalizedName ? t('nameInvalidFeedback') : t('nameRequiredFeedback'));
@@ -398,7 +478,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
       };
       if (navigatorWithShare.share) {
         await navigatorWithShare.share({
-          title: generic ? t('genericArtworkTitle') : `${t('shareTitle')} ${eventName}`,
+          title: `${t('shareTitle')} ${eventName}`,
           text: shareText,
           url: publishedShare.url,
         });
@@ -464,7 +544,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
 
   async function publishArtwork() {
     if (!requireValidName()) return;
-    if (!LINKS_API_ORIGIN) {
+    if (!linksApiOrigin) {
       toast.error(t('shareApiUnavailable'));
       return;
     }
@@ -484,13 +564,13 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
         toast.error(t('shareImageTooLarge'));
         return;
       }
-      const response = await fetch(`${LINKS_API_ORIGIN}/api/v1/attending-artworks`, {
+      const response = await fetch(`${linksApiOrigin}/api/v1/attending-artworks`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           captchaToken,
           imageBase64: await fileToBase64(file),
-          eventSlug: generic ? 'community' : event.slug,
+          eventSlug: event.slug,
           eventName,
           attendeeName: normalizedName,
           caption: shareText,
@@ -530,7 +610,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href={generic ? '/attendings/' : getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
+        <a className={styles.brand} href={customEvent ? getGenericAttendingLandingHref() : getAttendingLandingUrl()} aria-label="HASHPASS Club attending home">
           <img src="/attending/logo-hashpass.svg" alt="" />
           <span>HASHPASS <b>CLUB</b></span>
         </a>
@@ -549,13 +629,13 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
       </header>
 
       <main className={styles.main}>
-        <section className={`${styles.intro} ${generic ? styles.genericIntro : ''}`}>
+        <section className={styles.intro}>
           <div>
-            <p className={styles.eyebrow}><span className={styles.liveDot} />{generic ? t('genericPageEyebrow') : t('pageEyebrow')}</p>
-            <h1>{generic ? t('genericPageTitle') : pastEvent ? t('pastPageTitle') : t('pageTitle')}</h1>
-            <p className={styles.lead}>{generic ? t('genericPageDescription') : t('pageDescription')}</p>
+            <p className={styles.eyebrow}><span className={styles.liveDot} />{customEvent ? t('customEventPageEyebrow') : t('pageEyebrow')}</p>
+            <h1>{customEvent ? t('customEventPageTitle') : pastEvent ? t('pastPageTitle') : t('pageTitle')}</h1>
+            <p className={styles.lead}>{customEvent ? t('customEventPageDescription') : t('pageDescription')}</p>
           </div>
-          {!generic && <div className={styles.eventMeta}>
+          <div className={styles.eventMeta}>
             <Badge mode={mode} tone="neutral" compact>{event.shortName}</Badge>
             <span className={styles.eventName}>{eventName}</span>
             <span className={styles.eventDetails}>
@@ -563,15 +643,97 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
               {location && <span><MapPin size={15} />{location}</span>}
             </span>
             {event.website && <a href={event.website} target="_blank" rel="noopener noreferrer">{t('eventWebsite')} <ArrowUpRight size={14} /></a>}
-          </div>}
+          </div>
         </section>
 
         <div className={styles.workspace}>
           <section className={styles.editor} aria-labelledby="attending-editor-title">
             <Surface mode={mode} style={{ width: '100%', padding: 0, overflow: 'hidden' }}>
               <div className={styles.editorInner}>
+            {customEvent && (
+              <section className={styles.customEventForm} aria-labelledby="custom-event-form-title">
+                <div className={styles.sectionHeading}>
+                  <span className={styles.stepNumber}>01</span>
+                  <div>
+                    <h2 id="custom-event-form-title">{t('customEventFormTitle')}</h2>
+                    <p>{t('customEventFormDescription')}</p>
+                  </div>
+                </div>
+
+                <div className={styles.customEventFields}>
+                  <div className={styles.customEventWideField}>
+                    <FormField
+                      mode={mode}
+                      label={`${t('customEventNameLabel')} · ${t('requiredField')}`}
+                      value={customEventName}
+                      onChangeText={setCustomEventName}
+                      placeholder={t('customEventNamePlaceholder')}
+                      maxLength={100}
+                      onBlur={() => setCustomEventTouched((state) => ({ ...state, name: true }))}
+                      error={customEventNameError}
+                      accessibilityLabel={`${t('customEventNameLabel')} · ${t('requiredField')}`}
+                    />
+                  </div>
+                  <div className={styles.customEventDateField}>
+                    <label htmlFor="custom-event-date">{t('customEventDateLabel')} · {t('requiredField')}</label>
+                    <input
+                      id="custom-event-date"
+                      className={styles.customEventDateInput}
+                      type="date"
+                      required
+                      value={customEventDate}
+                      aria-invalid={!!customEventDateError}
+                      aria-describedby={customEventDateError ? 'custom-event-date-error' : undefined}
+                      onChange={(changeEvent) => setCustomEventDate(changeEvent.currentTarget.value)}
+                      onBlur={() => setCustomEventTouched((state) => ({ ...state, date: true }))}
+                    />
+                    {customEventDateError && <p className={styles.customEventFieldError} id="custom-event-date-error" role="alert">{customEventDateError}</p>}
+                  </div>
+                  <div>
+                    <FormField
+                      mode={mode}
+                      label={`${t('customEventLocationLabel')} · ${t('requiredField')}`}
+                      value={customEventLocation}
+                      onChangeText={setCustomEventLocation}
+                      placeholder={t('customEventLocationPlaceholder')}
+                      maxLength={120}
+                      onBlur={() => setCustomEventTouched((state) => ({ ...state, location: true }))}
+                      error={customEventLocationError}
+                      accessibilityLabel={`${t('customEventLocationLabel')} · ${t('requiredField')}`}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.customEventLogoField}>
+                  <p className={styles.fieldHeading}>{t('customEventLogoLabel')}</p>
+                  <label className={`${styles.sourceCard} ${customEventLogo ? styles.sourceActive : ''}`}>
+                    <span className={styles.sourceIcon}><ImagePlus size={19} /></span>
+                    <span>
+                      <strong>{customEventLogo ? t('customEventLogoReady') : t('customEventLogoChoose')}</strong>
+                      <small>{t('customEventLogoHint')}</small>
+                    </span>
+                    {customEventLogo && <Check className={styles.sourceCheck} size={16} />}
+                    <input
+                      ref={customEventLogoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className={styles.visuallyHidden}
+                      onChange={handleCustomEventLogoUpload}
+                      aria-label={t('customEventLogoLabel')}
+                    />
+                  </label>
+                  {customEventLogo && (
+                    <div className={styles.customEventLogoPreview}>
+                      <img src={customEventLogo} alt="" />
+                      <ActionButton mode={mode} label={t('customEventLogoRemove')} variant="ghost" onPress={clearCustomEventLogo} />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
             <div className={styles.sectionHeading}>
-              <span className={styles.stepNumber}>01</span>
+              <span className={styles.stepNumber}>{customEvent ? '02' : '01'}</span>
               <div>
                 <h2 id="attending-editor-title">{t('personalizeTitle')}</h2>
                 <p>{t('personalizeBody')}</p>
@@ -707,7 +869,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
               <div className={styles.previewInner}>
             <div className={styles.previewHeading}>
               <div>
-                <p className={styles.previewEyebrow}>{generic ? t('genericPreviewEyebrow') : t('previewEyebrow')}</p>
+                <p className={styles.previewEyebrow}>{t('previewEyebrow')}</p>
                 <h2 id="attending-preview-title">{t('previewTitle')}</h2>
               </div>
               <span className={styles.previewRatio}>4:5</span>
@@ -720,14 +882,12 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 width={1080}
                 height={1350}
                 role="img"
-                aria-label={generic
-                  ? t('genericArtAccessibleName', { attendee: displayName })
-                  : t('artAccessibleName', { event: eventName, attendee: displayName })}
+                aria-label={t('artAccessibleName', { event: eventName, attendee: displayName })}
               />
               {!artReady && <div className={styles.artLoading} aria-live="polite">{t('makingPreview')}</div>}
             </div>
 
-            <p className={styles.disclaimer}>{generic ? t('genericIntentionDisclaimer') : t('intentionDisclaimer')}</p>
+            <p className={styles.disclaimer}>{t('intentionDisclaimer')}</p>
             {photoExportWarning && <p className={styles.exportWarning}>{t('photoExportWarning')}</p>}
 
             <div className={styles.actions}>
@@ -736,7 +896,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 label={t('shareImage')}
                 leadingIcon={<Share2 size={17} />}
                 onPress={shareArtwork}
-                disabled={!hasHydrated || !artReady || !isNameValid}
+                disabled={!hasHydrated || !artReady || !isNameValid || !isCustomEventValid}
                 style={{ flex: 1 }}
               />
               <ActionButton
@@ -745,11 +905,12 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 leadingIcon={<ArrowDownToLine size={17} />}
                 variant="secondary"
                 onPress={downloadArtwork}
-                disabled={!hasHydrated || !artReady || !isNameValid}
+                disabled={!hasHydrated || !artReady || !isNameValid || !isCustomEventValid}
                 style={{ flex: 1 }}
               />
             </div>
             {!isNameValid && <p className={styles.nameRequirement} role="status">{t('nameActionHint')}</p>}
+            {customEvent && !isCustomEventValid && <p className={styles.nameRequirement} role="status">{t('customEventActionHint')}</p>}
 
             <div className={styles.socialShare}>
               <span>{t('shareOn')}</span>
@@ -759,7 +920,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 trailingIcon={<ArrowUpRight size={14} />}
                 variant="ghost"
                 onPress={() => openSocialShare('x')}
-                disabled={!isNameValid}
+                disabled={!isNameValid || !isCustomEventValid}
               />
               <ActionButton
                 mode={mode}
@@ -767,7 +928,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 trailingIcon={<ArrowUpRight size={14} />}
                 variant="ghost"
                 onPress={() => openSocialShare('linkedin')}
-                disabled={!isNameValid}
+                disabled={!isNameValid || !isCustomEventValid}
               />
               <ActionButton
                 mode={mode}
@@ -775,7 +936,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                 leadingIcon={lastAction === 'copy' ? <Check size={14} /> : undefined}
                 variant="ghost"
                 onPress={copyEventLink}
-                disabled={!isNameValid}
+                disabled={!isNameValid || !isCustomEventValid}
               />
             </div>
             <p className={styles.shareHint}>{t('shareHint')}</p>
@@ -799,13 +960,13 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
             }
           }}
         >
-          <ModalBackdrop mode={mode} pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <ModalBackdrop mode={mode} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, pointerEvents: 'none' }} />
           <div className={styles.shareDialogPanel} role="dialog" aria-modal="true" aria-labelledby="attending-share-title">
             <Surface mode={mode} style={{ width: '100%', padding: 0, overflow: 'hidden' }}>
               <div className={styles.shareDialogContent}>
                 <div className={styles.shareDialogHeader}>
                   <div>
-                    <p className={styles.previewEyebrow}>{generic ? t('genericPreviewEyebrow') : t('previewEyebrow')}</p>
+                    <p className={styles.previewEyebrow}>{t('previewEyebrow')}</p>
                     <h2 id="attending-share-title">{publishedShare ? t('sharePublicReady') : t('shareDialogTitle')}</h2>
                   </div>
                   <IconButton
@@ -823,7 +984,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
 
                 {!publishedShare ? (
                   <>
-                    <p className={styles.shareDialogDescription}>{generic ? t('genericShareDialogDescription') : t('shareDialogDescription')}</p>
+                    <p className={styles.shareDialogDescription}>{t('shareDialogDescription')}</p>
                     <FormField
                       mode={mode}
                       label={t('shareEmailLabel')}
@@ -841,17 +1002,17 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                     />
                     <p className={styles.shareDialogPrivacy}>{t('shareEmailPrivacy')}</p>
 
-                    {LINKS_API_ORIGIN ? (
+                    {linksApiOrigin ? (
                       <div className={styles.shareCaptcha}>
                         <CaptchaWidget
-                          apiEndpoint={`${LINKS_API_ORIGIN}/api/captcha`}
+                          apiEndpoint={`${linksApiOrigin}/api/captcha`}
                           lang={['es', 'fr', 'de', 'pt'].includes(locale.split('-')[0]) ? locale.split('-')[0] : undefined}
                           resetKey={captchaResetKey}
                           onSolve={setCaptchaToken}
                           onReset={() => setCaptchaToken(null)}
                           onError={() => {
                             setCaptchaToken(null);
-                            toast.error(t('sharePublishError'));
+                            toast.error(t('shareCaptchaUnavailable'));
                           }}
                         />
                         <p className={styles.shareCaptchaStatus} role="status">
@@ -877,7 +1038,7 @@ export function AttendingExperience({ event, generic = false }: AttendingExperie
                         mode={mode}
                         label={isPublishingArtwork ? t('sharePublishingButton') : t('sharePublishButton')}
                         onPress={publishArtwork}
-                        disabled={isPublishingArtwork || !captchaToken || !LINKS_API_ORIGIN}
+                        disabled={isPublishingArtwork || !captchaToken || !linksApiOrigin}
                       />
                     </div>
                   </>

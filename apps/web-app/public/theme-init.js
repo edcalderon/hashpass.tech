@@ -6,9 +6,13 @@
         ? 'light'
         : stored === 'dark'
           ? 'dark'
-          : window.matchMedia('(prefers-color-scheme: light)').matches
-            ? 'light'
+          : stored === 'system'
+            ? window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark'
             : 'dark';
     document.documentElement.setAttribute('data-theme', theme);
+    var themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#050816' : '#fafbff');
   } catch (error) {}
 })();

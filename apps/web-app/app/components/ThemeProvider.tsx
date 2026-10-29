@@ -27,6 +27,8 @@ function getSystemTheme(): ResolvedTheme {
 function applyTheme(resolved: ResolvedTheme) {
   const root = document.documentElement;
   root.setAttribute('data-theme', resolved);
+  const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = resolved === 'dark' ? '#050816' : '#fafbff';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -35,7 +37,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial = stored ?? 'system';
+    const initial = stored ?? 'dark';
     const resolved = initial === 'system' ? getSystemTheme() : (initial as ResolvedTheme);
     setThemeState(initial);
     setResolvedTheme(resolved);

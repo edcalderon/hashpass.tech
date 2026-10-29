@@ -111,6 +111,10 @@ amplify-backend-config/
 storybook-static/
 .storybook-static/
 
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
 # Local tool caches and noise
 .agents/
 .turbo/

@@ -14,6 +14,7 @@ const PRECACHE_URLS = [
   '/sw-register.js',
   '/og-image.png',
   '/logo-hashpass.svg',
+  '/logo-full-hashpass-black-red.svg',
   '/logo-full-hashpass-black.svg',
   '/logo-full-hashpass-black-cyan.svg',
   '/logo-full-hashpass-white.svg',

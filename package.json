@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.9.178",
+  "version": "1.9.180",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -67,8 +67,8 @@
     "preinstall": "node packages/tools/scripts/check-node-baseline.mjs",
     "dev": "bash packages/tools/scripts/dev-command.sh mobile -- pnpm --filter hashpass-mobile-app dev",
     "dev:mobile": "bash packages/tools/scripts/dev-command.sh mobile -- pnpm --filter hashpass-mobile-app dev",
-    "dev:club": "bash packages/tools/scripts/dev-command.sh club -- pnpm --filter hashpass-club-web dev",
-    "dev:web-app": "bash packages/tools/scripts/dev-command.sh club -- pnpm --filter hashpass-club-web dev",
+    "dev:club": "bash packages/tools/scripts/dev-club.sh",
+    "dev:web-app": "bash packages/tools/scripts/dev-club.sh",
     "dev:companion": "bash packages/tools/scripts/dev-command.sh companion -- pnpm --filter @hashpass/companion dev",
     "dev:directus": "bash packages/tools/scripts/dev-command.sh directus -- pnpm --filter hashpass-directus dev",
     "dev:video-studio": "bash packages/tools/scripts/dev-command.sh video-studio -- pnpm --filter hashpass-video-studio dev",

@@ -18,7 +18,7 @@ export interface AttendingLandingProps {
 
 export interface AttendingExperienceProps {
   event: AttendingEventData;
-  generic?: boolean;
+  customEvent?: boolean;
 }
 
 export interface AttendingLandingStepProps {
@@ -55,9 +55,9 @@ export interface AttendingEventData {
 }
 
 export interface AttendingArtworkOptions {
+  themeMode: 'dark' | 'light';
   eventName: string;
   shortName: string;
-  genericArtwork?: boolean;
   location: string;
   venue: string;
   dateLabel: string;

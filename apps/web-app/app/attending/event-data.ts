@@ -116,17 +116,17 @@ export function makeAttendingEventData(event: EventConfig, eventSlug: string): A
   };
 }
 
-export function makeGenericAttendingData(): AttendingEventData {
+export function makeCustomAttendingEventData(): AttendingEventData {
   return {
     slug: 'community',
     id: 'community',
-    name: 'HASHPASS Club',
-    shortName: 'COMMUNITY',
+    name: '',
+    shortName: 'EVENT',
     city: '',
     country: '',
     venue: '',
-    color: '#27D8FF',
-    logoSrc: '/attending/logo-full-hashpass-white-cyan.svg',
+    color: '#156BFF',
+    logoSrc: POWERED_BY_LOGO,
     startDate: null,
     endDate: null,
     dateFallback: null,
