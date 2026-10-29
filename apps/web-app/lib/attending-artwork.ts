@@ -601,7 +601,7 @@ function drawBslColombiaArtwork(
   context.stroke();
 
   context.textAlign = 'left';
-  drawCalendar(context, 132, 842, iconAccent, 30);
+  drawCalendar(context, 132, 860, iconAccent, 30);
   context.fillStyle = detailColor;
   context.font = '700 28px Manrope, sans-serif';
   drawFittedText(context, options.dateLabel, 170, 870, 330, 700, 'Manrope, sans-serif', 28, 19);
@@ -612,7 +612,7 @@ function drawBslColombiaArtwork(
   context.lineTo(532, 890);
   context.stroke();
 
-  drawLocationPin(context, 562, 842, iconAccent, 30);
+  drawLocationPin(context, 562, 863, iconAccent, 30);
   context.fillStyle = detailColor;
   context.font = '700 28px Manrope, sans-serif';
   drawFittedText(context, options.location, 596, 870, 365, 700, 'Manrope, sans-serif', 28, 19);
@@ -623,10 +623,32 @@ function drawBslColombiaArtwork(
   context.lineTo(962, 904);
   context.stroke();
 
-  drawBuilding(context, 132, 927, iconAccent, 30);
-  context.fillStyle = detailColor;
-  context.font = '700 27px Manrope, sans-serif';
-  drawFittedText(context, compactVenue(options.venue), 170, 956, 790, 700, 'Manrope, sans-serif', 27, 18);
+  const venueLabel = compactVenue(options.venue);
+  if (venueLabel) {
+    let venueFontSize = 27;
+    context.font = `700 ${venueFontSize}px Manrope, sans-serif`;
+    while (venueFontSize > 18 && context.measureText(venueLabel).width > 790) {
+      venueFontSize = Math.max(18, venueFontSize - 2);
+      context.font = `700 ${venueFontSize}px Manrope, sans-serif`;
+    }
+    const venueTextWidth = Math.min(context.measureText(venueLabel).width, 790);
+    const venueGroupWidth = 30 + 16 + venueTextWidth;
+    const venueGroupStart = (ART_WIDTH - venueGroupWidth) / 2;
+    drawBuilding(context, venueGroupStart + 15, 943, iconAccent, 30);
+    context.fillStyle = detailColor;
+    context.textAlign = 'left';
+    drawFittedText(
+      context,
+      venueLabel,
+      venueGroupStart + 46,
+      956,
+      790,
+      700,
+      'Manrope, sans-serif',
+      venueFontSize,
+      18,
+    );
+  }
 
   drawRoundRect(context, 150, 984, 780, 72, 36);
   context.fillStyle = lightMode ? 'rgba(175, 13, 1, 0.08)' : 'rgba(8, 30, 70, 0.66)';

@@ -69,7 +69,7 @@ function getLogoSrc(event: EventConfig): string {
     bsl: '/attending/logos/bsl-ontour-pro.svg',
     peru2026: '/attending/logos/bsl-peru-pro.svg',
     chile2026: '/attending/logos/bsl-chile-pro.svg',
-    colombia2026: '/attending/logos/bsl-colombia-pro.svg',
+    colombia2026: '/attending/logos/bsl-ontour-pro.svg',
     bsl2025: '/attending/logos/BSL-Logo-fondo-oscuro-2024.svg',
     'hash-poker': '/attending/logos/hash-poker-room-logo.webp',
   };
