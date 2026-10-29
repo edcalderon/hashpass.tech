@@ -444,6 +444,9 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
     expect(renderer!.root.findByProps({ accessibilityLabel: 'viewMode.list' }).props.accessibilityState.selected).toBe(true);
+    // List view is a row card: a type-icon tile leads it and no photo is rendered.
+    expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-media-'))).toHaveLength(0);
+    expect(renderer!.root.findAll((node) => String(node.props.testID ?? '').startsWith('agenda-card-icon-')).length).toBeGreaterThan(0);
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
     await act(async () => {
@@ -615,15 +618,24 @@ describe('event schedule screens', () => {
     ))).toHaveLength(0);
     expect(renderer!.root.findByProps({ children: 'Auditorio Principal' })).toBeTruthy();
     const networkingMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-networking-session' });
-    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(false);
+    // The type badge sits on the photo (where the bookmark used to be) as an icon that opens to its label.
+    const typeBadge = (id: string) => renderer!.root.findAllByProps({ testID: `agenda-card-type-${id}` })
+      .find((node) => typeof node.props.onPress === 'function')!;
+    expect(networkingMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'people')).toBe(true);
+    expect(typeBadge('networking-session').props.accessibilityLabel).toBe('TYPES.NETWORKING');
     const networkingCard = renderer!.root.findByProps({ testID: 'agenda-card-networking-session' });
+    expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' })).toHaveLength(0);
+    act(() => typeBadge('networking-session').props.onHoverIn());
     expect(networkingCard.findAllByProps({ children: 'TYPES.NETWORKING' }).length).toBeGreaterThan(0);
-    expect(networkingCard.findAllByProps({ accessibilityLabel: 'types.revealLabel' })).toHaveLength(0);
+    act(() => typeBadge('networking-session').props.onHoverOut());
+    // The bookmark moved to the top-right of the card body, outside the photo.
+    expect(networkingMedia.findAllByProps({ testID: 'agenda-card-bookmark-networking-session' })).toHaveLength(0);
+    expect(networkingCard.findAllByProps({ testID: 'agenda-card-bookmark-networking-session' }).length).toBeGreaterThan(0);
     expect(networkingMedia.findByProps({ testID: 'agenda-card-venue-networking-session' })).toBeTruthy();
     const panelMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-panel-session' });
     expect(panelMedia.findByProps({ testID: 'agenda-card-venue-panel-session' })).toBeTruthy();
     const workshopMedia = renderer!.root.findByProps({ testID: 'agenda-card-media-workshop-session' });
-    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(false);
+    expect(workshopMedia.findAllByType('NativeSafeIcon' as any).some((node) => node.props.name === 'build')).toBe(true);
     expect(workshopMedia.findAllByProps({ testID: 'agenda-card-venue-workshop-session' })).toHaveLength(0);
 
     const gridButton = renderer!.root.findByProps({ accessibilityLabel: 'viewMode.grid' });
@@ -799,6 +811,14 @@ describe('event schedule screens', () => {
     const textOf = () => renderer!.root.findAllByType(Text).map((node) => node.children.join(''));
     expect(textOf()).toEqual(expect.arrayContaining(['Saved opening', 'Unsaved panel']));
     expect(renderer!.root.findAllByProps({ testID: 'agenda-card-bookmark-session-1' }).length).toBeGreaterThan(0);
+
+    // A saved session shows a filled red bookmark; an unsaved one stays an outlined muted one.
+    const bookmarkIcon = (id: string) => renderer!.root
+      .findAllByProps({ testID: `agenda-card-bookmark-${id}` })
+      .find((node) => typeof node.props.onPress === 'function')!
+      .findByType('MaterialIcons' as any);
+    expect(bookmarkIcon('session-1').props).toMatchObject({ name: 'bookmark', color: uiPalette('light').danger });
+    expect(bookmarkIcon('session-2').props).toMatchObject({ name: 'bookmark-border', color: uiPalette('light').muted });
 
     const bookmarkedTab = findBookmarkedTab(renderer!);
     await act(async () => {

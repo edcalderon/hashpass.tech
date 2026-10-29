@@ -60,6 +60,21 @@ function buildRevealLayoutAnimation(): LayoutAnimationConfig {
     delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
   };
 }
+/**
+ * Animates the next layout change (a reveal chip growing or shrinking) on native, where the
+ * web CSS transition does not apply. A no-op on web, under reduced motion, or in a partial
+ * react-native test mock.
+ */
+export function animateRevealChange(motionAllowed: boolean) {
+  try {
+    if (Platform.OS !== "web" && motionAllowed) {
+      ensureAndroidLayoutAnimationEnabled();
+      LayoutAnimation.configureNext(buildRevealLayoutAnimation());
+    }
+  } catch {
+    // Worst case the change is not animated that time.
+  }
+}
 export function Surface({
   mode = "light",
   style,
@@ -367,6 +382,8 @@ export type IconButtonProps = Omit<PressableProps, "children"> &
     pinnedOpen?: boolean;
     /** Reveal buttons only: overrides the resting surface, e.g. glass over a photo. */
     surfaceStyle?: ViewStyle;
+    /** Reveal buttons only: extra px the pill grows by when expanded (default fits a short label). */
+    revealWidth?: number;
   };
 
 export function IconButton({
@@ -384,6 +401,7 @@ export function IconButton({
   revealText,
   pinnedOpen = false,
   surfaceStyle,
+  revealWidth = 104,
   onHoverIn,
   onHoverOut,
   onFocus,
@@ -460,7 +478,7 @@ export function IconButton({
       : undefined;
     // The visible pill may be compact (`size`), but the Pressable keeps at
     // least the compact touch target so a 30px pill is still easy to tap.
-    const visualWidth = expanded ? edge + 104 : edge;
+    const visualWidth = expanded ? edge + revealWidth : edge;
     return (
         <Pressable
           {...props}

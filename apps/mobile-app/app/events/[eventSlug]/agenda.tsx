@@ -41,7 +41,7 @@ import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
 import { ActionButton, HoverText, IconButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import StatusPill from '../../../components/StatusPill';
+import RevealBadge from '../../../components/RevealBadge';
 import WorkshopShimmer from '../../../components/WorkshopShimmer';
 import {
   buildGoogleCalendarUrl,
@@ -271,6 +271,8 @@ export default function BSL2025AgendaScreen() {
   const interfaceMode = isDark ? 'dark' : 'light';
   const palette = uiPalette(interfaceMode);
   const speakerStatusHues = uiTokens.speakerStatus[interfaceMode];
+  // The bookmark sits on the card surface, so the saved state uses the theme's red.
+  const bookmarkSavedColor = palette.danger;
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
@@ -321,6 +323,7 @@ export default function BSL2025AgendaScreen() {
   const [agendaLayout, setAgendaLayout] = useState<'compact' | 'list' | 'grid'>('compact');
   const isCompactAgenda = agendaLayout === 'compact';
   const isAgendaGrid = agendaLayout === 'grid';
+  const isAgendaRow = agendaLayout === 'list';
   const isWideAgenda = viewportWidth >= 768;
   const [usingJsonFallback, setUsingJsonFallback] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<'running' | 'stopped' | 'unknown'>('unknown');
@@ -1550,7 +1553,7 @@ export default function BSL2025AgendaScreen() {
         labelNumberOfLines={1}
         tooltipText={label}
         accessibilityLabel={label}
-        variant={isConfirmed ? 'ghost' : 'secondary'}
+        variant="secondary"
         leadingIcon={icon}
         accessibilityHint={t('actions.actionHint', 'Opens this session action')}
         onPress={onPress}
@@ -1615,104 +1618,105 @@ export default function BSL2025AgendaScreen() {
               isCompactAgenda && !isWideAgenda && styles.agendaItemLayoutMobile,
             ]}
           >
-            <View
-              testID={`agenda-card-media-${item.id}`}
-              style={[
-                styles.agendaMedia,
-                isCompactAgenda && styles.agendaMediaCompact,
-                isAgendaGrid && styles.agendaMediaGrid,
-                isWideAgenda && !isAgendaGrid && styles.agendaMediaWide,
-                isCompactAgenda && !isWideAgenda && styles.agendaMediaMobile,
-                { backgroundColor: `${typeColor}20` },
-              ]}
-            >
-              {venueImage ? (
-                <>
-                  <Image
-                    testID={`agenda-card-venue-${item.id}`}
-                    source={venueImage}
-                    resizeMode="cover"
-                    style={styles.agendaVenueImage}
-                    accessible={false}
-                  />
-                  <View style={[styles.agendaVenueScrim, { pointerEvents: "none" }]} />
-                </>
-              ) : null}
-              {usesSpeakerPortrait && featuredSpeaker ? (
-                <View style={styles.agendaMediaFallback}>
-                  <SpeakerAvatar
-                    name={featuredSpeaker.displayName}
-                    imageUrl={featuredSpeaker.image}
-                    size={isAgendaGrid ? 112 : isCompactAgenda ? 52 : 72}
-                    showBorder
-                    style={styles.agendaFeaturedAvatar}
-                  />
+            {isAgendaRow ? (
+              <View testID={`agenda-card-icon-${item.id}`} style={styles.agendaRowLead}>
+                <View style={[styles.agendaRowIcon, { backgroundColor: `${typeColor}22`, borderColor: `${typeColor}66` }]}>
+                  <NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={24} color={typeColor} />
                 </View>
-              ) : null}
-              {isConfirmed ? (
-                <IconButton
-                  mode="dark"
-                  accentColor="#FFFFFF"
-                  revealLabel
-                  preserveBaseStyleOnReveal
-                  size={30}
-                  label={t('actions.onAgenda', 'On agenda')}
-                  pinnedOpen={pinnedBadge === `agenda:${item.id}`}
-                  surfaceStyle={styles.agendaMediaChip}
-                  style={styles.agendaOnAgenda}
-                  onPress={() => pinBadge(`agenda:${item.id}`)}
-                  testID={`agenda-card-on-agenda-${item.id}`}
-                >
-                  <MaterialIcons name="check" size={18} color={speakerStatusHues.active} />
-                </IconButton>
-              ) : null}
-              {usesSpeakerPortrait && resolvedSpeakers.length > 1 ? (
-                <View style={[styles.agendaMediaCount, isConfirmed && styles.agendaMediaCountBelow]}>
-                  <Text style={styles.agendaMediaCountText}>+{resolvedSpeakers.length - 1}</Text>
-                </View>
-              ) : null}
-              <IconButton
-                mode="dark"
-                accentColor="#FFFFFF"
-                revealLabel
-                preserveBaseStyleOnReveal
-                size={30}
-                label={isFavorite
-                  ? t('actions.removeBookmark', 'Remove bookmark')
-                  : t('actions.bookmark', 'Bookmark session')}
-                revealText={isFavorite
-                  ? t('actions.bookmarked', 'Bookmarked')
-                  : t('actions.bookmarkShort', 'Bookmark')}
-                pinnedOpen={pinnedBadge === `bookmark:${item.id}`}
-                accessibilityState={{ selected: isFavorite }}
-                surfaceStyle={styles.agendaMediaChip}
-                style={styles.agendaBookmark}
-                onPress={() => {
-                  pinBadge(`bookmark:${item.id}`);
-                  void handleToggleFavorite(item);
-                }}
-                testID={`agenda-card-bookmark-${item.id}`}
-              >
-                <MaterialIcons
-                  name={isFavorite ? 'bookmark' : 'bookmark-border'}
-                  size={19}
-                  color="#FFFFFF"
-                />
-              </IconButton>
-              <View
-                testID={`agenda-card-time-footer-${item.id}`}
-                style={styles.agendaMediaFooter}
-              >
-                <NativeSafeIcon name="schedule" size={14} color="#FFFFFF" />
-                <Text
-                  testID={`agenda-card-time-${item.id}`}
-                  style={styles.agendaTime}
-                  numberOfLines={isWideAgenda || isCompactAgenda || isAgendaGrid ? 1 : 2}
-                >
-                  {formatAgendaCardTime(item, eventTzOffset)}
-                </Text>
+                {isConfirmed ? (
+                  <View
+                    testID={`agenda-card-on-agenda-${item.id}`}
+                    accessible
+                    accessibilityLabel={t('actions.onAgenda', 'On agenda')}
+                    style={[styles.agendaRowCheck, { backgroundColor: speakerStatusHues.active, borderColor: palette.surface }]}
+                  >
+                    <MaterialIcons name="check" size={12} color="#FFFFFF" />
+                  </View>
+                ) : null}
               </View>
-            </View>
+            ) : (
+              <View
+                testID={`agenda-card-media-${item.id}`}
+                style={[
+                  styles.agendaMedia,
+                  isCompactAgenda && styles.agendaMediaCompact,
+                  isAgendaGrid && styles.agendaMediaGrid,
+                  isWideAgenda && !isAgendaGrid && styles.agendaMediaWide,
+                  isCompactAgenda && !isWideAgenda && styles.agendaMediaMobile,
+                  { backgroundColor: `${typeColor}20` },
+                ]}
+              >
+                {venueImage ? (
+                  <>
+                    <Image
+                      testID={`agenda-card-venue-${item.id}`}
+                      source={venueImage}
+                      resizeMode="cover"
+                      style={styles.agendaVenueImage}
+                      accessible={false}
+                    />
+                    <View style={[styles.agendaVenueScrim, { pointerEvents: "none" }]} />
+                  </>
+                ) : null}
+                {usesSpeakerPortrait && featuredSpeaker ? (
+                  <View style={styles.agendaMediaFallback}>
+                    <SpeakerAvatar
+                      name={featuredSpeaker.displayName}
+                      imageUrl={featuredSpeaker.image}
+                      size={isAgendaGrid ? 112 : isCompactAgenda ? 52 : 72}
+                      showBorder
+                      style={styles.agendaFeaturedAvatar}
+                    />
+                  </View>
+                ) : null}
+                {isConfirmed ? (
+                  <IconButton
+                    mode="dark"
+                    accentColor="#FFFFFF"
+                    revealLabel
+                    preserveBaseStyleOnReveal
+                    size={30}
+                    label={t('actions.onAgenda', 'On agenda')}
+                    pinnedOpen={pinnedBadge === `agenda:${item.id}`}
+                    surfaceStyle={styles.agendaMediaChip}
+                    style={styles.agendaOnAgenda}
+                    onPress={() => pinBadge(`agenda:${item.id}`)}
+                    testID={`agenda-card-on-agenda-${item.id}`}
+                  >
+                    <MaterialIcons name="check" size={18} color={speakerStatusHues.active} />
+                  </IconButton>
+                ) : null}
+                {usesSpeakerPortrait && resolvedSpeakers.length > 1 ? (
+                  <View style={styles.agendaMediaCount}>
+                    <Text style={styles.agendaMediaCountText}>+{resolvedSpeakers.length - 1}</Text>
+                  </View>
+                ) : null}
+                <View style={styles.agendaMediaType}>
+                  <RevealBadge
+                    isDark
+                    label={typeLabel}
+                    color={typeColor}
+                    surfaceColor={uiTokens.effects.mediaChipBase}
+                    textColor="#FFFFFF"
+                    icon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={15} color={typeColor} />}
+                    testID={`agenda-card-type-${item.id}`}
+                  />
+                </View>
+                <View
+                  testID={`agenda-card-time-footer-${item.id}`}
+                  style={styles.agendaMediaFooter}
+                >
+                  <NativeSafeIcon name="schedule" size={14} color="#FFFFFF" />
+                  <Text
+                    testID={`agenda-card-time-${item.id}`}
+                    style={styles.agendaTime}
+                    numberOfLines={isWideAgenda || isCompactAgenda || isAgendaGrid ? 1 : 2}
+                  >
+                    {formatAgendaCardTime(item, eventTzOffset)}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <View style={[styles.agendaItemContent, isCompactAgenda && styles.agendaItemContentCompact]}>
               <View style={styles.agendaHeaderRow}>
@@ -1729,22 +1733,60 @@ export default function BSL2025AgendaScreen() {
                   {cleanSessionTitle(item.title)}
                 </HoverText>
                 <View style={styles.agendaBadges}>
+                  <View style={styles.agendaBookmarkSlot}>
+                    <IconButton
+                      mode={interfaceMode}
+                      accentColor={palette.text}
+                      revealLabel
+                      preserveBaseStyleOnReveal
+                      size={uiTokens.control.compactHeight}
+                      revealWidth={128}
+                      label={isFavorite
+                        ? t('actions.removeBookmark', 'Remove bookmark')
+                        : t('actions.bookmark', 'Bookmark session')}
+                      revealText={isFavorite
+                        ? t('actions.bookmarked', 'Bookmarked')
+                        : t('actions.bookmarkShort', 'Bookmark')}
+                      pinnedOpen={pinnedBadge === `bookmark:${item.id}`}
+                      accessibilityState={{ selected: isFavorite }}
+                      surfaceStyle={styles.agendaBookmarkChip}
+                      style={styles.agendaBookmarkInCard}
+                      onPress={() => {
+                        pinBadge(`bookmark:${item.id}`);
+                        void handleToggleFavorite(item);
+                      }}
+                      testID={`agenda-card-bookmark-${item.id}`}
+                    >
+                      <MaterialIcons
+                        name={isFavorite ? 'bookmark' : 'bookmark-border'}
+                        size={18}
+                        color={isFavorite ? bookmarkSavedColor : palette.muted}
+                      />
+                    </IconButton>
+                  </View>
                   {isPast ? (
-                    <StatusPill
+                    <RevealBadge
                       isDark={isDark}
                       label={t('badges.past')}
                       color={speakerStatusHues.past}
-                      trailingIcon={<MaterialIcons name="history" size={13} color={palette.muted} />}
+                      surfaceColor={palette.surface}
+                      textColor={palette.text}
+                      icon={<MaterialIcons name="history" size={15} color={palette.muted} />}
+                      testID={`agenda-card-past-${item.id}`}
                     />
                   ) : null}
-                  <StatusPill
-                    isDark={isDark}
-                    label={typeLabel}
-                    color={typeColor}
-                    trailingIcon={<NativeSafeIcon name={getAgendaTypeIcon(item.type) as NativeSafeIconName} size={13} color={palette.muted} />}
-                  />
                 </View>
               </View>
+
+              {isAgendaRow ? (
+                <View style={styles.locationContainer}>
+                  <MaterialIcons name="schedule" size={15} color={typeColor} />
+                  <Text testID={`agenda-card-time-${item.id}`} style={styles.agendaRowTime} numberOfLines={1}>
+                    {formatAgendaCardTime(item, eventTzOffset)}
+                  </Text>
+                  <Text style={styles.agendaRowType} numberOfLines={1}>{typeLabel}</Text>
+                </View>
+              ) : null}
 
               <View style={styles.locationContainer}>
                 <MaterialIcons
@@ -1810,7 +1852,7 @@ export default function BSL2025AgendaScreen() {
                 ]}>
                   {renderAgendaAction(
                     isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda'),
-                    <MaterialIcons name={isConfirmed ? 'check-circle' : 'add-circle-outline'} size={19} color={palette.accent} />,
+                    <MaterialIcons name={isConfirmed ? 'remove-circle-outline' : 'add-circle-outline'} size={19} color={palette.accent} />,
                     () => { void handleAgendaAction(item, startTime); },
                   )}
                   <View style={styles.agendaSecondaryActions}>
@@ -2484,21 +2526,11 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderColor: uiTokens.effects.mediaBorder,
     boxShadow: '0 2px 10px rgba(3, 12, 24, 0.35)',
   },
-  // Top-left of the photo; opens rightwards.
+  // Bottom-left of the photo, just above the time footer; opens rightwards.
   agendaOnAgenda: {
+    bottom: 40 + uiTokens.space.sm,
     left: uiTokens.space.sm,
     position: 'absolute',
-    top: uiTokens.space.sm,
-    zIndex: 2,
-  },
-  agendaMediaCountBelow: {
-    top: uiTokens.space.sm + 30 + uiTokens.space.xs,
-  },
-  // Top-right of the photo; opens leftwards.
-  agendaBookmark: {
-    position: 'absolute',
-    right: uiTokens.space.sm,
-    top: uiTokens.space.sm,
     zIndex: 2,
   },
   agendaMediaCountText: {
@@ -2527,6 +2559,44 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
           WebkitBackdropFilter: `blur(${uiTokens.effects.mediaOverlayBlur}px) saturate(1.25)`,
         } as any)
       : {}),
+  },
+  // List view: a type-icon tile leads the row instead of the photo.
+  agendaRowLead: {
+    paddingLeft: uiTokens.space.lg,
+    paddingTop: uiTokens.space.xl,
+    position: 'relative',
+  },
+  agendaRowIcon: {
+    alignItems: 'center',
+    borderRadius: uiTokens.radius.media,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  agendaRowCheck: {
+    alignItems: 'center',
+    borderRadius: uiTokens.radius.circle,
+    borderWidth: 2,
+    bottom: -4,
+    height: 20,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -4,
+    width: 20,
+  },
+  agendaRowTime: {
+    color: colors.text.primary,
+    flexShrink: 1,
+    fontSize: uiTokens.type.label - 1,
+    fontWeight: '700',
+  },
+  agendaRowType: {
+    color: colors.text.secondary,
+    flexShrink: 1,
+    fontSize: uiTokens.type.caption,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   agendaItemLayoutCompact: {
     minHeight: 118,
@@ -2564,6 +2634,32 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: uiTokens.space.md,
+  },
+  // Type badge on the photo, top-right (where the bookmark used to sit).
+  agendaMediaType: {
+    height: 28,
+    position: 'absolute',
+    right: uiTokens.space.sm,
+    top: uiTokens.space.sm,
+    width: 28,
+    zIndex: 2,
+  },
+  // Bookmark in the card's top-right corner; opens leftwards over the title.
+  // Same edge as the external-calendar action so the two icon buttons match.
+  agendaBookmarkSlot: {
+    height: uiTokens.control.compactHeight,
+    width: uiTokens.control.compactHeight,
+  },
+  agendaBookmarkInCard: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 5,
+  },
+  // Bookmark sits on the card, not a photo: opaque tinted surface instead of dark glass.
+  agendaBookmarkChip: {
+    backgroundColor: uiPalette(isDark).surface,
+    borderColor: uiPalette(isDark).border,
   },
   agendaBadges: {
     alignItems: 'flex-end',
