@@ -23,6 +23,18 @@ test('allows the HashPass app origin to preflight QR approval requests', async (
   assert.match(response.headers['access-control-allow-methods'], /POST/);
 });
 
+test('allows CBWeek production to preflight QR approval requests', async () => {
+  const response = await handler({
+    version: '2.0',
+    headers: { origin: 'https://cbweek.hashpass.tech' },
+    requestContext: { http: { method: 'OPTIONS' } },
+  });
+
+  assert.equal(response.statusCode, 204);
+  assert.equal(response.headers['access-control-allow-origin'], 'https://cbweek.hashpass.tech');
+  assert.equal(response.headers['access-control-allow-credentials'], 'true');
+});
+
 test('an EventBridge scheduled event archives expired QR links', async () => {
   const client = createFakeSupabaseClient();
   setAdminDbForTesting(client as unknown as SupabaseClient);

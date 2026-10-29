@@ -252,10 +252,15 @@ const resolveProviderName = (hostname?: string | null): AuthProviderConfig['prov
 
 const resolveSupabaseCredentials = (hostname?: string | null) => {
   const resolvedHostname = resolveRuntimeHostname(hostname);
+  const tenant = ENV_CONFIG.getTenant(resolvedHostname);
   const supabaseProfile = firstEnv(['EXPO_PUBLIC_SUPABASE_PROFILE', 'SUPABASE_PROFILE']);
   const isBslProfile = Boolean(supabaseProfile && /^bsl(?:-|$)/i.test(supabaseProfile));
-  const isBsl = isBslProfile || ENV_CONFIG.getTenant(resolvedHostname).slug !== 'main';
-  const isDevelopmentHost = isDevelopmentHostname(resolvedHostname);
+  const isBsl = tenant.supabaseProfile
+    ? /^bsl(?:-|$)/i.test(tenant.supabaseProfile)
+    : isBslProfile || tenant.slug !== 'main';
+  const isDevelopmentHost = tenant.supabaseProfile
+    ? /(?:development|dev)$/i.test(tenant.supabaseProfile)
+    : isDevelopmentHostname(resolvedHostname);
 
   const coreUrlEnv = isDevelopmentHost
     ? [

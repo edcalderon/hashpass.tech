@@ -72,6 +72,7 @@ const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
   "hash.poker": "hash-poker",
   "www.hash.poker": "hash-poker",
   "cbweek2026.hashpass.tech": "cbweek2026",
+  "cbweek.hashpass.tech": "cbweek2026",
 };
 
 const getEventTourHubId = (eventId: string): string | null => {

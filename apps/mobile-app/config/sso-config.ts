@@ -41,6 +41,7 @@ export const SSO_CONFIG = {
       'https://blockchainsummit.hashpass.lat',
       'https://blockchainsummit-dev.hashpass.lat',
       'https://cbweek2026.hashpass.tech',
+      'https://cbweek.hashpass.tech',
       'https://api.hashpass.tech',
       'https://api-dev.hashpass.tech',
       'https://companion.hashpass.tech',

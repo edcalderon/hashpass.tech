@@ -49,6 +49,7 @@ cors_allow_origins = {
     "https://attending.hashpass.tech",
     "https://bsl.hashpass.tech",
     "https://cbweek2026.hashpass.tech",
+    "https://cbweek.hashpass.tech",
     # The approval UI is served from this origin after the Club opens it.
     "https://hashpass.tech",
     "https://www.hashpass.tech",

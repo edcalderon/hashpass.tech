@@ -27,6 +27,11 @@ describe('mobile API CORS utility', () => {
     expect(headers.get('Vary')).toBe('Origin');
   });
 
+  it('allows the production CBWeek origin through the shared API defaults', () => {
+    const headers = new Headers(getCorsHeaders(requestFor('https://cbweek.hashpass.tech')));
+    expect(headers.get('Access-Control-Allow-Origin')).toBe('https://cbweek.hashpass.tech');
+  });
+
   it('supports multiple configured origins without reflecting an untrusted origin', () => {
     process.env.CORS_ALLOW_ORIGINS = 'https://tenant.example, https://second.example';
 
