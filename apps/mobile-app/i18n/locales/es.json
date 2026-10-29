@@ -1509,7 +1509,10 @@
       "removeSessionMessage": "La sesión se eliminará de tu plan del día. Podrás deshacerlo durante unos segundos.",
       "sessionRemoved": "Sesión eliminada de tu plan",
       "sessionRestored": "Sesión restaurada en tu plan",
-      "excludePastSessions": "Excluir sesiones que ya han pasado"
+      "excludePastSessions": "Excluir sesiones que ya han pasado",
+      "cancel": "Cancelar",
+      "bookmark": "Guardar",
+      "bookmarked": "Guardado"
     },
     "tips": {
       "title": "Consejos de Networking",
