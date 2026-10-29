@@ -349,6 +349,52 @@ function drawFittedText(
   context.fillText(text, x, y, maxWidth);
 }
 
+function drawFittedWrappedText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  weight: number,
+  fontFamily: string,
+  maxSize: number,
+  minSize: number,
+  maxLines: number,
+): number {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  let size = maxSize;
+  let lines: string[] = [];
+
+  const wrapAtCurrentSize = () => {
+    const wrapped: string[] = [];
+    let line = '';
+    words.forEach((word) => {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && context.measureText(candidate).width > maxWidth) {
+        wrapped.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    });
+    if (line) wrapped.push(line);
+    return wrapped;
+  };
+
+  while (size >= minSize) {
+    context.font = `${weight} ${size}px ${fontFamily}`;
+    lines = wrapAtCurrentSize();
+    if (lines.length <= maxLines && lines.every((line) => context.measureText(line).width <= maxWidth)) break;
+    size -= 2;
+  }
+
+  context.font = `${weight} ${size}px ${fontFamily}`;
+  lines.slice(0, maxLines).forEach((line, index) => {
+    context.fillText(line, x, y + index * size * 1.04, maxWidth);
+  });
+  return Math.min(lines.length, maxLines) * size * 1.04;
+}
+
 function compactVenue(venue: string): string {
   return venue
     .replace(/Edificios H e I\s*[·•]\s*/i, '')
@@ -376,12 +422,16 @@ function drawColombiaFlagRibbon(
   context.fillRect(x + yellowWidth + blueWidth, y, width - yellowWidth - blueWidth, height);
 }
 
-function drawFrostedArtworkPanel(context: CanvasRenderingContext2D, lightMode: boolean) {
-  const x = 62;
-  const y = 704;
-  const width = 956;
-  const height = 625;
-  const radius = 42;
+function drawFrostedArtworkPanel(
+  context: CanvasRenderingContext2D,
+  lightMode: boolean,
+  accentColor: string,
+) {
+  const x = 56;
+  const y = 686;
+  const width = 968;
+  const height = 643;
+  const radius = 46;
   const inset = 20;
   const backdrop = document.createElement('canvas');
   backdrop.width = width + inset * 2;
@@ -408,21 +458,24 @@ function drawFrostedArtworkPanel(context: CanvasRenderingContext2D, lightMode: b
     context.filter = 'none';
   }
   const glass = context.createLinearGradient(0, y, 0, y + height);
-  glass.addColorStop(0, lightMode ? 'rgba(249, 250, 252, 0.68)' : 'rgba(2, 12, 42, 0.68)');
-  glass.addColorStop(1, lightMode ? 'rgba(243, 245, 248, 0.78)' : 'rgba(1, 8, 31, 0.8)');
+  glass.addColorStop(0, lightMode ? 'rgba(249, 250, 252, 0.78)' : 'rgba(2, 12, 42, 0.78)');
+  glass.addColorStop(1, lightMode ? 'rgba(243, 245, 248, 0.86)' : 'rgba(1, 8, 31, 0.86)');
   context.fillStyle = glass;
   context.fillRect(x, y, width, height);
   context.restore();
 
   context.save();
   drawRoundRect(context, x, y, width, height, radius);
-  context.strokeStyle = lightMode ? 'rgba(93, 111, 132, 0.24)' : 'rgba(39, 216, 255, 0.38)';
-  context.lineWidth = 1.5;
+  context.shadowColor = colorWithAlpha(accentColor, lightMode ? 0.12 : 0.24);
+  context.shadowBlur = 15;
+  context.strokeStyle = lightMode ? 'rgba(175, 13, 1, 0.48)' : colorWithAlpha(accentColor, 0.9);
+  context.lineWidth = 3;
   context.stroke();
+  context.shadowBlur = 0;
   context.beginPath();
   context.moveTo(x + 38, y + 1);
   context.lineTo(x + width - 38, y + 1);
-  context.strokeStyle = lightMode ? 'rgba(255, 255, 255, 0.68)' : 'rgba(217, 244, 255, 0.16)';
+  context.strokeStyle = lightMode ? 'rgba(255, 255, 255, 0.78)' : 'rgba(217, 244, 255, 0.22)';
   context.lineWidth = 1;
   context.stroke();
   context.restore();
@@ -461,9 +514,9 @@ function drawBslColombiaArtwork(
   context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
 
   const leftWash = context.createLinearGradient(0, 0, 620, 0);
-  leftWash.addColorStop(0, lightMode ? 'rgba(1, 9, 35, 0.3)' : 'rgba(1, 9, 35, 0.62)');
-  leftWash.addColorStop(0.66, lightMode ? 'rgba(1, 9, 35, 0.1)' : 'rgba(1, 9, 35, 0.28)');
-  leftWash.addColorStop(1, 'rgba(1, 9, 35, 0)');
+  leftWash.addColorStop(0, lightMode ? 'rgba(249, 250, 252, 0.88)' : 'rgba(1, 9, 35, 0.62)');
+  leftWash.addColorStop(0.66, lightMode ? 'rgba(249, 250, 252, 0.74)' : 'rgba(1, 9, 35, 0.28)');
+  leftWash.addColorStop(1, lightMode ? 'rgba(249, 250, 252, 0.1)' : 'rgba(1, 9, 35, 0)');
   context.fillStyle = leftWash;
   context.fillRect(0, 0, 660, 760);
 
@@ -487,7 +540,7 @@ function drawBslColombiaArtwork(
     lightMode ? '#607f99' : accentColor,
     lightMode ? '#3c5f7d' : secondaryAccentColor,
     options.transparentPortrait,
-    { x: 350, y: 28, width: 668, height: 900, radius: 224, verticalAnchor: 0.38 },
+    { x: 470, y: 22, width: 554, height: 910, radius: 208, verticalAnchor: 0.36 },
   );
 
   // Event mark and the Colombian colors anchor the upper-left corner while
@@ -511,62 +564,93 @@ function drawBslColombiaArtwork(
   context.textAlign = 'center';
   context.fillText('BSL  ·  COLOMBIA 2026', 278, 282);
 
-  drawFrostedArtworkPanel(context, lightMode);
-
-  context.textAlign = 'center';
+  // Put the attendee's intention in the open left column. The two-line serif
+  // display treatment keeps the headline legible beside the larger portrait
+  // while preserving the active locale's exact wording.
+  context.textAlign = 'left';
   context.textBaseline = 'alphabetic';
+  context.fillStyle = iconAccent;
+  context.font = '700 22px "IBM Plex Mono", monospace';
+  context.fillText(options.shortName.toLocaleUpperCase(), 58, 358);
+
   const headline = getAttendingArtworkHeadline(options);
   context.fillStyle = headingColor;
-  drawFittedText(context, headline, ART_WIDTH / 2, 830, 900, 800, 'Manrope, sans-serif', 88, 52);
+  context.shadowColor = lightMode ? 'transparent' : 'rgba(0, 0, 0, 0.38)';
+  context.shadowBlur = lightMode ? 0 : 16;
+  drawFittedWrappedText(context, headline, 58, 466, 420, 700, 'Fraunces, Georgia, serif', 104, 62, 2);
+  context.shadowColor = 'transparent';
+  context.shadowBlur = 0;
+  context.fillStyle = iconAccent;
+  context.fillRect(58, 626, 124, 8);
+  context.fillStyle = colorWithAlpha(iconAccent, 0.82);
+  context.fillRect(198, 626, 52, 8);
+
+  drawFrostedArtworkPanel(context, lightMode, iconAccent);
+
+  context.textAlign = 'center';
 
   context.fillStyle = lightMode ? '#17243a' : '#eaf7ff';
-  context.font = '800 37px Manrope, sans-serif';
-  drawFittedText(context, options.eventName, ART_WIDTH / 2, 919, 865, 800, 'Manrope, sans-serif', 37, 25);
+  context.font = '700 58px Fraunces, Georgia, serif';
+  drawFittedText(context, options.eventName, ART_WIDTH / 2, 786, 854, 700, 'Fraunces, Georgia, serif', 58, 34);
 
   context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.26 : 0.66);
   context.lineWidth = lightMode ? 1.5 : 2;
   context.beginPath();
-  context.moveTo(118, 946);
-  context.lineTo(962, 946);
+  context.moveTo(118, 814);
+  context.lineTo(962, 814);
   context.stroke();
 
-  const detailTop = 990;
-  const detailTextY = 1000;
   context.textAlign = 'left';
-  drawLocationPin(context, 124, detailTop, iconAccent, 29);
+  drawCalendar(context, 132, 860, iconAccent, 30);
   context.fillStyle = detailColor;
-  context.font = '700 25px Manrope, sans-serif';
-  drawFittedText(context, options.location, 153, detailTextY, 205, 700, 'Manrope, sans-serif', 25, 17);
+  context.font = '700 28px Manrope, sans-serif';
+  drawFittedText(context, options.dateLabel, 170, 870, 330, 700, 'Manrope, sans-serif', 28, 19);
 
   context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.42);
   context.beginPath();
-  context.moveTo(374, 961);
-  context.lineTo(374, 1018);
+  context.moveTo(532, 834);
+  context.lineTo(532, 890);
   context.stroke();
 
-  drawCalendar(context, 409, detailTop, iconAccent, 29);
+  drawLocationPin(context, 562, 863, iconAccent, 30);
   context.fillStyle = detailColor;
-  context.font = '700 24px Manrope, sans-serif';
-  drawFittedText(context, options.dateLabel, 438, detailTextY, 205, 700, 'Manrope, sans-serif', 24, 17);
+  context.font = '700 28px Manrope, sans-serif';
+  drawFittedText(context, options.location, 596, 870, 365, 700, 'Manrope, sans-serif', 28, 19);
 
-  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.42);
+  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.28 : 0.5);
   context.beginPath();
-  context.moveTo(674, 961);
-  context.lineTo(674, 1018);
+  context.moveTo(118, 904);
+  context.lineTo(962, 904);
   context.stroke();
 
-  drawBuilding(context, 711, detailTop, iconAccent, 29);
-  context.fillStyle = detailColor;
-  context.font = '700 22px Manrope, sans-serif';
-  drawFittedText(context, compactVenue(options.venue), 741, detailTextY, 235, 700, 'Manrope, sans-serif', 22, 15);
+  const venueLabel = compactVenue(options.venue);
+  if (venueLabel) {
+    let venueFontSize = 27;
+    context.font = `700 ${venueFontSize}px Manrope, sans-serif`;
+    while (venueFontSize > 18 && context.measureText(venueLabel).width > 790) {
+      venueFontSize = Math.max(18, venueFontSize - 2);
+      context.font = `700 ${venueFontSize}px Manrope, sans-serif`;
+    }
+    const venueTextWidth = Math.min(context.measureText(venueLabel).width, 790);
+    const venueGroupWidth = 30 + 16 + venueTextWidth;
+    const venueGroupStart = (ART_WIDTH - venueGroupWidth) / 2;
+    drawBuilding(context, venueGroupStart + 15, 943, iconAccent, 30);
+    context.fillStyle = detailColor;
+    context.textAlign = 'left';
+    drawFittedText(
+      context,
+      venueLabel,
+      venueGroupStart + 46,
+      956,
+      790,
+      700,
+      'Manrope, sans-serif',
+      venueFontSize,
+      18,
+    );
+  }
 
-  context.strokeStyle = colorWithAlpha(themeAccent, lightMode ? 0.22 : 0.4);
-  context.beginPath();
-  context.moveTo(118, 1030);
-  context.lineTo(962, 1030);
-  context.stroke();
-
-  drawRoundRect(context, 214, 1047, 652, 60, 30);
+  drawRoundRect(context, 150, 984, 780, 72, 36);
   context.fillStyle = lightMode ? 'rgba(175, 13, 1, 0.08)' : 'rgba(8, 30, 70, 0.66)';
   context.fill();
   context.strokeStyle = lightMode
@@ -581,14 +665,15 @@ function drawBslColombiaArtwork(
   context.textAlign = 'center';
   context.fillStyle = lightMode ? '#142238' : '#ffffff';
   context.font = '800 34px Manrope, sans-serif';
-  drawFittedText(context, identity, ART_WIDTH / 2, 1087, 596, 800, 'Manrope, sans-serif', 34, 20);
+  drawFittedText(context, identity, ART_WIDTH / 2, 1031, 720, 800, 'Manrope, sans-serif', 34, 20);
 
   const hasSocial = !!(options.attendeeSocialHandles.x || options.attendeeSocialHandles.instagram);
-  if (hasSocial) drawSocialHandles(context, options, 1128, detailColor);
+  if (hasSocial) drawSocialHandles(context, options, 1080, detailColor);
 
   context.fillStyle = lightMode ? '#526b82' : themeAccent;
   context.font = '700 22px "IBM Plex Mono", monospace';
-  drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1180 : 1156, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
+  drawFittedText(context, hashtags.join('   '), ART_WIDTH / 2, hasSocial ? 1161 : 1114, 850, 700, '"IBM Plex Mono", monospace', 22, 15);
+  const poweredByY = hasSocial ? 1270 : 1200;
 
   context.textAlign = 'left';
   context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
@@ -597,13 +682,13 @@ function drawBslColombiaArtwork(
   const brandWidth = 150;
   const groupStart = (ART_WIDTH - labelWidth - 12 - brandWidth) / 2;
   context.fillStyle = lightMode ? 'rgba(116, 45, 43, 0.82)' : 'rgba(230, 244, 255, 0.78)';
-  context.fillText(options.poweredByLabel, groupStart, 1270);
+  context.fillText(options.poweredByLabel, groupStart, poweredByY);
   if (poweredByLogo) {
-    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, 1251, brandWidth, 36);
+    drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, poweredByY - 19, brandWidth, 36);
   } else {
     context.fillStyle = 'rgba(230, 244, 255, 0.84)';
     context.font = '800 18px Manrope, sans-serif';
-    context.fillText('HASHPASS', groupStart + labelWidth + 12, 1270);
+    context.fillText('HASHPASS', groupStart + labelWidth + 12, poweredByY);
   }
   context.textAlign = 'left';
 }

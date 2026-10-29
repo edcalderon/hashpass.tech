@@ -26,11 +26,20 @@ locals {
     "Idempotency-Key",
   ]
 
-  # Event artwork pages run on one HTTPS subdomain per event. Keep the public
-  # CAPTCHA/artwork endpoints reachable from newly added event subdomains too.
+  # Keep credentialed API calls scoped to the known production app and event
+  # origins. Add new event hosts here when they are provisioned; API Gateway
+  # supports protocol wildcards, but they would expose credentialed routes to
+  # every HTTPS origin.
   prod_cors_allow_origins = distinct(concat(
-    lookup(var.cors_allow_origins, "prod", []),
-    ["https://*"]
+    [
+      for origin in lookup(var.cors_allow_origins, "prod", []) : origin
+      if !contains(["*", "https://*"], lower(trimspace(origin)))
+    ],
+    [
+      "https://attending.hashpass.tech",
+      "https://bsl.hashpass.tech",
+      "https://cbweek2026.hashpass.tech",
+    ]
   ))
 }
 

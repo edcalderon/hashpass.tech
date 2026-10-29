@@ -128,6 +128,14 @@ resource "aws_acm_certificate_validation" "site" {
   ]
 }
 
+resource "aws_cloudfront_function" "attending_host_routing" {
+  name    = "${var.name_prefix}-attending-host-routing"
+  runtime = "cloudfront-js-2.0"
+  comment = "Serve the attending landing on its dedicated hostname"
+  publish = true
+  code    = file("${path.module}/attending-landing-routing.js")
+}
+
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "${var.name_prefix} ${local.site_custom_domain_name} front door"
@@ -163,6 +171,11 @@ resource "aws_cloudfront_distribution" "site" {
       cookies {
         forward = "none"
       }
+    }
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.attending_host_routing.arn
     }
   }
 

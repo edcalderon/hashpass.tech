@@ -23,5 +23,14 @@ describe('PWA service worker cache policy', () => {
     expect(serviceWorkerSource).toContain("request.destination === 'script'");
     expect(serviceWorkerSource).toContain("request.destination === 'style'");
     expect(serviceWorkerSource).toContain("url.pathname === '/manifest.json'");
+    expect(serviceWorkerSource).toContain("url.pathname === '/manifest.webmanifest'");
+
+    const manifestJson = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../../public/manifest.json'), 'utf8'),
+    );
+    const webManifest = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../../public/manifest.webmanifest'), 'utf8'),
+    );
+    expect(webManifest).toEqual(manifestJson);
   });
 });

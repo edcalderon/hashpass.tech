@@ -64,6 +64,7 @@ jobs:
           # real club visitors must authenticate against the real database.
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_ATTENDING_SITE_HOME_URL: https://hashpass.club/
           # Also required at build time, same inlining rule as above -- HashPass
           # Auth (QR login) throws "requires linksApiBaseUrl to be configured"
           # at runtime when this is missing, since the SDK client never had a

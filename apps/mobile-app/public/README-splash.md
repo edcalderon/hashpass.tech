@@ -1,7 +1,7 @@
 Splash asset
 
 - Location used by Expo/native: `app.json` now points to `./public/assets/splash.gif`.
-- Web/PWA: `public/manifest.json` is the PWA manifest; Expo generates the web manifest from `app.json` at build time.
+- Web/PWA: `public/manifest.webmanifest` is the linked PWA manifest; `public/manifest.json` remains as a compatibility alias for older installs. Expo also generates the web manifest from `app.json` at build time.
 - If you want a separate PNG icon (`assets/images/splash-icon.png`) for native builds, place a PNG at that path.
 
 To replace the splash GIF manually (if needed):

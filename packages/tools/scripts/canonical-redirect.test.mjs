@@ -27,16 +27,30 @@ function redirectsFor(address) {
   return redirects;
 }
 
-test('keeps the attending landing path out of legacy event redirects', () => {
-  assert.deepEqual(redirectsFor('https://attending.hashpass.tech/attending/'), []);
-  assert.deepEqual(redirectsFor('https://attending.hashpass.tech/attending'), []);
+test('redirects legacy attending paths to the attending host root', () => {
+  assert.deepEqual(
+    redirectsFor('https://attending.hashpass.tech/attending/?campaign=summer#events'),
+    ['https://attending.hashpass.tech/?campaign=summer#events'],
+  );
+  assert.deepEqual(
+    redirectsFor('https://attending.hashpass.tech/attending'),
+    ['https://attending.hashpass.tech/'],
+  );
 });
 
-test('redirects the attending host root to its landing page', () => {
+test('leaves the attending host root for the edge rewrite', () => {
+  assert.deepEqual(redirectsFor('https://attending.hashpass.tech/?campaign=summer#events'), []);
+});
+
+test('returns the Club attending path to the Club homepage', () => {
   assert.deepEqual(
-    redirectsFor('https://attending.hashpass.tech/?campaign=summer#events'),
-    ['https://attending.hashpass.tech/attending/?campaign=summer#events'],
+    redirectsFor('https://hashpass.club/attending/?campaign=summer#events'),
+    ['https://hashpass.club/?campaign=summer#events'],
   );
+});
+
+test('keeps the dedicated BSL logo route on its own host', () => {
+  assert.deepEqual(redirectsFor('https://bsl.hashpass.tech/attending/bsl/'), []);
 });
 
 test('keeps legacy event links working', () => {

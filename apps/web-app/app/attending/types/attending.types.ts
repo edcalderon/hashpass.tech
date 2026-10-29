@@ -14,6 +14,7 @@ export type AttendingRoutePageProps = { params: Promise<{ eventSlug: string }> }
 
 export interface AttendingLandingProps {
   events: AttendingEventData[];
+  showCustomEventCard?: boolean;
 }
 
 export interface AttendingExperienceProps {

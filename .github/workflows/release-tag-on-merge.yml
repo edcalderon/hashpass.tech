@@ -76,9 +76,9 @@ permissions:
   id-token: write
 
 concurrency:
-  # A unique group per main commit prevents duplicate delivery for one
-  # release without replacing a different release that is already pending.
-  group: release-tag-on-merge-${{ github.sha }}
+  # Both post-merge events must serialize on the promotion commit itself.
+  # github.sha differs across push and pull_request_target payloads.
+  group: release-tag-on-merge-${{ inputs.merge_sha || github.event.pull_request.merge_commit_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -89,6 +89,7 @@ jobs:
       is_promotion: ${{ steps.resolve.outputs.is_promotion }}
       merge_sha: ${{ steps.resolve.outputs.merge_sha }}
       pr_number: ${{ steps.resolve.outputs.pr_number }}
+      already_released: ${{ steps.resolve.outputs.already_released }}
     steps:
       - name: Resolve merged promotion PR
         id: resolve
@@ -146,16 +147,61 @@ jobs:
             exit 1
           fi
 
+          # The same merged PR can arrive through both push:main and
+          # pull_request_target:closed. If the first event already completed
+          # the release, the second must be a no-op instead of republishing
+          # Lukas and failing the existing-tag guard. Keep the merge recovery
+          # useful: tag-and-sync still runs for an already-tagged commit so it
+          # can finish a develop sync that failed on the first event.
+          release_version=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${merge_sha}" \
+            -H 'Accept: application/vnd.github+json' \
+            --jq '.content' | base64 --decode | jq -r '.version')
+          if [[ -z "${release_version}" || "${release_version}" == "null" ]]; then
+            echo "::error::Could not read the release version at ${merge_sha}."
+            exit 1
+          fi
+
+          already_released=false
+          if tag_ref=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/git/ref/tags/v${release_version}" \
+            -H 'Accept: application/vnd.github+json' \
+            --jq '.object' 2>&1); then
+            tag_type=$(jq -r '.type' <<<"${tag_ref}")
+            tag_sha=$(jq -r '.sha' <<<"${tag_ref}")
+            if [[ "${tag_type}" == "tag" ]]; then
+              tag_sha=$(gh api \
+                "repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}" \
+                -H 'Accept: application/vnd.github+json' \
+                --jq '.object.sha')
+            fi
+            if [[ "${tag_sha}" != "${merge_sha}" ]]; then
+              echo "::error::Release tag v${release_version} points at ${tag_sha}, not ${merge_sha}. Refusing to treat a different commit as released."
+              exit 1
+            fi
+            already_released=true
+            echo "Release v${release_version} already points at ${merge_sha}; treating this duplicate trigger as a recovery no-op."
+          else
+            if [[ "${tag_ref}" != *"HTTP 404"* ]]; then
+              echo "::error::Could not check whether release tag v${release_version} already exists."
+              echo "${tag_ref}"
+              exit 1
+            fi
+          fi
+
           {
             echo "is_promotion=true"
             echo "merge_sha=${merge_sha}"
             echo "pr_number=${pr_number}"
+            echo "already_released=${already_released}"
           } >> "$GITHUB_OUTPUT"
           echo "Resolved merged develop promotion PR #${pr_number}."
 
   publish-lukas:
     needs: resolve-promotion
-    if: needs.resolve-promotion.outputs.is_promotion == 'true'
+    if: >
+      needs.resolve-promotion.outputs.is_promotion == 'true' &&
+      needs.resolve-promotion.outputs.already_released != 'true'
     uses: ./.github/workflows/lukas-landing-deploy.yml
     with:
       ref: ${{ needs.resolve-promotion.outputs.merge_sha }}
@@ -164,8 +210,12 @@ jobs:
   tag-and-sync:
     needs: [resolve-promotion, publish-lukas]
     if: >
+      always() &&
       needs.resolve-promotion.outputs.is_promotion == 'true' &&
-      needs.publish-lukas.result == 'success'
+      (
+        needs.publish-lukas.result == 'success' ||
+        needs.resolve-promotion.outputs.already_released == 'true'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Preflight — require RELEASE_AUTOMATION_TOKEN
@@ -196,15 +246,28 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Guard against re-tagging an existing version
+      - name: Verify existing release tag
+        id: tag_guard
+        env:
+          MERGE_SHA: ${{ needs.resolve-promotion.outputs.merge_sha }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          if git rev-parse "refs/tags/v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "::error::Tag v${{ steps.version.outputs.version }} already exists. Refusing to move or duplicate it — if this PR's version bump is wrong, fix package.json and re-promote instead of re-running this job."
-            exit 1
+          tag_ref="refs/tags/v${RELEASE_VERSION}"
+          if git rev-parse --verify "${tag_ref}^{commit}" >/dev/null 2>&1; then
+            tagged_sha=$(git rev-parse "${tag_ref}^{commit}")
+            if [[ "${tagged_sha}" != "${MERGE_SHA}" ]]; then
+              echo "::error::Tag v${RELEASE_VERSION} already points at ${tagged_sha}, not ${MERGE_SHA}. Refusing to move or duplicate it."
+              exit 1
+            fi
+            echo "already_tagged=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${RELEASE_VERSION} already points at the exact promotion commit; skipping duplicate tag creation."
+          else
+            echo "already_tagged=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create and push release tag
+        if: steps.tag_guard.outputs.already_tagged != 'true'
         env:
           MERGE_SHA: ${{ needs.resolve-promotion.outputs.merge_sha }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}

@@ -13,6 +13,13 @@ const ROUTE_EVENT_IDS: Record<string, string> = {
 
 export const FEATURED_ATTENDING_EVENT_SLUGS = ['bsl', 'cbweek'] as const;
 
+export function getAttendingLandingEventSlug() {
+  const configuredSlug = process.env.NEXT_PUBLIC_ATTENDING_SITE_EVENT_SLUG?.trim().toLowerCase();
+  return configuredSlug && (FEATURED_ATTENDING_EVENT_SLUGS as readonly string[]).includes(configuredSlug)
+    ? configuredSlug
+    : null;
+}
+
 const POWERED_BY_LOGO = '/attending/logo-full-hashpass-white-cyan.svg';
 
 const BSL_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
@@ -49,7 +56,12 @@ function todayInBogota(): string {
 export function getUpcomingFeaturedAttendingEvents(
   today = todayInBogota(),
 ): AttendingEventData[] {
-  return FEATURED_ATTENDING_EVENT_SLUGS.flatMap((eventSlug) => {
+  const dedicatedEventSlug = getAttendingLandingEventSlug();
+  const featuredSlugs: readonly string[] = dedicatedEventSlug
+    ? [dedicatedEventSlug]
+    : FEATURED_ATTENDING_EVENT_SLUGS;
+
+  return featuredSlugs.flatMap((eventSlug) => {
     const event = resolveAttendingEvent(eventSlug);
     if (!event) return [];
     const lastEventDay = (event.eventEndDate || event.eventStartDate || '').slice(0, 10);
@@ -69,7 +81,7 @@ function getLogoSrc(event: EventConfig): string {
     bsl: '/attending/logos/bsl-ontour-pro.svg',
     peru2026: '/attending/logos/bsl-peru-pro.svg',
     chile2026: '/attending/logos/bsl-chile-pro.svg',
-    colombia2026: '/attending/logos/bsl-colombia-pro.svg',
+    colombia2026: '/attending/logos/bsl-ontour-pro.svg',
     bsl2025: '/attending/logos/BSL-Logo-fondo-oscuro-2024.svg',
     'hash-poker': '/attending/logos/hash-poker-room-logo.webp',
   };

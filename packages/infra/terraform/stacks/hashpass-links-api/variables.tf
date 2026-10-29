@@ -174,10 +174,8 @@ variable "cors_allow_origins" {
     prod = [
       "https://hashpass.club",
       "https://attending.hashpass.tech",
-      # Event artwork pages use one event subdomain each, so the static event
-      # route can call the public CAPTCHA and artwork publication endpoints.
-      # API Gateway accepts HTTPS wildcard origins for this public API.
-      "https://*",
+      "https://bsl.hashpass.tech",
+      "https://cbweek2026.hashpass.tech",
       # The Club's web-app approval link opens at hashpass.tech. API Gateway
       # owns OPTIONS, so this must be listed here as well as in the Lambda.
       "https://hashpass.tech",

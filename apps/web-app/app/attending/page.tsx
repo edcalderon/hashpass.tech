@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { AttendingLandingExperience } from './AttendingLandingExperience';
-import { getUpcomingFeaturedAttendingEvents } from './event-data';
+import { getAttendingLandingEventSlug, getUpcomingFeaturedAttendingEvents } from './event-data';
 import { getAttendingLandingUrl } from '../../lib/attending-url';
 
 const ATTENDING_SITE_URL = getAttendingLandingUrl();
@@ -26,5 +26,10 @@ export const metadata: Metadata = {
 };
 
 export default function AttendingLandingPage() {
-  return <AttendingLandingExperience events={getUpcomingFeaturedAttendingEvents()} />;
+  return (
+    <AttendingLandingExperience
+      events={getUpcomingFeaturedAttendingEvents()}
+      showCustomEventCard={!getAttendingLandingEventSlug()}
+    />
+  );
 }

@@ -1,3 +1,14 @@
+## [1.9.181](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.180...v1.9.181) (2026-10-29)
+### Released
+- make duplicate release tags idempotent (#538)
+
+### Release scope
+- Compared with: `v1.9.180` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Release tooling
+
 ## [1.9.180](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.178...v1.9.180) (2026-10-29)
 
 

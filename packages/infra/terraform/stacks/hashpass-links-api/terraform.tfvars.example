@@ -47,8 +47,8 @@ cors_allow_origins = {
   prod = [
     "https://hashpass.club",
     "https://attending.hashpass.tech",
-    # Event-specific attending pages run on their own HTTPS subdomains.
-    "https://*",
+    "https://bsl.hashpass.tech",
+    "https://cbweek2026.hashpass.tech",
     # The approval UI is served from this origin after the Club opens it.
     "https://hashpass.tech",
     "https://www.hashpass.tech",

@@ -105,6 +105,7 @@ jobs:
       - name: Add the BSL attending artwork route
         if: matrix.environment == 'bsl-production'
         env:
+          ATTENDING_SITE_EVENT_SLUG: bsl
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_LINKS_API_BASE_URL: ${{ vars.NEXT_PUBLIC_LINKS_API_BASE_URL }}
