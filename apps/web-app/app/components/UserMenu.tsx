@@ -8,19 +8,12 @@ import { useSession } from './SessionProvider';
 import { useToast } from './Toast';
 import { supabaseClient } from '../../lib/supabase-client';
 import { resolveHashpassAppUrl } from '../../lib/hashpass-app-url';
+import { resolveProfileAvatarUrl } from '../../lib/profile-avatar';
+import { ProfileAvatar } from './ProfileAvatar';
 
 // Matches apps/mobile-app/app/(shared)/dashboard/profile.tsx's public
 // router path.
 const HASHPASS_PROFILE_PATH = '/dashboard/profile';
-
-// Same fallback service (and same params) apps/mobile-app's own profile
-// screen uses (generateUIAvatarUrl in app/(shared)/dashboard/profile.tsx) --
-// matches hashpass.tech's actual avatar look instead of a locally-invented
-// initials circle, and gives every user a real photo URL to render even
-// when Supabase has no avatar_url/picture on file.
-function uiAvatarUrl(name: string): string {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=200&bold=true&format=png`;
-}
 
 function menuItemStyle(color: string): CSSProperties {
   return {
@@ -34,13 +27,12 @@ function menuItemStyle(color: string): CSSProperties {
 // Replaces the navbar's "Sign in" pill once a Supabase session exists
 // (HashPass Auth QR login, or any future auth path this app grows).
 export function UserMenu({ size = 40 }: { size?: number }) {
-  const { user } = useSession();
+  const { user, profileAvatarUrl } = useSession();
   const { resolvedTheme } = useTheme();
   const { t } = useTranslation('nav');
   const toast = useToast();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [photoFailed, setPhotoFailed] = useState(false);
   const isDark = resolvedTheme === 'dark';
 
   if (!user) return null;
@@ -50,13 +42,7 @@ export function UserMenu({ size = 40 }: { size?: number }) {
     (user.user_metadata?.name as string | undefined) ||
     user.email ||
     'HASHPASS';
-  const realPhotoUrl = (user.user_metadata?.avatar_url || user.user_metadata?.picture) as
-    | string
-    | undefined;
-  // CSS background-image fails silently on a broken/blocked photo URL (no
-  // onError to react to) -- a real <img> lets a failed load fall through to
-  // the generated avatar instead of rendering an empty circle.
-  const avatarSrc = !photoFailed && realPhotoUrl ? realPhotoUrl : uiAvatarUrl(displayName);
+  const avatarSrc = resolveProfileAvatarUrl(profileAvatarUrl, user);
 
   const openPanel = () => {
     setOpen(false);
@@ -103,15 +89,7 @@ export function UserMenu({ size = 40 }: { size?: number }) {
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.85'; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
       >
-        {/* key forces a remount (and a fresh error state) whenever the
-            underlying photo URL actually changes, e.g. a different user. */}
-        <img
-          key={realPhotoUrl ?? displayName}
-          src={avatarSrc}
-          alt=""
-          onError={() => setPhotoFailed(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-        />
+        <ProfileAvatar src={avatarSrc} name={displayName} size={size} />
       </button>
 
       {open && (

@@ -11,8 +11,10 @@ import { drawAttendingArtwork } from '../../lib/attending-artwork';
 import { formatAttendingEventDate } from '../../lib/attending-date';
 import { getAttendingArtworkPublishEventUrl, getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
 import { getLinksApiOrigin } from '../../lib/links-api-origin';
+import { resolveProfileAvatarUrl } from '../../lib/profile-avatar';
 import { removePersonBackground } from '../../lib/remove-person-background';
 import { ClubSettingsMenu } from '../components/ClubSettingsMenu';
+import { ProfileAvatar } from '../components/ProfileAvatar';
 import { useSession } from '../components/SessionProvider';
 import { SignInModal } from '../components/SignInModal';
 import { useTheme } from '../components/ThemeProvider';
@@ -110,7 +112,7 @@ export function AttendingExperience({
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
   const linksApiOrigin = getLinksApiOrigin();
-  const { user, isLoading: sessionLoading } = useSession();
+  const { user, isLoading: sessionLoading, profileAvatarUrl } = useSession();
   const toast = useToast();
   const mode = resolvedTheme;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -210,7 +212,7 @@ export function AttendingExperience({
     metadataText(userMetadata, ['company', 'organization']),
   ].filter(Boolean).join(' · ');
   const profileSocial = metadataText(userMetadata, ['social_handle', 'socialHandle', 'handle']);
-  const profilePhoto = metadataText(userMetadata, ['avatar_url', 'picture', 'avatar', 'photo_url']);
+  const profilePhoto = resolveProfileAvatarUrl(profileAvatarUrl, user);
   const currentPhoto = photoSource === 'hashpass'
     ? profilePhoto || null
     : photoSource === 'upload'
@@ -762,7 +764,9 @@ export function AttendingExperience({
                   onClick={useHashpassProfile}
                   aria-pressed={photoSource === 'hashpass'}
                 >
-                  {user && profilePhoto ? <img className={styles.sourceAvatar} src={profilePhoto} alt="" /> : <span className={styles.sourceIcon}><UserRound size={19} /></span>}
+                  {user
+                    ? <ProfileAvatar src={profilePhoto} name={profileName || user.email || ''} size={36} className={styles.sourceAvatar} />
+                    : <span className={styles.sourceIcon}><UserRound size={19} /></span>}
                   <span><strong>{t('hashpassProfile')}</strong><small>{sessionLoading ? t('checkingProfile') : user ? t('profileConnected') : t('profileSignInHint')}</small></span>
                   {photoSource === 'hashpass' && <Check className={styles.sourceCheck} size={16} />}
                 </button>

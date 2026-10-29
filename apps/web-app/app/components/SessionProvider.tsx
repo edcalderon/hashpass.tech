@@ -8,12 +8,14 @@ interface SessionContextValue {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
+  profileAvatarUrl: string | null;
 }
 
 const SessionContext = createContext<SessionContextValue>({
   session: null,
   user: null,
   isLoading: true,
+  profileAvatarUrl: null,
 });
 
 async function restoreSession(client: ReturnType<typeof supabaseClient>): Promise<Session | null> {
@@ -43,6 +45,7 @@ async function restoreSession(client: ReturnType<typeof supabaseClient>): Promis
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -89,8 +92,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId) {
+      setProfileAvatarUrl(null);
+      return;
+    }
+
+    let active = true;
+    setProfileAvatarUrl(null);
+    void (async () => {
+      try {
+        const { data } = await supabaseClient()
+          .from('user_profiles')
+          .select('avatar_url')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!active) return;
+        setProfileAvatarUrl(typeof data?.avatar_url === 'string' ? data.avatar_url : null);
+      } catch {
+        if (active) setProfileAvatarUrl(null);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id]);
+
   return (
-    <SessionContext.Provider value={{ session, user: session?.user ?? null, isLoading }}>
+    <SessionContext.Provider value={{ session, user: session?.user ?? null, isLoading, profileAvatarUrl }}>
       {children}
     </SessionContext.Provider>
   );
