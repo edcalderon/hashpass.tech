@@ -138,7 +138,7 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 | `GET` | `/api/health` | none | Liveness check |
 | `POST` | `/api/v1/attending-artworks` | Cap token | Publishes a PNG and optionally emails its public link |
 | `GET` | `/a/:token` | opaque public token | Open Graph page for a public event artwork; expires after 90 days |
-| `GET` | `/a/:token/image` | opaque public token | Redirects to the hosted PNG preview |
+| `GET` | `/a/:token/image` | opaque public token | Serves the hosted PNG preview through the first-party share origin |
 | `POST` | `/api/v1/auth/qr/challenges` | none | Browser starts a login attempt (PKCE `codeChallenge` in, `qrUrl`/`state`/`binding` out) |
 | `GET` | `/api/v1/auth/qr/challenges/:id` | `x-hashpass-binding` header + `state` | Browser polls for the mobile app's decision |
 | `POST` | `/api/v1/auth/qr/challenges/:id/approve` | bearer token (app's own session) | Mobile app approves/denies, called under the user's own authenticated session |
@@ -155,7 +155,7 @@ their own `NEXT_PUBLIC_LINKS_API_BASE_URL` / `EXPO_PUBLIC_LINKS_API_BASE_URL`
 Published event artwork returns tenant-branded `shareUrl` and `imageUrl` values
 at `https://<event>.hashpass.tech/attending/<event>/a/:token`. The tenant
 CloudFront route forwards those opaque paths to this service's `/a/:token`
-Open Graph page and `/a/:token/image` image redirect. Custom community events
+Open Graph page and `/a/:token/image` first-party image proxy. Custom community events
 continue to use the API's `/a/:token` URLs.
 
 Security properties, in one place since they're spread across a few files:

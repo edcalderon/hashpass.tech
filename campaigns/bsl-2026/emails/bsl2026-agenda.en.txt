@@ -1,4 +1,4 @@
-REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+REVIEW PREVIEW — the final send includes recipient-specific subscription controls.
 
 Make room for what matters.
 
@@ -9,7 +9,9 @@ Your time at BSL matters. Open the Colombia 2026 agenda, browse the sessions and
 Return to your personal agenda to check for overlaps. Saving a session helps you plan; it does not replace your pass or guarantee a seat. The programme may change.
 
 Build my agenda: https://hashpass.tech/events/colombia2026/agenda?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-agenda
-Video and guide: https://hashpass.tech/campaigns/bsl-2026/#agenda
 
-You receive this email because you subscribed to HASHPASS updates. You can stop receiving campaigns at any time.
-Unsubscribe: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW
+Watch the video and step-by-step guide: https://hashpass.tech/campaigns/bsl-2026/#agenda
+
+Internal preview of a HASHPASS campaign. The final send includes recipient-specific subscription controls.
+A personal unsubscribe link will be added when the campaign is sent.
+Privacy: https://hashpass.tech/privacy

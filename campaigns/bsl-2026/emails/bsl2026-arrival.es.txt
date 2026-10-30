@@ -1,4 +1,4 @@
-REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+VISTA PREVIA — el envío final incluye los controles de suscripción personalizados.
 
 Nos vemos en Bogotá.
 
@@ -9,7 +9,9 @@ BSL Colombia 2026 empieza hoy, 4 de noviembre, y continúa hasta el 6 de noviemb
 Revisa tu pase, tu agenda y las reuniones aceptadas. Lleva tu tarjeta de contacto lista y abre HASHPASS antes de llegar. Si cambia una sesión o un horario, confirma la última información en la app.
 
 Abrir mi experiencia BSL: https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-arrival
-Video y guía: https://hashpass.tech/campaigns/bsl-2026/#teaser
 
-Recibes este correo por tu suscripción a las novedades de HASHPASS. Puedes dejar de recibir campañas en cualquier momento.
-Cancelar suscripción: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW
+Ver video y guía paso a paso: https://hashpass.tech/campaigns/bsl-2026/#teaser
+
+Vista previa interna de una campaña HASHPASS. El envío final incluye controles de suscripción personalizados.
+El enlace personal para cancelar la suscripción se añadirá al enviar la campaña.
+Privacidad: https://hashpass.tech/privacy

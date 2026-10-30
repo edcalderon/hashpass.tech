@@ -1,4 +1,4 @@
-REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+REVIEW PREVIEW — the final send includes recipient-specific subscription controls.
 
 Start the conversation before arrival.
 
@@ -9,7 +9,9 @@ Open BSL Colombia Networking, find a person and review their profile and availab
 Check My requests for their response and My schedule for the final time. A request becomes a confirmed meeting only after acceptance and availability checks. Request limits depend on your pass.
 
 Find a conversation: https://hashpass.tech/events/colombia2026/networking?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-meetings
-Video and guide: https://hashpass.tech/campaigns/bsl-2026/#meetings
 
-You receive this email because you subscribed to HASHPASS updates. You can stop receiving campaigns at any time.
-Unsubscribe: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW
+Watch the video and step-by-step guide: https://hashpass.tech/campaigns/bsl-2026/#meetings
+
+Internal preview of a HASHPASS campaign. The final send includes recipient-specific subscription controls.
+A personal unsubscribe link will be added when the campaign is sent.
+Privacy: https://hashpass.tech/privacy

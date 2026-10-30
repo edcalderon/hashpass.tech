@@ -305,6 +305,13 @@ export async function sendMarketingMessage(details: MarketingMail) {
     const result = await sender.transporter.sendMail({
       from: `HASHPASS <${sender.from}>`, to: details.to, subject: details.subject,
       html: details.html, text: details.text,
+      ...(details.attachments?.length ? { attachments: details.attachments.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        contentType: attachment.contentType,
+        cid: attachment.cid,
+        contentDisposition: 'inline' as const,
+      })) } : {}),
       messageId: `<marketing-${details.deliveryId}@hashpass.tech>`,
       headers: { 'List-Unsubscribe': `<${details.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     });

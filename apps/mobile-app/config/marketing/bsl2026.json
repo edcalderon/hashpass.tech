@@ -261,6 +261,87 @@
         "video": "/campaigns/bsl-2026/teaser.mp4",
         "poster": "/campaigns/bsl-2026/teaser-poster.png"
       }
+    },
+    {
+      "key": "bsl2026-attendance-invitation",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · personal attendance artwork",
+      "scheduledAt": "2026-10-29T18:30:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "¿Vas a asistir a BSL Bogotá?",
+          "preheader": "Crea tu imagen «Voy a asistir» y compártela con tu comunidad.",
+          "heading": "Si vas a BSL, que tu comunidad lo sepa.",
+          "message": "Hola,\n\nBogotá está a punto de reunir a la comunidad blockchain de Latinoamérica para Blockchain Summit Latam Colombia 2026. Si planeas estar allí, convierte esa intención en una imagen personal y compártela antes del encuentro.\n\nCrea tu arte con tu nombre, tu perfil o una foto. Recuerda compartirlo en tus redes sociales con los hashtags oficiales #BlockchainSummitLatam #BSLOnTour2026 #BSLColombia2026 y etiquetar a @BlockSummitLA para que la comunidad del evento también pueda encontrar tu publicación.\n\nNos vemos en Bogotá,\nEl equipo HASHPASS",
+          "actionUrl": "https://bsl.hashpass.tech/attending/bsl/?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-attendance-invitation",
+          "actionLabel": "Crear mi imagen de asistencia",
+          "guideUrl": "https://blockchainsummit.la/colombia2026/",
+          "guideLabel": "Conocer el evento oficial",
+          "brand": {
+            "name": "HASHPASS",
+            "accentColor": "#0e7490",
+            "privacyUrl": "https://hashpass.tech/privacy",
+            "eventLabel": "BLOCKCHAIN SUMMIT LATAM · BOGOTÁ · NOV 4–6",
+            "logoUrl": "https://hashpass.tech/attending/email-previews/hashpass-white-cyan.png",
+            "eventLogoUrl": "https://hashpass.tech/attending/email-previews/bsl-ontour-pro.png",
+            "eventLogoAlt": "Blockchain Summit Latam · BSL On Tour"
+          },
+          "eventDetails": {
+            "date": "4–6 de noviembre de 2026",
+            "location": "Bogotá, Colombia",
+            "venue": "Universidad Externado de Colombia · La Candelaria"
+          },
+          "hashtags": [
+            "#BlockchainSummitLatam",
+            "#BSLOnTour2026",
+            "#BSLColombia2026"
+          ],
+          "disclaimer": "La imagen expresa una intención personal; no es inscripción, entrada ni confirmación de asistencia.",
+          "imageUrl": "https://hashpass.tech/attending/email-previews/bsl-colombia-2026-attendance-es.jpg",
+          "imageAlt": "Vista de ejemplo del arte Voy a asistir para BSL Colombia 2026",
+          "imageCaption": "Ejemplo ficticio: Valentina. Agrega tu nombre, cargo y perfiles al crear tu imagen."
+        },
+        "en": {
+          "subject": "Are you coming to BSL Bogotá?",
+          "preheader": "Create your “I’m attending” artwork and share it with your community.",
+          "heading": "Going to BSL? Let your community know.",
+          "message": "Hi,\n\nBogotá is about to bring together the Latin American blockchain community for Blockchain Summit Latam Colombia 2026. If you plan to be there, turn that intention into a personal image and share it before the event.\n\nCreate your artwork with your name, profile or photo. Remember to share it on social media with the official hashtags #BlockchainSummitLatam #BSLOnTour2026 #BSLColombia2026 and tag @BlockSummitLA so the event community can find your post.\n\nSee you in Bogotá,\nThe HASHPASS team",
+          "actionUrl": "https://bsl.hashpass.tech/attending/bsl/?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-attendance-invitation",
+          "actionLabel": "Create my attendance artwork",
+          "guideUrl": "https://blockchainsummit.la/colombia2026/",
+          "guideLabel": "Visit the official event site",
+          "brand": {
+            "name": "HASHPASS",
+            "accentColor": "#0e7490",
+            "privacyUrl": "https://hashpass.tech/privacy",
+            "eventLabel": "BLOCKCHAIN SUMMIT LATAM · BOGOTÁ · NOV 4–6",
+            "logoUrl": "https://hashpass.tech/attending/email-previews/hashpass-white-cyan.png",
+            "eventLogoUrl": "https://hashpass.tech/attending/email-previews/bsl-ontour-pro.png",
+            "eventLogoAlt": "Blockchain Summit Latam · BSL On Tour"
+          },
+          "eventDetails": {
+            "date": "November 4–6, 2026",
+            "location": "Bogotá, Colombia",
+            "venue": "Universidad Externado de Colombia · La Candelaria"
+          },
+          "hashtags": [
+            "#BlockchainSummitLatam",
+            "#BSLOnTour2026",
+            "#BSLColombia2026"
+          ],
+          "disclaimer": "The image expresses personal intent; it is not registration, a ticket or confirmation of attendance.",
+          "imageUrl": "https://hashpass.tech/attending/email-previews/bsl-colombia-2026-attendance-en.jpg",
+          "imageAlt": "Sample I’m attending artwork for BSL Colombia 2026",
+          "imageCaption": "Fictional sample: Joe Doe. Add your name, role and social profiles in the artwork builder."
+        }
+      }
     }
   ]
 }

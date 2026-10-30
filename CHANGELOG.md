@@ -1,3 +1,31 @@
+## [1.9.194](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.192...v1.9.194) (2026-10-30)
+
+
+### Features
+
+* publish first-party attending artwork previews ([06da896](https://github.com/hashpass-tech/hashpass.tech/commit/06da896bc5a9f3ed857be94c7f0d66e93cacefe9))
+### Release Highlights
+- publish first-party attending artwork previews
+
+### Release scope
+- Compared with: `v1.9.192` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- QR links API
+- Release tooling
+
+## [1.9.193](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.192...v1.9.193) (2026-10-30)
+### Released
+- Version 1.9.193 release
+
+### Release scope
+- Compared with: `v1.9.192` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+
 ## [1.9.192](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.191...v1.9.192) (2026-10-30)
 ### Released
 - route BSL artwork share URLs to the links API

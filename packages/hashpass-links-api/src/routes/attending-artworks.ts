@@ -262,6 +262,9 @@ export async function getAttendingArtworkShare(request: Request, token: string):
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${escapeHtml(shareUrl)}">
   <meta property="og:image" content="${escapeHtml(imageUrl)}">
+  <meta property="og:image:url" content="${escapeHtml(imageUrl)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}">
+  <meta property="og:image:alt" content="${escapeHtml(share.attendee_name)}’s artwork for ${escapeHtml(share.event_name)}">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1080">
   <meta property="og:image:height" content="1350">
@@ -269,6 +272,7 @@ export async function getAttendingArtworkShare(request: Request, token: string):
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+  <meta name="twitter:image:alt" content="${escapeHtml(share.attendee_name)}’s artwork for ${escapeHtml(share.event_name)}">
   <style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#071a29;color:#f5f8fb;font:16px/1.5 system-ui,sans-serif}.card{width:min(100%,560px);padding:20px;border:1px solid #294657;border-radius:24px;background:#0d2232;box-sizing:border-box}.card img{display:block;width:min(100%,432px);height:auto;margin:0 auto 20px;border-radius:16px}.card h1{font-size:24px;line-height:1.2}.card p{color:#b8c9d4}.actions{display:flex;gap:12px;flex-wrap:wrap}.actions a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#18c49a;color:#06231d;text-decoration:none;font-weight:700}.actions a.secondary{background:#173a4b;color:#d7f5ee}</style>
 </head>
 <body>
@@ -288,21 +292,30 @@ export async function getAttendingArtworkShare(request: Request, token: string):
       'cache-control': 'public, max-age=300, stale-while-revalidate=3600',
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
-      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://*.supabase.co; base-uri 'none'; frame-ancestors 'none'",
+      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'",
     },
   });
 }
 
-// GET /a/:token/image -- redirect crawlers and people to the public PNG.
+// GET /a/:token/image -- serve the PNG through the first-party short-link
+// origin. Keeping the storage provider behind this endpoint makes the URL
+// stable for social crawlers and prevents previews from being tied to a
+// Supabase hostname.
 export async function redirectAttendingArtworkImage(request: Request, token: string): Promise<Response> {
   const share = await findShare(token);
   if (!share) return apiError('Artwork link not found or expired', 404);
-  const imageUrl = adminDb().storage.from(BUCKET).getPublicUrl(share.object_path).data.publicUrl;
-  return new Response(null, {
-    status: 302,
+
+  const { data, error } = await adminDb().storage.from(BUCKET).download(share.object_path);
+  if (error || !data) return apiError('Artwork image not found or expired', 404);
+
+  return new Response(data, {
+    status: 200,
     headers: {
-      location: imageUrl,
-      'cache-control': 'public, max-age=300',
+      'content-type': 'image/png',
+      'content-length': String(data.size),
+      'content-disposition': 'inline; filename="hashpass-event-artwork.png"',
+      'cache-control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+      'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
     },
   });

@@ -2,8 +2,8 @@ import pack from '../../config/marketing/bsl2026.json';
 import { activityRoute, renderMarketingEmail, safeCampaignUrl, validCampaignCopy, validCampaignDraft, validZonedTime, formatCampaignTime } from '../../lib/marketing';
 
 describe('campaign validation and rendering', () => {
-  it('validates all six bilingual scheduled campaign drafts', () => {
-    expect(pack.messages).toHaveLength(6);
+  it('validates all seven bilingual scheduled campaign drafts', () => {
+    expect(pack.messages).toHaveLength(7);
     for (const m of pack.messages) expect(validCampaignDraft({ ...m, readiness: {} })).toBe(true);
     expect(new Date(pack.messages[0].scheduledAt).toISOString()).toBe('2026-10-26T14:00:00.000Z');
     expect(formatCampaignTime(pack.messages[0].scheduledAt)).toContain('09:00');
@@ -28,6 +28,19 @@ describe('campaign validation and rendering', () => {
     expect(en.html).not.toContain('<script>'); expect(en.html).toContain('&lt;script&gt;'); expect(en.html).toContain('Unsubscribe');
     expect(en.text).toContain('First & second\n\nNext paragraph'); expect(en.html).not.toContain('BSL COLOMBIA');
     expect(renderMarketingEmail(copy, 'https://api.hashpass.tech/', 'es').html).toContain('Cancelar suscripción');
+  });
+  it('renders the bilingual attendance artwork with published brand assets and its preview caption', () => {
+    const invitation = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-attendance-invitation');
+    expect(invitation).toBeDefined();
+    for (const locale of ['es', 'en'] as const) {
+      const copy = invitation!.content[locale];
+      expect(validCampaignCopy(copy)).toBe(true);
+      const rendered = renderMarketingEmail(copy, null, locale);
+      expect(rendered.html).toContain(copy.brand!.logoUrl!);
+      expect(rendered.html).toContain(copy.brand!.eventLogoUrl!);
+      expect(rendered.html).toContain(copy.imageUrl!);
+      expect(rendered.html).toContain(copy.imageCaption!);
+    }
   });
   it('allowlists normalized navigation and excludes sensitive routes and query strings', () => {
     expect(activityRoute('/contacts?card=private')).toBe('/contacts');
