@@ -113,7 +113,7 @@ test('uses the updates mailbox when the primary SMTP sender is not configured', 
     host: 'smtp.hostinger.com',
     port: '465',
     user: 'updates@hashpass.tech',
-    pass: 'test-password',
+    pass: 'x'.repeat(12),
     from: 'updates@hashpass.tech',
     suffix: '_UPDATES',
   });
