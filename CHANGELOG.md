@@ -1,3 +1,13 @@
+## [1.9.192](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.191...v1.9.192) (2026-10-30)
+### Released
+- route BSL artwork share URLs to the links API
+
+### Release scope
+- Compared with: `v1.9.191` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+
 ## [1.9.191](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.190...v1.9.191) (2026-10-29)
 ### Released
 - share captcha state across links API Lambda instances

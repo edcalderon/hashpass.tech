@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610292357, // Updated to current timestamp
-  releaseDate: '2026-10-29',
+  buildNumber: 202610300050, // Updated to current timestamp
+  releaseDate: '2026-10-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'share captcha state across links API Lambda instances'
+    'route BSL artwork share URLs to the links API'
   ],
   breakingChanges: [],
-  notes: 'share captcha state across links API Lambda instances'
+  notes: 'route BSL artwork share URLs to the links API'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.192': {
+    version: '1.9.192',
+    buildNumber: 202610300050,
+    releaseDate: '2026-10-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route BSL artwork share URLs to the links API'
+    ],
+    breakingChanges: [],
+    notes: 'route BSL artwork share URLs to the links API'
+  },
   '1.9.191': {
     version: '1.9.191',
     buildNumber: 202610292357,
