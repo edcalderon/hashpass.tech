@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610300050, // Updated to current timestamp
+  buildNumber: 202610300447, // Updated to current timestamp
   releaseDate: '2026-10-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'route BSL artwork share URLs to the links API'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'route BSL artwork share URLs to the links API'
+  notes: 'Version 1.9.193 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.193': {
+    version: '1.9.193',
+    buildNumber: 202610300447,
+    releaseDate: '2026-10-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.193 release'
+  },
   '1.9.192': {
     version: '1.9.192',
     buildNumber: 202610300050,
