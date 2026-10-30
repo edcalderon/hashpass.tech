@@ -495,6 +495,7 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   "close-circle": "cancel",
   "cloud-download-outline": "cloud-download",
   "copy-outline": "content-copy",
+  "download-outline": "file-download",
   "calendar-today": "calendar-today",
   "compass-outline": "explore",
   dialpad: "dialpad",

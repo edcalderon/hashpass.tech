@@ -27,4 +27,15 @@ describe('DocsScreen PWA guide action', () => {
     expect(guideActionIndex).toBeGreaterThan(0);
     expect(webOnlyDocumentationIndex).toBeGreaterThan(guideActionIndex);
   });
+
+  it('uses a mapped download icon instead of the web fallback question mark', () => {
+    expect(source).toContain('Ionicons name="download-outline"');
+
+    const iconSource = fs.readFileSync(
+      path.resolve(__dirname, '../../lib/vector-icons.tsx'),
+      'utf8',
+    );
+
+    expect(iconSource).toMatch(/"download-outline":\s*"file-download"/);
+  });
 });
