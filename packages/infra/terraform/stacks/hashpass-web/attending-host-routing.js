@@ -32,7 +32,7 @@ function handler(event) {
       statusCode: 302,
       statusDescription: 'Found',
       headers: {
-        location: { value: 'https://api.hashpass.tech' + apiPath },
+        location: { value: 'https://hpass.id' + apiPath },
         'cache-control': { value: 'no-store' },
       },
     };
