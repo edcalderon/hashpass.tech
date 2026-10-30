@@ -180,4 +180,18 @@ describe('shared captcha storage', () => {
     await expect(repository.consume('token', 'valid')).resolves.toBeGreaterThan(Date.now());
     await expect(repository.consume('challenge', 'delete-me')).resolves.toBeNull();
   });
+
+  it('binds the server Supabase client when the mobile wrappers get no client', () => {
+    const repository = createSupabaseCaptchaRepository('mobile-app');
+    const storage = createSupabaseCaptchaStorage('mobile-app');
+
+    expect(repository).toEqual(expect.objectContaining({
+      store: expect.any(Function),
+      consume: expect.any(Function),
+      delete: expect.any(Function),
+      deleteExpired: expect.any(Function),
+    }));
+    expect(storage.challenges.read).toEqual(expect.any(Function));
+    expect(storage.tokens.get).toEqual(expect.any(Function));
+  });
 });

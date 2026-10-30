@@ -5,6 +5,17 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.57] - 2026-10-29
+
+### Stable
+- Version 1.0.57 release
+
+### Technical Details
+- Version: 1.0.57
+- Release Type: stable
+- Build Number: 20261029235538
+- Release Date: 2026-10-29
+
 ## [1.0.56] - 2026-10-29
 
 ### Stable
