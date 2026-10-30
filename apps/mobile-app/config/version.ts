@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202610301731, // Updated to current timestamp
+  buildNumber: 202610301835, // Updated to current timestamp
   releaseDate: '2026-10-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'keep artwork previews on short-link origin'
+    'ship the light-theme HashPass logo with the BSL attending overlay'
   ],
   breakingChanges: [],
-  notes: 'keep artwork previews on short-link origin'
+  notes: 'ship the light-theme HashPass logo with the BSL attending overlay'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.196': {
+    version: '1.9.196',
+    buildNumber: 202610301835,
+    releaseDate: '2026-10-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'ship the light-theme HashPass logo with the BSL attending overlay'
+    ],
+    breakingChanges: [],
+    notes: 'ship the light-theme HashPass logo with the BSL attending overlay'
+  },
   '1.9.195': {
     version: '1.9.195',
     buildNumber: 202610301731,
