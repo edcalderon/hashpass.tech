@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.62",
-    "buildNumber": 20261030183528,
+    "version": "1.0.63",
+    "buildNumber": 20261030194441,
     "releaseDate": "2026-10-30",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Deploy matching Club and BSL attending versions"
+    "notes": "Version 1.0.63 release"
   },
   "versions": [
+    {
+      "version": "1.0.63",
+      "buildNumber": 20261030194441,
+      "releaseDate": "2026-10-30",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.63 release"
+    },
     {
       "version": "1.0.62",
       "buildNumber": 20261030183528,
