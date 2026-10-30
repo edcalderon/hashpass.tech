@@ -81,7 +81,7 @@ export function renderMarketingEmail(copy: CampaignCopy, unsubscribeUrl: string 
     ? (es ? 'Vista previa interna de una campaña HASHPASS. El envío final incluye controles de suscripción personalizados.' : 'Internal preview of a HASHPASS campaign. The final send includes recipient-specific subscription controls.')
     : subscribedFooter;
   const optoutMarkup = previewOnly
-    ? `<span style="font-size:12px;color:#565963">${es ? 'El enlace personal para cancelar la suscripción se añadirá al enviar la campaña.' : 'A personal unsubscribe link will be added when the campaign is sent.'}</span>`
+    ? `<span style="font-size:12px;color:#565963">${optout} — ${es ? 'el enlace personal se añadirá al enviar la campaña.' : 'the personal link will be added when the campaign is sent.'}</span>`
     : `<a href="${escape(unsubscribeUrl || '')}" style="font-size:12px;color:${color}">${optout}</a>`;
   const logo = safeLogoUrl ? `<img alt="${escape(brandName)}" width="160" src="${escape(safeLogoUrl)}" style="display:block;width:160px;max-width:160px;height:auto;border:0">` : `<span style="display:inline-block;color:#ffffff;font-size:17px;font-weight:700;letter-spacing:3px">${escape(brandName)}</span>`;
   const eventLogoUrl = brand?.eventLogoUrl && safeCampaignUrl(brand.eventLogoUrl) ? brand.eventLogoUrl : '';
