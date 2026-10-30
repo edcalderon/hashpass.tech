@@ -1,3 +1,13 @@
+## [1.9.195](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.194...v1.9.195) (2026-10-30)
+### Released
+- keep artwork previews on short-link origin
+
+### Release scope
+- Compared with: `v1.9.194` (the previous global release tag)
+
+### Affected products & packages
+- QR links API
+
 ## [1.9.194](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.192...v1.9.194) (2026-10-30)
 
 

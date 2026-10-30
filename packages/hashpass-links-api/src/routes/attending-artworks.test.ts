@@ -61,3 +61,22 @@ test('advertises the first-party image URL in social metadata', async () => {
   assert.match(html, new RegExp(`twitter:image" content="https://hpass\\.id/a/${shareKey}/image`));
   assert.doesNotMatch(html, /supabase\.co/);
 });
+
+test('keeps tenant-event artwork images on the short-link origin', async () => {
+  const client = useFakeDb();
+  const share = client._tables.get('attending_artwork_shares')?.get('share-1');
+  if (!share) throw new Error('Expected fake artwork share');
+  Object.assign(share, {
+    event_slug: 'bsl',
+    event_name: 'Blockchain Summit Latam Colombia 2026',
+    event_url: 'https://bsl.hashpass.tech/attending/bsl/',
+  });
+
+  const response = await handleRequest(new Request(`https://hpass.id/a/${shareKey}`));
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, new RegExp(`og:image" content="https://hpass\\.id/a/${shareKey}/image`));
+  assert.match(html, new RegExp(`<img src="https://hpass\\.id/a/${shareKey}/image`));
+  assert.doesNotMatch(html, /og:image\" content=\"https:\/\/bsl\.hashpass\.tech/);
+});

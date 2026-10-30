@@ -296,6 +296,13 @@ test('unauthenticated qr-links list is rejected', async () => {
   assert.equal(response.status, 401);
 });
 
+test('public short-link favicon is available on the legacy .ico path', async () => {
+  const response = await handleRequest(new Request('https://hpass.id/favicon.ico'));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/svg+xml; charset=utf-8');
+  assert.match(await response.text(), /<svg/);
+});
+
 // hpass.id, hashpass.link, and hashp.link all front this same service --
 // a real visitor landing on the bare domain should get a friendly redirect,
 // not the generic JSON 404 every other unmatched route gets. hashpass.link

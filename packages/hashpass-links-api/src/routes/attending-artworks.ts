@@ -48,10 +48,13 @@ function eventArtworkShareUrl(request: Request, eventSlug: string, eventUrl: str
   return new URL(`/attending/${eventSlug}/a/${token}`, origin).toString();
 }
 
-function eventArtworkImageUrl(request: Request, eventSlug: string, eventUrl: string, token: string): string {
-  if (eventSlug === 'community') return absoluteUrl(request, `/a/${token}/image`);
-  const origin = new URL(eventUrl).origin;
-  return new URL(`/attending/${eventSlug}/a/${token}/image`, origin).toString();
+function eventArtworkImageUrl(request: Request, token: string): string {
+  // Keep the image on the first-party short-link origin for every event. The
+  // tenant event URL is the right destination for event details, but it may
+  // redirect image requests through a separate host (and its CSP cannot
+  // safely allow every tenant/storage origin). Serving the image from the
+  // same origin also gives social crawlers and email clients one stable URL.
+  return absoluteUrl(request, `/a/${token}/image`);
 }
 
 function readArtworkBytes(value: unknown): Buffer | null {
@@ -220,7 +223,7 @@ export async function createAttendingArtwork(request: Request): Promise<Response
   }
 
   const shareUrl = eventArtworkShareUrl(request, row.event_slug, row.event_url, token);
-  const imageUrl = eventArtworkImageUrl(request, row.event_slug, row.event_url, token);
+  const imageUrl = eventArtworkImageUrl(request, token);
   let emailStatus: AttendingArtworkEmailStatus = 'not_requested';
   if (email) {
     emailStatus = await sendArtworkEmail({
@@ -242,7 +245,7 @@ export async function getAttendingArtworkShare(request: Request, token: string):
   if (!share) return apiError('Artwork link not found or expired', 404);
 
   const shareUrl = eventArtworkShareUrl(request, share.event_slug, share.event_url, token);
-  const imageUrl = eventArtworkImageUrl(request, share.event_slug, share.event_url, token);
+  const imageUrl = eventArtworkImageUrl(request, token);
   const customEventArtwork = share.event_slug === 'community';
   const title = `${share.attendee_name} · ${share.event_name} | HASHPASS`;
   const description = `${share.attendee_name} made a shareable attendance artwork for ${share.event_name}. This is a personal intention, not an RSVP or ticket.`;
