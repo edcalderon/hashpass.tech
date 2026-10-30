@@ -18,7 +18,7 @@ const host = event.request.headers && event.request.headers.host ? event.request
 const artworkShare = uri.match(/^\\/attending\\/bsl\\/a\\/([A-Za-z0-9_-]{40,64})(\\/image)?\\/?$/);
 
 if (artworkShare && (host === "bsl.hashpass.tech" || host === "bsl-dev.hashpass.tech")) {
-  const apiOrigin = host === "bsl-dev.hashpass.tech" ? "https://api-dev.hashpass.tech" : "https://api.hashpass.tech";
+  const apiOrigin = host === "bsl-dev.hashpass.tech" ? "https://dev.hashpass.link" : "https://hpass.id";
   const apiPath = artworkShare[2] ? "/a/" + artworkShare[1] + "/image" : "/a/" + artworkShare[1];
   return {
     statusCode: 302,
