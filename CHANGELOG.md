@@ -1,3 +1,18 @@
+## [1.9.197](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.196...v1.9.197) (2026-10-30)
+
+
+### Bug Fixes
+
+* **links:** serve artwork previews and deliver confirmation mail ([85050bf](https://github.com/hashpass-tech/hashpass.tech/commit/85050bf8cee5d9fb5a705cfe85fcdd3c3674df32))
+### Release Highlights
+- serve artwork previews and deliver confirmation mail
+
+### Release scope
+- Compared with: `v1.9.196` (the previous global release tag)
+
+### Affected products & packages
+- QR links API
+
 ## [1.9.196](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.195...v1.9.196) (2026-10-30)
 ### Released
 - ship the light-theme HashPass logo with the BSL attending overlay
