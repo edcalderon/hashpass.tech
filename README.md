@@ -20,17 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.196)
+## 📋 Latest Changes (v1.9.197)
 
-### Released
-- ship the light-theme HashPass logo with the BSL attending overlay
+### Bug Fixes
+
+* **links:** serve artwork previews and deliver confirmation mail ([85050bf](https://github.com/hashpass-tech/hashpass.tech/commit/85050bf8cee5d9fb5a705cfe85fcdd3c3674df32))
+### Release Highlights
+- serve artwork previews and deliver confirmation mail
 
 ### Release scope
-- Compared with: `v1.9.195` (the previous global release tag)
+- Compared with: `v1.9.196` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
-- Release tooling
+- QR links API
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
