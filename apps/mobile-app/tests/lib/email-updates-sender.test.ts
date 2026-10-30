@@ -76,6 +76,17 @@ describe('updates@hashpass.tech sender', () => {
       headers: { 'List-Unsubscribe': `<${marketingMessage.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     }));
   });
+  it('sends optional campaign preview images as inline MIME attachments', async () => {
+    const { sendMarketingMessage } = require('../../lib/email');
+    const attachments = [{ filename: 'preview.jpg', content: Buffer.from('preview'), contentType: 'image/jpeg', cid: 'campaign-preview' }];
+    mockSendMail.mockResolvedValueOnce({ messageId: 'm2', accepted: [marketingMessage.to] });
+
+    await sendMarketingMessage({ ...marketingMessage, attachments });
+
+    expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+      attachments: [{ ...attachments[0], contentDisposition: 'inline' }],
+    }));
+  });
   it('distinguishes provider rejection from uncertain network outcomes', async () => {
     const { sendMarketingMessage } = require('../../lib/email');
     mockSendMail.mockResolvedValueOnce({ rejected: ['fixture@example.test'] });

@@ -48,7 +48,10 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    const responseBody = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const responseBody = contentType.toLowerCase().startsWith('image/')
+      ? Buffer.from(await response.arrayBuffer())
+      : await response.text();
     res.writeHead(response.status, Object.fromEntries(responseHeaders));
     res.end(responseBody);
   } catch (error) {

@@ -1,4 +1,4 @@
-REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+REVIEW PREVIEW — the final send includes recipient-specific subscription controls.
 
 The summit starts with you.
 
@@ -9,7 +9,9 @@ BSL Colombia 2026 takes place in Bogotá on November 4–6. Open HASHPASS, check
 This week we will share short guides to build your agenda, request meetings and grow your network. Start by exploring the event.
 
 Explore BSL Colombia: https://hashpass.tech/events/colombia2026?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-launch
-Video and guide: https://hashpass.tech/campaigns/bsl-2026/#teaser
 
-You receive this email because you subscribed to HASHPASS updates. You can stop receiving campaigns at any time.
-Unsubscribe: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW
+Watch the video and step-by-step guide: https://hashpass.tech/campaigns/bsl-2026/#teaser
+
+Internal preview of a HASHPASS campaign. The final send includes recipient-specific subscription controls.
+A personal unsubscribe link will be added when the campaign is sent.
+Privacy: https://hashpass.tech/privacy

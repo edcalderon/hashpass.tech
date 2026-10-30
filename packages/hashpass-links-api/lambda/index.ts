@@ -178,7 +178,11 @@ export async function handleLambdaEvent(event: ApiGatewayEvent | ScheduledEvent)
 
     const response = await handleRequest(request);
 
-    const body = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const isBinaryResponse = contentType.toLowerCase().startsWith('image/');
+    const body = isBinaryResponse
+      ? Buffer.from(await response.arrayBuffer()).toString('base64')
+      : await response.text();
     const headers: Record<string, string> = {};
     const setCookieHeaders = getSetCookieHeaders(response.headers);
 
@@ -194,7 +198,7 @@ export async function handleLambdaEvent(event: ApiGatewayEvent | ScheduledEvent)
       statusCode: response.status,
       headers,
       body,
-      isBase64Encoded: false,
+      isBase64Encoded: isBinaryResponse,
     };
 
     if (setCookieHeaders.length > 0) {

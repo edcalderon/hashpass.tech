@@ -1,4 +1,4 @@
-REVIEW PREVIEW — recipient unsubscribe token is inserted only at send time.
+VISTA PREVIA — el envío final incluye los controles de suscripción personalizados.
 
 Elige lo que quieres llevarte.
 
@@ -9,7 +9,9 @@ Tu tiempo en BSL cuenta. Abre la agenda de Colombia 2026, explora las sesiones y
 Vuelve a tu agenda personal para revisar coincidencias. Guardar una sesión te ayuda a organizarte; no reemplaza tu pase ni garantiza un asiento. El programa puede actualizarse.
 
 Preparar mi agenda: https://hashpass.tech/events/colombia2026/agenda?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-agenda
-Video y guía: https://hashpass.tech/campaigns/bsl-2026/#agenda
 
-Recibes este correo por tu suscripción a las novedades de HASHPASS. Puedes dejar de recibir campañas en cualquier momento.
-Cancelar suscripción: https://api.hashpass.tech/api/marketing/unsubscribe?token=PREVIEW
+Ver video y guía paso a paso: https://hashpass.tech/campaigns/bsl-2026/#agenda
+
+Vista previa interna de una campaña HASHPASS. El envío final incluye controles de suscripción personalizados.
+El enlace personal para cancelar la suscripción se añadirá al enviar la campaña.
+Privacidad: https://hashpass.tech/privacy

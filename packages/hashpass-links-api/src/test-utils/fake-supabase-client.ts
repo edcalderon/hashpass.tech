@@ -23,6 +23,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
   private payload: Row = {};
   private filters: Predicate[] = [];
   private wantsSingle = false;
+  private allowsEmptySingle = false;
   private sortBy: { column: string; ascending: boolean } | undefined;
   private rowRange: { from: number; to: number } | undefined;
   private rowLimit: number | undefined;
@@ -70,6 +71,11 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     return this;
   }
 
+  gt(column: string, value: string | number): this {
+    this.filters.push((row) => (row[column] as string | number) > value);
+    return this;
+  }
+
   lt(column: string, value: string | number): this {
     this.filters.push((row) => (row[column] as string | number) < value);
     return this;
@@ -95,6 +101,12 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
 
   single(): this {
     this.wantsSingle = true;
+    return this;
+  }
+
+  maybeSingle(): this {
+    this.wantsSingle = true;
+    this.allowsEmptySingle = true;
     return this;
   }
 
@@ -146,7 +158,7 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     const rows = this.matchedRows();
     if (this.wantsSingle) {
       const row = rows[0] ?? null;
-      return { data: row, error: row ? null : { message: 'no rows found' } };
+      return { data: row, error: row || this.allowsEmptySingle ? null : { message: 'no rows found' } };
     }
     return { data: rows, error: null };
   }
@@ -163,6 +175,7 @@ export type FakeUser = { id: string; email: string; token: string };
 
 export function createFakeSupabaseClient(users: FakeUser[] = []) {
   const tables = new Map<string, Map<string, Row>>();
+  const storageBuckets = new Map<string, Map<string, Blob>>();
   const usersByToken = new Map(users.map((user) => [user.token, user]));
   const usersById = new Map(users.map((user) => [user.id, user]));
   const usersByEmail = new Map(users.map((user) => [user.email, user]));
@@ -176,9 +189,41 @@ export function createFakeSupabaseClient(users: FakeUser[] = []) {
     return table;
   }
 
+  function storageBucketFor(name: string): Map<string, Blob> {
+    let bucket = storageBuckets.get(name);
+    if (!bucket) {
+      bucket = new Map();
+      storageBuckets.set(name, bucket);
+    }
+    return bucket;
+  }
+
   return {
     from(name: string) {
       return new FakeQueryBuilder(name, tableFor(name));
+    },
+    storage: {
+      from(name: string) {
+        const bucket = storageBucketFor(name);
+        return {
+          async download(path: string) {
+            const data = bucket.get(path) ?? null;
+            return { data, error: data ? null : { message: 'not found' } };
+          },
+          async upload(path: string, body: unknown) {
+            const data = body instanceof Blob ? body : new Blob([body as BlobPart]);
+            bucket.set(path, data);
+            return { data: { path }, error: null };
+          },
+          async remove(paths: string[]) {
+            for (const path of paths) bucket.delete(path);
+            return { data: paths.map((path) => ({ name: path })), error: null };
+          },
+          getPublicUrl(path: string) {
+            return { data: { publicUrl: `https://storage.example.test/${encodeURIComponent(path)}` } };
+          },
+        };
+      },
     },
     auth: {
       async getUser(token: string) {
@@ -211,6 +256,7 @@ export function createFakeSupabaseClient(users: FakeUser[] = []) {
     },
     // Test-only escape hatch for setting up/inspecting rows directly.
     _tables: tables,
+    _storage: storageBuckets,
   };
 }
 

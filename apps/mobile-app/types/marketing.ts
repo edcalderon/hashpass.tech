@@ -1,6 +1,20 @@
 export type CampaignLocale = 'es' | 'en';
 export type CampaignStatus = 'draft' | 'scheduled' | 'paused' | 'sending' | 'completed' | 'cancelled';
 export type DeliveryStatus = 'queued' | 'sending' | 'accepted' | 'failed' | 'unknown' | 'suppressed';
+export interface CampaignEmailBrand {
+  name: string;
+  logoUrl?: string;
+  eventLogoUrl?: string;
+  eventLogoAlt?: string;
+  accentColor?: string;
+  privacyUrl?: string;
+  eventLabel?: string;
+}
+export interface CampaignEventDetails {
+  date: string;
+  location: string;
+  venue: string;
+}
 export interface CampaignCopy {
   subject: string;
   preheader: string;
@@ -10,7 +24,13 @@ export interface CampaignCopy {
   actionLabel: string;
   imageUrl?: string;
   imageAlt?: string;
+  imageCaption?: string;
   guideUrl?: string;
+  guideLabel?: string;
+  brand?: CampaignEmailBrand;
+  eventDetails?: CampaignEventDetails;
+  hashtags?: string[];
+  disclaimer?: string;
 }
 export interface MarketingCampaign {
   id: string;
@@ -95,4 +115,12 @@ export interface MarketingMail {
   text: string;
   unsubscribeUrl: string;
   deliveryId: string;
+  attachments?: MarketingInlineAttachment[];
+}
+
+export interface MarketingInlineAttachment {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+  cid: string;
 }
