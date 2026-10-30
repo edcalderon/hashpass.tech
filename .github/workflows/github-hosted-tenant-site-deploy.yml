@@ -3,6 +3,10 @@ name: GitHub-hosted tenant site build and deploy
 on:
   push:
     branches: [develop, main]
+    # A Club web release also publishes the attending overlay for the event
+    # tenant. The overlay is built from the same club-v* tag so both hosts
+    # report the same app version and contain the same web assets.
+    tags: ['club-v*']
     paths:
       - 'apps/mobile-app/**'
       - 'apps/web-app/**'
@@ -42,15 +46,22 @@ jobs:
       - id: targets
         env:
           BRANCH: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
           TARGET: ${{ inputs.target }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          const allowed = process.env.BRANCH === 'develop'
+          const isClubRelease = process.env.REF_TYPE === 'tag'
+            && /^club-v\d+\.\d+\.\d+$/.test(process.env.BRANCH);
+          const allowed = isClubRelease
+            ? ['bsl-production']
+            : process.env.BRANCH === 'develop'
             ? ['cbweek-development', 'bsl-development']
             : process.env.BRANCH === 'main' ? ['production', 'bsl-production', 'cbweek-production'] : [];
-          const defaults = process.env.BRANCH === 'develop'
+          const defaults = isClubRelease
+            ? ['bsl-production']
+            : process.env.BRANCH === 'develop'
             ? ['cbweek-development', 'bsl-development']
             : process.env.BRANCH === 'main' ? ['production', 'bsl-production'] : [];
           const targets = process.env.TARGET ? [process.env.TARGET] : defaults;
@@ -159,7 +170,12 @@ jobs:
 
   migrate-database:
     needs: targets
-    if: github.event_name == 'push' || (inputs.deploy == true && inputs.target != 'cbweek-production')
+    # Club tags deploy the already-released static artifact and must not rerun
+    # core database migrations. Branch pushes and explicit production dispatches
+    # retain the existing migration behavior.
+    if: >-
+      (github.event_name == 'push' && github.ref_type != 'tag') ||
+      (inputs.deploy == true && inputs.target != 'cbweek-production')
     name: Migrate core database (${{ github.ref_name == 'main' && 'production' || 'development' }})
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -185,7 +201,9 @@ jobs:
       needs.targets.result == 'success' &&
       needs.build.result == 'success' &&
       (
-        (github.event_name == 'push' && needs.migrate-database.result == 'success') ||
+        (github.event_name == 'push' &&
+          ((github.ref_type == 'tag' && needs.migrate-database.result == 'skipped') ||
+           (github.ref_type != 'tag' && needs.migrate-database.result == 'success'))) ||
         (inputs.deploy == true &&
           (inputs.target == 'cbweek-production' || needs.migrate-database.result == 'success'))
       )
