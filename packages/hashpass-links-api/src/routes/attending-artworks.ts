@@ -5,7 +5,9 @@ import { validateCaptchaToken } from './captcha';
 import type {
   AttendingArtworkEmailStatus,
   AttendingArtworkShareRow,
+  ArtworkEmailCopy,
   CreateAttendingArtworkBody,
+  MailerConfig,
 } from './attending-artworks.types';
 
 const BUCKET = 'attending-artworks';
@@ -16,8 +18,34 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const PUBLIC_ARTWORK_URL_PATTERN = /^https:\/\/(?:[a-z0-9][a-z0-9-]{0,62}\.hashpass\.tech(?:\/attending\/[a-z0-9][a-z0-9-]{0,79})?|hashpass\.club\/attendings)\/?$/;
 
-function mailerEnvironmentValue(name: string): string | undefined {
-  return process.env[`NODEMAILER_${name}`];
+function mailerEnvironmentValue(name: string, suffix: '' | '_UPDATES' = '', env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return env[`NODEMAILER_${name}${suffix}`];
+}
+
+function readMailerConfig(suffix: '' | '_UPDATES', env: NodeJS.ProcessEnv = process.env): MailerConfig {
+  return {
+    host: mailerEnvironmentValue('HOST', suffix, env) || '',
+    port: mailerEnvironmentValue('PORT', suffix, env) || '587',
+    user: mailerEnvironmentValue('USER', suffix, env) || '',
+    pass: mailerEnvironmentValue('PASS', suffix, env) || '',
+    from: mailerEnvironmentValue('FROM', suffix, env) || '',
+    suffix,
+  };
+}
+
+/**
+ * Artwork mail is transactional and normally uses the Brevo-backed primary
+ * sender. Some deployments only provision the updates mailbox, however, so
+ * use that complete configuration as a safe fallback instead of silently
+ * dropping the confirmation email.
+ */
+export function resolveArtworkMailerConfig(env: NodeJS.ProcessEnv = process.env): MailerConfig | null {
+  const primary = readMailerConfig('', env);
+  if (primary.host && primary.user && primary.pass && primary.from) return primary;
+
+  const updates = readMailerConfig('_UPDATES', env);
+  if (updates.host && updates.user && updates.pass && updates.from) return updates;
+  return null;
 }
 
 function hashToken(token: string): string {
@@ -72,13 +100,65 @@ function validLocale(value: unknown): string {
   return /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value) ? value : 'en';
 }
 
-function mailIsConfigured(): boolean {
-  return Boolean(
-    mailerEnvironmentValue('HOST')
-      && mailerEnvironmentValue('USER')
-      && mailerEnvironmentValue('PASS')
-      && mailerEnvironmentValue('FROM'),
-  );
+export function getArtworkEmailCopy(locale: string, attendeeName: string, eventName: string): ArtworkEmailCopy {
+  if (locale.toLowerCase().startsWith('es')) {
+    return {
+      subject: `Tu arte del evento está listo · ${eventName}`,
+      heading: `Tu arte está listo, ${attendeeName}`,
+      description: `Tu imagen personal para compartir del evento ${eventName} está lista.`,
+      openLabel: 'Abrir mi arte',
+      downloadLabel: 'Descargar PNG',
+      attachmentNotice: 'También adjuntamos una copia PNG. El enlace público vence en 90 días y cualquiera que lo tenga puede verlo.',
+      textGreeting: `Hola ${attendeeName},`,
+    };
+  }
+
+  return {
+    subject: `Your event artwork is ready · ${eventName}`,
+    heading: `Your artwork is ready, ${attendeeName}`,
+    description: `Your shareable attendance artwork for ${eventName} is ready.`,
+    openLabel: 'Open your artwork',
+    downloadLabel: 'Download PNG',
+    attachmentNotice: 'A PNG copy is attached to this email. The public link expires in 90 days and is visible to anyone who has it.',
+    textGreeting: `Hi ${attendeeName},`,
+  };
+}
+
+export function buildArtworkEmailMessage(input: {
+  attendeeName: string;
+  eventName: string;
+  shareUrl: string;
+  imageUrl: string;
+  image: Buffer;
+  locale: string;
+}): {
+  subject: string;
+  text: string;
+  html: string;
+  attachments: Array<{ filename: string; content: Buffer; contentType: string; contentDisposition: 'inline'; cid: string }>;
+} {
+  const copy = getArtworkEmailCopy(input.locale, input.attendeeName, input.eventName);
+  const shareUrl = escapeHtml(input.shareUrl);
+  const imageUrl = escapeHtml(input.imageUrl);
+  const heading = escapeHtml(copy.heading);
+  const description = escapeHtml(copy.description);
+  const openLabel = escapeHtml(copy.openLabel);
+  const downloadLabel = escapeHtml(copy.downloadLabel);
+  const attachmentNotice = escapeHtml(copy.attachmentNotice);
+  const cid = 'hashpass-event-artwork';
+
+  return {
+    subject: copy.subject,
+    text: `${copy.textGreeting}\n\n${copy.description}\n\n${copy.openLabel}: ${input.shareUrl}\n${copy.downloadLabel}: ${input.imageUrl}\n\n${copy.attachmentNotice}`,
+    html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">${openLabel}</a> <a href="${imageUrl}" style="display:inline-block;padding:13px 20px;background:#e8eef7;color:#173454;border-radius:999px;text-decoration:none;font-weight:700">${downloadLabel}</a></p><p><img src="cid:${cid}" alt="Your event artwork" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">${attachmentNotice}</p></main></body></html>`,
+    attachments: [{
+      filename: 'hashpass-event-artwork.png',
+      content: input.image,
+      contentType: 'image/png',
+      contentDisposition: 'inline',
+      cid,
+    }],
+  };
 }
 
 async function sendArtworkEmail(input: {
@@ -88,32 +168,30 @@ async function sendArtworkEmail(input: {
   shareUrl: string;
   imageUrl: string;
   image: Buffer;
+  locale: string;
 }): Promise<boolean> {
-  if (!mailIsConfigured()) return false;
+  const config = resolveArtworkMailerConfig();
+  if (!config) {
+    console.warn('[hashpass-links-api] Artwork email skipped: no complete transactional or updates SMTP configuration.');
+    return false;
+  }
 
-  const host = mailerEnvironmentValue('HOST')!;
-  const port = Number.parseInt(mailerEnvironmentValue('PORT') || '587', 10);
+  const host = config.host;
+  const port = Number.parseInt(config.port, 10);
   const secure = port === 465;
   const normalizedHost = host.trim().toLowerCase().replace(/\.$/, '').split(':')[0];
   const isBrevo = normalizedHost === 'brevo.com'
     || normalizedHost.endsWith('.brevo.com')
     || normalizedHost === 'sendinblue.com'
     || normalizedHost.endsWith('.sendinblue.com');
-  const name = escapeHtml(input.attendeeName);
-  const event = escapeHtml(input.eventName);
-  const shareUrl = escapeHtml(input.shareUrl);
-  const imageUrl = escapeHtml(input.imageUrl);
-  const subject = `Your event artwork for ${input.eventName}`;
-  const heading = `Your artwork is ready, ${name}`;
-  const description = `Your shareable attendance artwork for ${event} is ready.`;
-  const imageAlt = 'Your event artwork';
+  const message = buildArtworkEmailMessage(input);
   let closeTransporter: (() => void) | undefined;
   try {
     const transporter = nodemailer.createTransport({
       host,
       port,
       secure,
-      auth: { user: mailerEnvironmentValue('USER'), pass: mailerEnvironmentValue('PASS') },
+      auth: { user: config.user, pass: config.pass },
       connectionTimeout: 10_000,
       tls: isBrevo
         ? { rejectUnauthorized: process.env.NODE_ENV === 'production', checkServerIdentity: () => undefined }
@@ -122,17 +200,12 @@ async function sendArtworkEmail(input: {
     });
     closeTransporter = () => transporter.close();
     const delivery = await transporter.sendMail({
-      from: `HASHPASS <${mailerEnvironmentValue('FROM')}>`,
+      from: `HASHPASS <${config.from}>`,
       to: input.email,
-      subject,
-      text: `Hi ${input.attendeeName},\n\nYour shareable attendance artwork for ${input.eventName} is ready.\n\nOpen your public artwork: ${input.shareUrl}\nDownload the PNG: ${input.imageUrl}\nA PNG copy is also attached to this email. The public link is available for 90 days.`,
-      html: `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101b2c"><main style="max-width:560px;margin:32px auto;padding:28px;background:#fff;border:1px solid #dbe4ef;border-radius:20px"><p style="font-size:12px;letter-spacing:.12em;font-weight:700;color:#1976d2">HASHPASS · EVENT ARTWORK</p><h1 style="font-size:24px">${heading}</h1><p>${description}</p><p><a href="${shareUrl}" style="display:inline-block;padding:13px 20px;background:#1976d2;color:#fff;border-radius:999px;text-decoration:none;font-weight:700">Open your artwork</a> <a href="${imageUrl}" style="display:inline-block;padding:13px 20px;background:#e8eef7;color:#173454;border-radius:999px;text-decoration:none;font-weight:700">Download PNG</a></p><p><img src="${imageUrl}" alt="${imageAlt}" style="display:block;width:100%;height:auto;border-radius:14px"></p><p style="font-size:13px;color:#64748b">A PNG copy is attached to this email. The public link expires in 90 days and is visible to anyone who has it.</p></main></body></html>`,
-      attachments: [{
-        filename: 'hashpass-event-artwork.png',
-        content: input.image,
-        contentType: 'image/png',
-        contentDisposition: 'attachment',
-      }],
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+      attachments: message.attachments,
     });
     return delivery.accepted.length > 0;
   } catch (error) {
@@ -233,6 +306,7 @@ export async function createAttendingArtwork(request: Request): Promise<Response
       shareUrl,
       imageUrl,
       image,
+      locale: row.locale,
     }) ? 'sent' : 'unavailable';
   }
 

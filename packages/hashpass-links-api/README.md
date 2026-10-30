@@ -113,11 +113,12 @@ install step, unlike the Expo Router API's packaging script.
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Same — service-role key, never exposed to clients |
 | `PUBLIC_ARTWORK_SHARE_ORIGIN` | no | Branded origin for public artwork pages (for example `https://hpass.id`); defaults to the API request origin |
 | `CORS_ALLOW_ORIGINS` | no | Comma-separated extra allowed origins, added to the built-in default list (`lambda/index.ts`'s `DEFAULT_CORS_ALLOWED_ORIGINS`: `hashpass.club`, `hashpass.link`, `localhost:3000`) |
-| `NODEMAILER_HOST` | no | SMTP host for optional artwork-link email delivery |
+| `NODEMAILER_HOST` | no | SMTP host for optional artwork-link email delivery (primary transactional sender) |
 | `NODEMAILER_PORT` | no | SMTP port (defaults to 587; port 465 uses implicit TLS) |
 | `NODEMAILER_USER` | no | SMTP username |
 | `NODEMAILER_PASS` | no | SMTP password; pass only through protected Terraform inputs |
 | `NODEMAILER_FROM` | no | Verified sender email address |
+| `NODEMAILER_HOST_UPDATES` / `NODEMAILER_PORT_UPDATES` / `NODEMAILER_USER_UPDATES` / `NODEMAILER_PASS_UPDATES` / `NODEMAILER_FROM_UPDATES` | no | Complete Hostinger updates-mailbox configuration used as a fallback when the primary transactional sender is not provisioned |
 | `QR_ANALYTICS_SECRET` | no, but recommended | HMAC secret (32+ chars) `logScan()` in `src/routes/qr-links.ts` passes to `anonymizeVisitor()` to hash a scanning visitor's IP. Missing it doesn't break the redirect — every scan just collapses into one `'unconfigured'` visitor bucket instead of being individually anonymized-and-distinguished, so scan *counts* stay correct but per-visitor uniqueness doesn't. Rotate periodically; `anonymizeVisitor` itself already rotates the hash monthly so old and new hashes for the same visitor can't be correlated. |
 
 The `qrUrl` returned by `POST /api/v1/auth/qr/challenges` is built from the

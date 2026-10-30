@@ -25,3 +25,22 @@ export interface AttendingArtworkShareRow {
 }
 
 export type AttendingArtworkEmailStatus = 'sent' | 'unavailable' | 'not_requested';
+
+export interface MailerConfig {
+  host: string;
+  port: string;
+  user: string;
+  pass: string;
+  from: string;
+  suffix: '' | '_UPDATES';
+}
+
+export interface ArtworkEmailCopy {
+  subject: string;
+  heading: string;
+  description: string;
+  openLabel: string;
+  downloadLabel: string;
+  attachmentNotice: string;
+  textGreeting: string;
+}
