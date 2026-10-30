@@ -24,11 +24,24 @@ import { apiError } from './server';
 
 type Handler = (request: Request, match: RegExpMatchArray) => Promise<Response>;
 
+const FAVICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#071a29"/><circle cx="16" cy="16" r="10" fill="none" stroke="#19d3c5" stroke-width="2"/><path d="m12 9 8 7-8 7" fill="none" stroke="#f04444" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></svg>';
+
+function favicon(): Response {
+  return new Response(FAVICON_SVG, {
+    headers: {
+      'content-type': 'image/svg+xml; charset=utf-8',
+      'cache-control': 'public, max-age=86400, immutable',
+      'x-content-type-options': 'nosniff',
+    },
+  });
+}
+
 // Ordered [method, path pattern, handler] table rather than a routing
 // library -- this service is deliberately minimal (see the original spec's
 // "minimal, high-performance redirect service" requirement) and the whole
 // route surface fits on one screen.
 const ROUTES: Array<[string, RegExp, Handler]> = [
+  ['GET', /^\/favicon\.(?:ico|svg)$/, () => Promise.resolve(favicon())],
   ['GET', /^\/api\/health$/, () => health()],
   ['POST', /^\/api\/captcha\/challenge$/, () => createCaptchaChallenge()],
   ['POST', /^\/api\/captcha\/redeem$/, (request) => redeemCaptchaChallenge(request)],
