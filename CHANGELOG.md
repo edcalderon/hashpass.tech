@@ -1,3 +1,14 @@
+## [1.9.196](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.195...v1.9.196) (2026-10-30)
+### Released
+- ship the light-theme HashPass logo with the BSL attending overlay
+
+### Release scope
+- Compared with: `v1.9.195` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Release tooling
+
 ## [1.9.195](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.194...v1.9.195) (2026-10-30)
 ### Released
 - keep artwork previews on short-link origin

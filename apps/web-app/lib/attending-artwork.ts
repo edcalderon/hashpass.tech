@@ -2,6 +2,9 @@ import type { AttendeeSocialPlatform, AttendingArtworkOptions } from '../app/att
 
 const ART_WIDTH = 1080;
 const ART_HEIGHT = 1350;
+// Served from /attending so tenant overlays that only copy that folder (BSL)
+// still resolve it; a root-relative path falls through to the SPA HTML there.
+export const LIGHT_POWERED_BY_LOGO_SRC = '/attending/logo-full-hashpass-black-red.svg';
 const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
 const canvasRenderIds = new WeakMap<HTMLCanvasElement, number>();
 
@@ -718,7 +721,7 @@ function drawBslColombiaArtwork(
   if (poweredByLogo) {
     drawContainedImage(context, poweredByLogo, groupStart + labelWidth + 12, poweredByY - 19, brandWidth, 36);
   } else {
-    context.fillStyle = 'rgba(230, 244, 255, 0.84)';
+    context.fillStyle = lightMode ? '#101b30' : 'rgba(230, 244, 255, 0.84)';
     context.font = '800 18px Manrope, sans-serif';
     context.fillText('HASHPASS', groupStart + labelWidth + 12, poweredByY);
   }
@@ -736,7 +739,7 @@ export async function drawAttendingArtwork(
 
   const isBslColombia = options.artworkTemplate.backgroundSrc?.endsWith('/bsl-colombia-2026.png') || false;
   const poweredByLogoSrc = isBslColombia && options.themeMode === 'light'
-    ? '/logo-full-hashpass-black-red.svg'
+    ? LIGHT_POWERED_BY_LOGO_SRC
     : options.artworkTemplate.poweredByLogoSrc;
   const [backgroundImage, logo, poweredByLogo, avatar] = await Promise.all([
     loadImage(options.artworkTemplate.backgroundSrc),

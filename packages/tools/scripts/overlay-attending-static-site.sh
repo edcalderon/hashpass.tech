@@ -34,7 +34,8 @@ for required_file in \
   "${ATTENDING_EXPORT}/theme-init.js" \
   "${ATTENDING_EXPORT}/sw-register.js" \
   "${ATTENDING_EXPORT}/logo-full-hashpass-white-cyan.svg" \
-  "${ATTENDING_EXPORT}/logo-full-hashpass-black-cyan.svg"; do
+  "${ATTENDING_EXPORT}/logo-full-hashpass-black-cyan.svg" \
+  "${ATTENDING_EXPORT}/attending/logo-full-hashpass-black-red.svg"; do
   if [[ ! -f "${required_file}" ]]; then
     echo "Missing attending export output: ${required_file}" >&2
     exit 1
