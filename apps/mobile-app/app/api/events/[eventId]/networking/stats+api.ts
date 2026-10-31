@@ -29,12 +29,18 @@ export async function GET(request: Request) {
     );
     if (countError) throw countError;
 
-    const { data: speaker, error: speakerError } = await supabase
+    const { data: speakerRows, error: speakerError } = await supabase
       .from("bsl_speakers")
       .select("id")
       .eq("user_id", meetingUserId)
-      .maybeSingle();
+      // Speaker profiles are event-scoped, so the same user may have more
+      // than one row. maybeSingle() would make PostgREST return 406 here and
+      // the networking dashboard would surface that as a 500.
+      .limit(1);
     if (speakerError) throw speakerError;
+    const speaker = Array.isArray(speakerRows)
+      ? speakerRows[0] ?? null
+      : speakerRows ?? null;
 
     let blockedUsers = 0;
     let speakerRequests = 0;

@@ -34,6 +34,7 @@ const mockFrom = jest.fn((table: string) => table === "bsl_speakers"
 function createSpeakerChain(): {
   eq: (...args: unknown[]) => unknown;
   in: (...args: unknown[]) => unknown;
+  limit: (...args: unknown[]) => unknown;
   maybeSingle: jest.Mock;
 } {
   return {
@@ -42,6 +43,10 @@ function createSpeakerChain(): {
       return createSpeakerChain();
     },
     in: (...args: unknown[]) => mockSpeakerIn(...args),
+    limit: (...args: unknown[]) => {
+      mockEq(...args);
+      return mockMaybeSingle();
+    },
     maybeSingle: mockMaybeSingle,
   };
 }

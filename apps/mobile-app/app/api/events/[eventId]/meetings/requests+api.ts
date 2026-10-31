@@ -55,9 +55,13 @@ async function speakerForUser(supabase: any, userId: string) {
     .from("bsl_speakers")
     .select("id, user_id")
     .eq("user_id", userId)
-    .maybeSingle();
+    // A user can have a speaker profile in more than one event. PostgREST's
+    // maybeSingle() returns 406 when that happens, turning an otherwise valid
+    // networking read into a 500. We only need one profile here; the meeting
+    // request queries below remain scoped by event_id.
+    .limit(1);
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data[0] ?? null : data ?? null;
 }
 
 async function speakerForRecordId(supabase: any, speakerId: string) {
@@ -65,9 +69,9 @@ async function speakerForRecordId(supabase: any, speakerId: string) {
     .from("bsl_speakers")
     .select("id, user_id")
     .eq("id", speakerId)
-    .maybeSingle();
+    .limit(1);
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data[0] ?? null : data ?? null;
 }
 
 type RequestSpeakerProfile = {

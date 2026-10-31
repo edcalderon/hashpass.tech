@@ -21,6 +21,7 @@ function createQuery(table: string): Record<string, unknown> {
       call.filters.push([column, value]);
       return query;
     }),
+    limit: jest.fn(async () => results[table]),
     maybeSingle: jest.fn(async () => results[table]),
     then: (onFulfilled: (value: QueryResult) => unknown) =>
       Promise.resolve(results[table]).then(onFulfilled),
@@ -49,7 +50,10 @@ describe("event networking stats api", () => {
     mockFrom.mockReset();
     queryCalls = [];
     results = {
-      bsl_speakers: { data: { id: "speaker-record-1" }, error: null },
+      // Supabase returns an array when the production query uses limit(1).
+      // Keep this fixture array-shaped so duplicate speaker profiles cannot
+      // regress into a PostgREST 406 via maybeSingle().
+      bsl_speakers: { data: [{ id: "speaker-record-1" }], error: null },
       user_blocks: { data: [{ id: "block-1" }, { id: "block-2" }], error: null },
       meeting_requests: { data: [{ id: "request-1" }], error: null },
     };

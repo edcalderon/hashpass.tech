@@ -9,8 +9,8 @@ let mockPendingResult: { data: unknown[] | null; error: unknown } = {
   data: [],
   error: null,
 };
-let mockSpeakerResult: { data: { user_id: string } | null; error: unknown } = {
-  data: { user_id: "speaker-user-id" },
+let mockSpeakerResult: { data: { user_id: string }[] | null; error: unknown } = {
+  data: [{ user_id: "speaker-user-id" }],
   error: null,
 };
 let consoleErrorSpy: jest.SpyInstance;
@@ -33,7 +33,10 @@ function mockCreateSpeakerQuery() {
   return {
     eq: (...args: unknown[]) => {
       mockEq(...args);
-      return { maybeSingle: jest.fn().mockResolvedValue(mockSpeakerResult) };
+      return {
+        limit: jest.fn().mockResolvedValue(mockSpeakerResult),
+        maybeSingle: jest.fn().mockResolvedValue(mockSpeakerResult),
+      };
     },
   };
 }
@@ -66,7 +69,7 @@ describe("meeting-request slots api", () => {
     mockEq.mockReset();
     mockFrom.mockClear();
     mockPendingResult = { data: [], error: null };
-    mockSpeakerResult = { data: { user_id: "speaker-user-id" }, error: null };
+    mockSpeakerResult = { data: [{ user_id: "speaker-user-id" }], error: null };
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
   });
 
