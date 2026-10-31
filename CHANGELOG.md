@@ -1,3 +1,18 @@
+## [1.9.198](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.197...v1.9.198) (2026-10-31)
+
+
+### Bug Fixes
+
+* **networking:** avoid speaker lookup 406s ([5baba51](https://github.com/hashpass-tech/hashpass.tech/commit/5baba5155443ac6cd17023d158ad3e2a6dd6f3b5))
+### Release Highlights
+- avoid speaker lookup 406s
+
+### Release scope
+- Compared with: `v1.9.197` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.197](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.196...v1.9.197) (2026-10-30)
 
 
