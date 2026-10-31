@@ -132,7 +132,7 @@ describe("meeting-requests api", () => {
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockMaybeSingle.mockResolvedValueOnce({
-        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        data: [{ id: "speaker-record-id", user_id: "speaker-user-id" }],
         error: null,
       });
 
@@ -417,7 +417,7 @@ describe("meeting-requests api", () => {
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockMaybeSingle.mockResolvedValueOnce({
-        data: { id: "550e8400-e29b-41d4-a716-446655440000", user_id: "speaker-user-id" },
+        data: [{ id: "550e8400-e29b-41d4-a716-446655440000", user_id: "speaker-user-id" }],
         error: null,
       });
 
