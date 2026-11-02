@@ -149,6 +149,14 @@ const passEntitlementTransitionsMigrationPath = path.join(
   root,
   'db/migrations/V147__harden_pass_entitlement_transitions.sql',
 );
+const adminPassStatusEnumMigrationPath = path.join(
+  root,
+  'db/migrations/V169__cast_admin_pass_status_enum.sql',
+);
+const adminPassStatusColumnTypeMigrationPath = path.join(
+  root,
+  'db/migrations/V170__match_admin_pass_status_column_type.sql',
+);
 const passQrOwnerBindingMigrationPath = path.join(
   root,
   'db/migrations/V148__bind_pass_qr_issuance_to_owner.sql',
@@ -984,6 +992,39 @@ describe('pass entitlement transition hardening migration', () => {
     expect(migration).toMatch(/WHERE user_id::text = transfer_row\.recipient_user_id[\s\S]*?event_id = transfer_row\.event_id[\s\S]*?FOR UPDATE/i);
     expect(migration).toMatch(/status = 'cancelled'/i);
     expect(migration).toMatch(/EXCEPTION WHEN unique_violation/i);
+  });
+});
+
+describe('admin pass status enum cast migration', () => {
+  it('ships the admin pass update fix and casts text before coalescing with the enum', () => {
+    const migration = fs.readFileSync(adminPassStatusEnumMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group).toContain('db/migrations/V169__cast_admin_pass_status_enum.sql');
+    expect(group.indexOf('db/migrations/V169__cast_admin_pass_status_enum.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V168__event_scoped_ticket_claim_notifications.sql'));
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_mutate_event_pass/i);
+    expect(migration).toMatch(/status\s*=\s*COALESCE\(p_status::public\.pass_status,\s*status\)/i);
+    expect(migration).not.toMatch(/status\s*=\s*COALESCE\(p_status,\s*status\)/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.admin_mutate_event_pass[\s\S]*TO service_role/i);
+  });
+});
+
+describe('admin pass status column type compatibility migration', () => {
+  it('casts status using the actual passes.status type for text and enum schemas', () => {
+    const migration = fs.readFileSync(adminPassStatusColumnTypeMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const group = config.groups['admin-pass-management'];
+
+    expect(group).toContain('db/migrations/V170__match_admin_pass_status_column_type.sql');
+    expect(group.indexOf('db/migrations/V170__match_admin_pass_status_column_type.sql'))
+      .toBeGreaterThan(group.indexOf('db/migrations/V169__cast_admin_pass_status_enum.sql'));
+    expect(migration).toMatch(/SELECT format\('%I\.%I',\s*status_namespace\.nspname,\s*status_type\.typname\)/i);
+    expect(migration).toMatch(/FROM pg_attribute[\s\S]*JOIN pg_type[\s\S]*JOIN pg_namespace/i);
+    expect(migration).toMatch(/status\s*=\s*COALESCE\(\$2::%s,\s*status\)/i);
+    expect(migration).not.toMatch(/status\s*=\s*COALESCE\(p_status::public\.pass_status/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.admin_mutate_event_pass[\s\S]*TO service_role/i);
   });
 });
 

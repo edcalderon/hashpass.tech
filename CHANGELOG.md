@@ -1,3 +1,20 @@
+## [1.9.213](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.212...v1.9.213) (2026-11-02)
+
+
+### Bug Fixes
+
+* cast admin pass status enum ([d5e2264](https://github.com/hashpass-tech/hashpass.tech/commit/d5e226471ebdb2e3781d8f067b2065e8773d8575))
+### Release Highlights
+- cast admin pass status enum
+
+### Release scope
+- Compared with: `v1.9.212` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.212](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.211...v1.9.212) (2026-11-02)
 
 
