@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611020127, // Updated to current timestamp
+  buildNumber: 202611020239, // Updated to current timestamp
   releaseDate: '2026-11-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'prepare BSL business offer campaign'
   ],
   bugfixes: [
-    'resolve pass card and notification layout'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'resolve pass card and notification layout'
+  notes: 'prepare BSL business offer campaign'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.208': {
+    version: '1.9.208',
+    buildNumber: 202611020239,
+    releaseDate: '2026-11-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'prepare BSL business offer campaign'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'prepare BSL business offer campaign'
+  },
   '1.9.207': {
     version: '1.9.207',
     buildNumber: 202611020127,
