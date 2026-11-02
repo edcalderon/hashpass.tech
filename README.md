@@ -20,16 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.206)
+## 📋 Latest Changes (v1.9.207)
 
-### Features
+### Bug Fixes
 
-* **mobile:** add dedicated ticket claim flow ([0af228e](https://github.com/hashpass-tech/hashpass.tech/commit/0af228eb6cb9840feda59f4b34e4f875d5cf13d2))
+* **mobile:** resolve pass card and notification layout ([1820b65](https://github.com/hashpass-tech/hashpass.tech/commit/1820b653ed899bdc15e067e820636aa3fb1d5565))
 ### Release Highlights
-- add dedicated ticket claim flow
+- resolve pass card and notification layout
 
 ### Release scope
-- Compared with: `v1.9.205` (the previous global release tag)
+- Compared with: `v1.9.206` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

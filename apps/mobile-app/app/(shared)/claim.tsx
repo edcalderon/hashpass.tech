@@ -112,6 +112,13 @@ export default function ClaimTicketScreen() {
             </Text>
           </View>
 
+          <ActionButton
+            mode={mode}
+            label={t('scanAction', 'Scan ticket QR')}
+            leadingIcon={<MaterialIcons name="qr-code-scanner" size={20} color={palette.onAccent} />}
+            onPress={() => setScannerVisible(true)}
+          />
+
           <Surface mode={mode} style={{ width: '100%', gap: uiTokens.space.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: uiTokens.space.md }}>
               <View
@@ -169,12 +176,6 @@ export default function ClaimTicketScreen() {
             {t('singleClaimNote', 'Only scan a ticket you purchased. Each original ticket can be claimed once.')}
           </Text>
 
-          <ActionButton
-            mode={mode}
-            label={t('scanAction', 'Scan ticket QR')}
-            leadingIcon={<MaterialIcons name="qr-code-scanner" size={20} color={palette.onAccent} />}
-            onPress={() => setScannerVisible(true)}
-          />
         </ScrollView>
       </SafeAreaView>
 

@@ -2112,6 +2112,8 @@
       "cancel": "취소",
       "noNotifications": "알림 없음",
       "noNotificationsMessage": "모든 알림을 확인했습니다! 새로운 알림이 여기에 표시됩니다.",
+      "noMatchingNotifications": "일치하는 알림이 없습니다",
+      "noMatchingNotificationsMessage": "다른 검색어를 입력하거나 필터를 조정해 보세요.",
       "noArchivedNotifications": "보관된 알림 없음",
       "noArchivedNotificationsMessage": "보관된 알림이 여기에 표시됩니다.",
       "loading": "알림 로딩 중...",

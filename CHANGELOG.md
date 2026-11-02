@@ -1,3 +1,18 @@
+## [1.9.207](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.206...v1.9.207) (2026-11-02)
+
+
+### Bug Fixes
+
+* **mobile:** resolve pass card and notification layout ([1820b65](https://github.com/hashpass-tech/hashpass.tech/commit/1820b653ed899bdc15e067e820636aa3fb1d5565))
+### Release Highlights
+- resolve pass card and notification layout
+
+### Release scope
+- Compared with: `v1.9.206` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.206](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.205...v1.9.206) (2026-11-01)
 
 

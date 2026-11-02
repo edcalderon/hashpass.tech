@@ -1155,6 +1155,8 @@
       "cancel": "Annuler",
       "noNotifications": "Aucune notification",
       "noNotificationsMessage": "Vous êtes à jour ! Les nouvelles notifications apparaîtront ici.",
+      "noMatchingNotifications": "Aucune notification correspondante",
+      "noMatchingNotificationsMessage": "Essayez une autre recherche ou ajustez vos filtres.",
       "noArchivedNotifications": "Aucune notification archivée",
       "noArchivedNotificationsMessage": "Les notifications archivées apparaîtront ici.",
       "loading": "Chargement des notifications...",

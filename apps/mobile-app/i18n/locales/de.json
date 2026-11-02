@@ -1154,6 +1154,8 @@
       "cancel": "Abbrechen",
       "noNotifications": "Keine Benachrichtigungen",
       "noNotificationsMessage": "Sie sind auf dem neuesten Stand! Neue Benachrichtigungen erscheinen hier.",
+      "noMatchingNotifications": "Keine passenden Benachrichtigungen",
+      "noMatchingNotificationsMessage": "Versuchen Sie eine andere Suche oder passen Sie die Filter an.",
       "noArchivedNotifications": "Keine archivierten Benachrichtigungen",
       "noArchivedNotificationsMessage": "Archivierte Benachrichtigungen erscheinen hier.",
       "loading": "Benachrichtigungen werden geladen...",

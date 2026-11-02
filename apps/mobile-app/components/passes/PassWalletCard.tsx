@@ -571,8 +571,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 14,
-        paddingBottom: 10,
+        padding: isNative ? uiTokens.space.sm : 14,
+        paddingBottom: isNative ? uiTokens.space.sm : 10,
+        height: isNative ? 56 : undefined,
         borderBottomWidth: 1,
         borderBottomColor: colors.divider,
         borderTopLeftRadius: 15,
@@ -611,7 +612,18 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       </View>
 
       {/* Summary Content */}
-      <View style={{ flex: 1, padding: uiTokens.space.md, paddingTop: uiTokens.space.sm, paddingBottom: uiTokens.control.minHeight }}>
+      <View style={isNative
+        ? {
+            height: PASS_CARD_HEIGHT - 56 - 48,
+            flexGrow: 0,
+            flexShrink: 0,
+            padding: uiTokens.space.sm,
+            position: 'relative',
+          }
+        : { flex: 1, padding: uiTokens.space.md, paddingTop: uiTokens.space.sm, paddingBottom: uiTokens.control.minHeight }}>
+        <View style={isNative
+          ? { height: Math.round(PASS_CARD_HEIGHT * 0.58) - 56 - uiTokens.space.sm, flexGrow: 0, flexShrink: 0 }
+          : undefined}>
         <View style={{ marginBottom: uiTokens.space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: uiTokens.space.xs }}>
             <MaterialIcons name="event" size={14} color={colors.text.secondary} />
@@ -646,17 +658,22 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             {getPassAccess(pass.pass_type)}
           </Text>
         </View>
+        </View>
 
         <View
-          style={{
-            marginTop: 'auto',
-            gap: uiTokens.space.xs,
-            width: '100%',
-          }}
+          style={isNative
+            ? {
+                position: 'absolute',
+                top: Math.round(PASS_CARD_HEIGHT * 0.58) - 56 + 8,
+                left: uiTokens.space.sm,
+                right: uiTokens.space.sm,
+                bottom: 8,
+                gap: uiTokens.space.xs,
+                justifyContent: 'center',
+              }
+            : { marginTop: 'auto', gap: uiTokens.space.xs, width: '100%' }}
         >
-          <View style={isNative
-            ? { flexDirection: 'column', alignItems: 'stretch', gap: uiTokens.space.xs, width: '100%' }
-            : { flexDirection: 'row', alignItems: 'stretch', gap: uiTokens.space.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: uiTokens.space.xs, width: '100%' }}>
             {upgradeTarget && (
               <>
               <ActionButton
@@ -669,7 +686,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 leadingIcon={<MaterialIcons name="confirmation-number" size={16} color={colors.primary} />}
                 trailingIcon={<MaterialIcons name="chevron-right" size={16} color={colors.text.secondary} />}
                 style={isNative
-                  ? { width: '100%', minHeight: 48, paddingHorizontal: uiTokens.space.md }
+                  ? { flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.xs }
                   : { flex: 1, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
               />
               {!isNative && <View style={{ width: 1, height: 32, alignSelf: 'center', backgroundColor: colors.divider }} />}
@@ -691,7 +708,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 leadingIcon={<MaterialIcons name="description" size={16} color={colors.primary} />}
                 trailingIcon={<MaterialIcons name="chevron-right" size={16} color={colors.text.secondary} />}
                 style={isNative
-                  ? { width: '100%', minHeight: 48, paddingHorizontal: uiTokens.space.md }
+                  ? { flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.xs }
                   : { flex: upgradeTarget ? 1 : 2, minHeight: 48, paddingHorizontal: uiTokens.space.sm }}
               />
           </View>
@@ -714,6 +731,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       {/* Ticket Footer Actions - Same style as front */}
       <View style={{
         flexDirection: 'row',
+        minHeight: 48,
         borderTopWidth: 1,
         borderTopColor: colors.divider,
         position: 'absolute',

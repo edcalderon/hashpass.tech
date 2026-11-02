@@ -34,8 +34,9 @@ export default function NotificationsScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<NotificationInboxTab>('all');
-  const [filteredNotifications, setFilteredNotifications] = useState<any[]>([]);
-  const [, setSearchQuery] = useState('');
+  const [filteredNotifications, setFilteredNotifications] = useState<Notification[] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({});
   const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
 
   // Separate the inbox by intent. Messages stay available in All, but their
@@ -54,8 +55,11 @@ export default function NotificationsScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refreshNotifications();
-    setRefreshing(false);
+    try {
+      await refreshNotifications();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Handle navigation from dropdown - highlight notification and mark as read
@@ -369,7 +373,7 @@ export default function NotificationsScreen() {
           onPress={() => handleNotificationPress(notification)}
           activeOpacity={0.7}
         >
-          <View style={styles.iconContainer}>
+          <View style={[styles.iconContainer, { borderColor: iconColor }]}>
             <MaterialIcons name={iconName as any} size={20} color={iconColor} />
           </View>
           <View style={styles.notificationText}>
@@ -455,9 +459,7 @@ export default function NotificationsScreen() {
 
   // Group chat messages after filtering, so results never duplicate a
   // conversation while still honouring search and advanced filters.
-  const sourceNotifications = filteredNotifications.length > 0
-    ? filteredNotifications
-    : tabFilteredNotifications;
+  const sourceNotifications = filteredNotifications ?? tabFilteredNotifications;
   const displayNotifications = useMemo(
     () => groupChatNotifications(sourceNotifications),
     [sourceNotifications],
@@ -500,38 +502,13 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      {/* Inbox tabs: the shared SegmentedTabs control, same as Wallet */}
-      <View style={styles.tabsWrap}>
-        <SegmentedTabs
-          mode={mode}
-          scrollable
-          accessibilityLabel={t('center.title')}
-          tabs={([
-            ['all', t('center.all')],
-            ['messages', t('center.messages', 'Messages')],
-            ['updates', t('center.updates', 'Updates')],
-            ['archive', t('center.archive')],
-          ] as const).map(([id, label]) => ({
-            id,
-            label,
-            count: tabUnreadCounts[id],
-          }))}
-          value={activeTab}
-          onChange={(tab) => {
-            setActiveTab(tab);
-            setFilteredNotifications([]);
-            setSearchQuery('');
-          }}
-          accentColor={colors.primary}
-          surfaceColor={colors.background.paper}
-        />
-      </View>
-
       {/* Filter Section */}
       <UnifiedSearchAndFilter
+        key={activeTab}
         data={tabFilteredNotifications}
         onFilteredData={setFilteredNotifications}
         onSearchChange={setSearchQuery}
+        onFilterChange={(filters: Record<string, unknown>) => setActiveFilters(filters)}
         searchPlaceholder={t('center.searchPlaceholder')}
         searchFields={['title', 'message', 'type']}
         filterGroups={filterGroups}
@@ -539,11 +516,36 @@ export default function NotificationsScreen() {
         customFilterLogic={customFilterLogic}
       />
 
-      {/* Refresh sits below search/filter, matching the speaker directory
-          screen's layout (events/[eventSlug]/speakers/calendar.tsx) instead
-          of crowding the title row alongside Mark All Read. */}
-      <View style={styles.refreshRow}>
+      {/* Keep inbox categories and refresh on the dashboard's compact toolbar row. */}
+      <View style={styles.tabsRefreshRow}>
+        <View style={styles.tabsWrap}>
+          <SegmentedTabs
+            mode={mode}
+            scrollable
+            accessibilityLabel={t('center.title')}
+            tabs={([
+              ['all', t('center.all')],
+              ['messages', t('center.messages', 'Messages')],
+              ['updates', t('center.updates', 'Updates')],
+              ['archive', t('center.archive')],
+            ] as const).map(([id, label]) => ({
+              id,
+              label,
+              count: tabUnreadCounts[id],
+            }))}
+            value={activeTab}
+            onChange={(tab) => {
+              setActiveTab(tab);
+              setFilteredNotifications(null);
+              setSearchQuery('');
+              setActiveFilters({});
+            }}
+            accentColor={colors.primary}
+            surfaceColor={colors.background.paper}
+          />
+        </View>
         <DashboardRefreshButton
+          compact
           loading={refreshing}
           disabled={isLoading}
           label={t('center.refresh', 'Refresh')}
@@ -562,7 +564,9 @@ export default function NotificationsScreen() {
             color={colors.text.secondary} 
           />
           <Text style={styles.emptyTitle}>
-            {activeTab === 'archive'
+            {searchQuery.trim() || Object.keys(activeFilters).length > 0
+              ? t('center.noMatchingNotifications', 'No matching notifications')
+              : activeTab === 'archive'
               ? t('center.noArchivedNotifications')
               : activeTab === 'messages'
                 ? t('center.noMessages', 'No messages')
@@ -571,7 +575,9 @@ export default function NotificationsScreen() {
                   : t('center.noNotifications')}
           </Text>
           <Text style={styles.emptyMessage}>
-            {activeTab === 'archive'
+            {searchQuery.trim() || Object.keys(activeFilters).length > 0
+              ? t('center.noMatchingNotificationsMessage', 'Try a different search or adjust your filters.')
+              : activeTab === 'archive'
               ? t('center.noArchivedNotificationsMessage')
               : activeTab === 'messages'
                 ? t('center.noMessagesMessage', 'New chat messages will appear here.')
@@ -660,14 +666,15 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
       lineHeight: 21,
     },
     tabsWrap: {
-      width: '100%',
-      paddingHorizontal: uiTokens.space.lg,
+      flex: 1,
+      minWidth: 0,
       paddingBottom: uiTokens.space.sm,
     },
-    refreshRow: {
+    tabsRefreshRow: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
       paddingHorizontal: uiTokens.space.lg,
+      alignItems: 'center',
+      gap: uiTokens.space.xs,
       paddingTop: uiTokens.space.xs,
       paddingBottom: uiTokens.space.xs,
     },
@@ -722,7 +729,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
       width: uiTokens.control.compactHeight,
       height: uiTokens.control.compactHeight,
       borderRadius: uiTokens.radius.pill,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: palette.border,
       backgroundColor: palette.surface,
       alignItems: 'center',

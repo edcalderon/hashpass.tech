@@ -2116,6 +2116,8 @@
       "cancel": "Cancelar",
       "noNotifications": "Sin notificaciones",
       "noNotificationsMessage": "¡Estás al día! Las nuevas notificaciones aparecerán aquí.",
+      "noMatchingNotifications": "No hay notificaciones que coincidan",
+      "noMatchingNotificationsMessage": "Prueba otra búsqueda o ajusta los filtros.",
       "noArchivedNotifications": "Sin notificaciones archivadas",
       "noArchivedNotificationsMessage": "Las notificaciones archivadas aparecerán aquí.",
       "loading": "Cargando notificaciones...",

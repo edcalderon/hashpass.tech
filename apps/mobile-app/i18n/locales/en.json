@@ -2117,6 +2117,8 @@
       "cancel": "Cancel",
       "noNotifications": "No Notifications",
       "noNotificationsMessage": "You're all caught up! New notifications will appear here.",
+      "noMatchingNotifications": "No matching notifications",
+      "noMatchingNotificationsMessage": "Try a different search or adjust your filters.",
       "noArchivedNotifications": "No Archived Notifications",
       "noArchivedNotificationsMessage": "Archived notifications will appear here.",
       "loading": "Loading notifications...",
