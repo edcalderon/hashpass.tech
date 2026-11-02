@@ -20,6 +20,7 @@ type TestNotification = {
   meeting_request_event_id?: string;
   meeting_id?: string;
   campaign_id?: string;
+  event_id?: string;
   is_urgent?: boolean;
   is_archived?: boolean;
   is_read: boolean;
@@ -223,9 +224,26 @@ describe('dashboard pages share the page layout', () => {
     act(() => view.unmount());
   });
 
-  it.each(['ticket_claim_review_required', 'marketing_campaign_approval_requested'])('%s opens campaign review in admin', async type => {
+  it('opens ticket-claim review notifications directly in the Ticket Claims tab', async () => {
     mockNotifications.splice(0, mockNotifications.length, {
-      id: 'review-notification', type, title: 'Needs review', message: 'Review details', campaign_id: 'campaign-1',
+      id: 'review-notification', type: 'ticket_claim_review_required', title: 'Needs review', message: 'Review details', event_id: 'colombia2026',
+      is_read: false, created_at: '2026-11-02T00:00:00Z',
+    });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    const card = view.root.findAllByType(TouchableOpacity).find(node => node.props.activeOpacity === 0.7);
+    expect(card).toBeTruthy();
+    await act(async () => { await card!.props.onPress(); });
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/dashboard/admin',
+      params: { tab: 'ticket-claims', eventId: 'colombia2026' },
+    });
+    act(() => view.unmount());
+  });
+
+  it('opens campaign approval notifications in Admin', async () => {
+    mockNotifications.splice(0, mockNotifications.length, {
+      id: 'campaign-review-notification', type: 'marketing_campaign_approval_requested', title: 'Needs review', message: 'Review details', campaign_id: 'campaign-1',
       is_read: false, created_at: '2026-11-02T00:00:00Z',
     });
     let view!: ReactTestRenderer;

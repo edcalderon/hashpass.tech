@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { EVENTS } from '../config/events';
 
 export type EventRole = 'event_admin' | 'moderator';
 
@@ -42,4 +43,12 @@ export function highestEventRole(grants: EventRoleGrant[], eventId: string): Eve
   if (forEvent.some((g) => g.role === 'event_admin')) return 'event_admin';
   if (forEvent.some((g) => g.role === 'moderator')) return 'moderator';
   return null;
+}
+
+export function effectiveEventRoleForEvent(grants: EventRoleGrant[], eventId: string): EventRole | null {
+  const directRole = highestEventRole(grants, eventId);
+  if (directRole) return directRole;
+
+  const hubEventId = EVENTS[eventId]?.tour?.hubEventId;
+  return hubEventId ? highestEventRole(grants, hubEventId) : null;
 }

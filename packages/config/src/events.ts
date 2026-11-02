@@ -217,7 +217,7 @@ const makeTourStopConfig = (
   eventStartDate: options.eventStartDate,
   eventEndDate: options.eventEndDate,
   eventDateString: options.eventDateString,
-  series: "Summit",
+  series: "BSL On Tour",
   geo: {
     country: options.country,
     continent: options.continent,

@@ -4,6 +4,7 @@ const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
 const mockRpc = jest.fn();
 const mockAuthorizeAdmin = jest.fn();
+const mockAuthorizeEventAdmin = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
@@ -11,6 +12,9 @@ jest.mock("@/lib/server/resolve-notification-identity", () => ({
 }));
 jest.mock("@/lib/server/global-admin", () => ({
   authorizeGlobalAdmin: (...args: unknown[]) => mockAuthorizeAdmin(...args),
+}));
+jest.mock("@/lib/server/event-admin", () => ({
+  authorizeEventAdmin: (...args: unknown[]) => mockAuthorizeEventAdmin(...args),
 }));
 const mockSendEmail = jest.fn();
 jest.mock("@/lib/email", () => ({
@@ -29,6 +33,7 @@ const chain = (result: { data: unknown; error?: unknown }) => {
   const c: Record<string, any> = {
     select: jest.fn(() => c),
     eq: jest.fn(() => c),
+    in: jest.fn(() => c),
     order: jest.fn(() => c),
     maybeSingle: jest.fn(async () => ({ data: result.data, error: result.error ?? null })),
     then: (resolve: (value: unknown) => unknown) =>
@@ -244,6 +249,7 @@ describe("/api/admin/pass-ticket-claims", () => {
   const mockGetUserById = jest.fn();
   const adminSupabase = {
     from: (...a: unknown[]) => mockFrom(...a),
+    rpc: (...a: unknown[]) => mockRpc(...a),
     auth: { admin: { getUserById: (...a: unknown[]) => mockGetUserById(...a) } },
   };
 
@@ -254,6 +260,7 @@ describe("/api/admin/pass-ticket-claims", () => {
     mockRpc.mockReset();
     mockGetUserById.mockReset().mockResolvedValue({ data: { user: { email: "claimant@example.com" } } });
     mockAuthorizeAdmin.mockReset().mockResolvedValue({ userId: "admin-1", supabase: adminSupabase });
+    mockAuthorizeEventAdmin.mockReset().mockResolvedValue({ userId: "event-admin-1", supabase: adminSupabase });
   });
   afterEach(() => jest.restoreAllMocks());
 
@@ -262,7 +269,9 @@ describe("/api/admin/pass-ticket-claims", () => {
 
   it("returns the authorization response for non-admins", async () => {
     mockAuthorizeAdmin.mockResolvedValue({ response: new Response("no", { status: 403 }) });
+    mockAuthorizeEventAdmin.mockResolvedValue({ response: new Response("no", { status: 403 }) });
     expect((await load().GET(new Request(ADMIN_URL))).status).toBe(403);
+    expect((await load().GET(new Request(`${ADMIN_URL}?eventId=colombia2026`))).status).toBe(403);
     expect((await load().POST(post(ADMIN_URL, {}))).status).toBe(403);
   });
 
@@ -275,6 +284,37 @@ describe("/api/admin/pass-ticket-claims", () => {
     });
     expect(q.eq).toHaveBeenCalledWith("status", "pending");
     expect(q.eq).toHaveBeenCalledWith("event_id", "e1");
+  });
+
+  it("lets an event admin review claims only for their granted event", async () => {
+    mockFrom.mockReturnValueOnce(chain({ data: { event_id: "colombia2026" } }));
+    mockRpc.mockResolvedValueOnce({ data: { status: "converted" }, error: null });
+    const response = await load().POST(post(ADMIN_URL, {
+      claimId: "claim-1", eventId: "colombia2026", action: "approve", passType: "business",
+    }));
+    expect(response.status).toBe(200);
+    expect(mockAuthorizeEventAdmin).toHaveBeenCalledWith(expect.any(Request), "colombia2026");
+    expect(mockRpc).toHaveBeenCalledWith("review_external_ticket_claim", expect.objectContaining({
+      p_claim_id: "claim-1", p_actor_user_id: "event-admin-1", p_action: "approve",
+    }));
+  });
+
+  it("rejects an event admin review when the claim belongs to another event", async () => {
+    mockFrom.mockReturnValueOnce(chain({ data: { event_id: "chile2026" } }));
+    const response = await load().POST(post(ADMIN_URL, {
+      claimId: "claim-1", eventId: "colombia2026", action: "reject", note: "wrong event",
+    }));
+    expect(response.status).toBe(403);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("filters the cross-event review queue to pending and validated claims", async () => {
+    const q = chain({ data: [{ id: "c1", claimant_user_id: "u1", status: "pending" }] });
+    mockFrom.mockReturnValueOnce(q);
+    const res = await load().GET(new Request(`${ADMIN_URL}?status=open`));
+    expect(res.status).toBe(200);
+    expect(q.in).toHaveBeenCalledWith("status", ["pending", "validated"]);
+    expect(q.eq).not.toHaveBeenCalledWith("event_id", expect.any(String));
   });
 
   it("looks each claimant up once and keeps a claim whose email lookup fails", async () => {

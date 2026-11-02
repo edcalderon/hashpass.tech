@@ -20,16 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.210)
+## 📋 Latest Changes (v1.9.211)
 
-### Features
+### Bug Fixes
 
-* **marketing:** gate campaigns on admin approval ([ee152ef](https://github.com/hashpass-tech/hashpass.tech/commit/ee152ef622abf8d7c0f60d4008cc06ca24e4faee))
+* route ticket claim reviews to event admins ([489255a](https://github.com/hashpass-tech/hashpass.tech/commit/489255a8a904094b6e6ebbbab468775a91a6673e))
 ### Release Highlights
-- gate campaigns on admin approval
+- route ticket claim reviews to event admins
 
 ### Release scope
-- Compared with: `v1.9.209` (the previous global release tag)
+- Compared with: `v1.9.210` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611020609, // Updated to current timestamp
+  buildNumber: 202611021817, // Updated to current timestamp
   releaseDate: '2026-11-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'gate campaigns on admin approval'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'route ticket claim reviews to event admins'
   ],
   breakingChanges: [],
-  notes: 'gate campaigns on admin approval'
+  notes: 'route ticket claim reviews to event admins'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.211': {
+    version: '1.9.211',
+    buildNumber: 202611021817,
+    releaseDate: '2026-11-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route ticket claim reviews to event admins'
+    ],
+    breakingChanges: [],
+    notes: 'route ticket claim reviews to event admins'
+  },
   '1.9.210': {
     version: '1.9.210',
     buildNumber: 202611020609,

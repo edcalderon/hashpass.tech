@@ -1,3 +1,19 @@
+## [1.9.211](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.210...v1.9.211) (2026-11-02)
+
+
+### Bug Fixes
+
+* route ticket claim reviews to event admins ([489255a](https://github.com/hashpass-tech/hashpass.tech/commit/489255a8a904094b6e6ebbbab468775a91a6673e))
+### Release Highlights
+- route ticket claim reviews to event admins
+
+### Release scope
+- Compared with: `v1.9.210` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.210](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.209...v1.9.210) (2026-11-02)
 
 
