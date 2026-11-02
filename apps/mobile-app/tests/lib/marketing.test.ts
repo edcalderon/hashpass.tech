@@ -54,9 +54,10 @@ describe('campaign validation and rendering', () => {
       expect(rendered.text).toContain(`${copy.promoCodeLabel}: ${copy.promoCode}`);
 
       const fallback = renderMarketingEmail({ ...copy, promoCodeLabel: undefined }, null, locale);
-      const fallbackLabel = locale === 'es' ? 'Código promocional' : 'Promo code';
-      expect(fallback.html).toContain(fallbackLabel);
-      expect(fallback.text).toContain(`${fallbackLabel}: ${copy.promoCode}`);
+      const fallbackHtmlLabel = locale === 'es' ? 'CÓDIGO PROMOCIONAL' : 'PROMO CODE';
+      const fallbackTextLabel = locale === 'es' ? 'Código promocional' : 'Promo code';
+      expect(fallback.html).toContain(fallbackHtmlLabel);
+      expect(fallback.text).toContain(`${fallbackTextLabel}: ${copy.promoCode}`);
     }
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: 'invalid code' })).toBe(false);
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: undefined, promoCodeLabel: 'CODE' })).toBe(false);
