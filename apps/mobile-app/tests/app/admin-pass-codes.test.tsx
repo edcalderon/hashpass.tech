@@ -77,7 +77,7 @@ describe('AdminPanel pass codes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAdminRouteParams = {};
+    mockAdminRouteParams = { eventId: 'chile2026' };
     mockAdminAccess = { globalRole: 'super_admin', eventRoles: [] };
     const query: any = {
       select: jest.fn(() => query),
@@ -461,16 +461,18 @@ describe('AdminPanel pass codes', () => {
     await act(async () => {
       triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
     });
-    expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Add a note');
+    expect(renderer.root.findAllByProps({
+      children: 'Add a review note before rejecting this claim.',
+    }).length).toBeGreaterThan(0);
+    expect(mockAlert).not.toHaveBeenCalled();
+
+    mockPost.mockResolvedValueOnce({
+      success: true,
+      data: { data: { id: 'claim-1', status: 'converted', pass_id: 'business-pass-000001' } },
+    });
     await act(async () => {
       triggerPress(renderer.root.findAllByProps({ children: 'Approve' })[0].parent);
-    });
-    const approveAlert = mockAlert.mock.calls.at(-1);
-    expect(approveAlert?.[0]).toBe('Approve ticket claim?');
-    const approve = (approveAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
-      .find((button) => button.text === 'Approve');
-    await act(async () => {
-      approve?.onPress?.();
+      await Promise.resolve();
       await Promise.resolve();
     });
     expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
@@ -480,6 +482,9 @@ describe('AdminPanel pass codes', () => {
       passType: 'business',
       note: undefined,
     }, { skipEventSegment: true });
+    expect(renderer.root.findAllByProps({
+      children: 'Claim approved. The BUSINESS pass is assigned to holder@example.com (ID ending 000001).',
+    }).length).toBeGreaterThan(0);
   });
 
   it('limits an event admin claim queue to their assigned event', async () => {
@@ -516,7 +521,7 @@ describe('AdminPanel pass codes', () => {
     expect(renderer.root.findAllByProps({ children: 'Ticket Claims' }).length).toBeGreaterThan(0);
   });
 
-  it('uses the shared filter chip for event-admin event selection', async () => {
+  it('uses the searchable event selector for event-admin event selection', async () => {
     mockAdminAccess = {
       globalRole: null,
       eventRoles: [
@@ -528,47 +533,50 @@ describe('AdminPanel pass codes', () => {
 
     const renderer = await renderPanel();
 
-    expect(renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
-    }).length).toBeGreaterThan(0);
-    expect(renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
-    }).length).toBeGreaterThan(0);
-
-    const chileChip = renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
-    }).find((node: any) => Object.prototype.hasOwnProperty.call(node.props, 'selected'));
-    expect(chileChip).toBeDefined();
+    const selector = renderer.root.findByProps({
+      accessibilityLabel: 'Select event for administration. Current event: BSL On Tour · Blockchain Summit Latam Chile 2026',
+    });
     await act(async () => {
-      triggerPress(chileChip);
+      triggerPress(selector);
+      await Promise.resolve();
+    });
+    const colombiaOption = renderer.root.findAll((node: any) =>
+      typeof node.props.accessibilityLabel === 'string' &&
+      node.props.accessibilityLabel.startsWith('BSL On Tour · Blockchain Summit Latam Colombia 2026'),
+    )[0];
+    expect(colombiaOption).toBeDefined();
+    await act(async () => {
+      triggerPress(colombiaOption);
       await Promise.resolve();
     });
     expect(renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
-      selected: true,
+      accessibilityLabel: 'Select event for administration. Current event: BSL On Tour · Blockchain Summit Latam Colombia 2026',
     }).length).toBeGreaterThan(0);
   });
 
-  it('uses the shared filter chip for global-admin event selection', async () => {
+  it('uses the searchable event selector for global-admin event selection', async () => {
     mockGet.mockResolvedValue({ success: true, data: { data: [] } });
 
     const renderer = await renderPanel();
 
-    expect(renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
-    }).length).toBeGreaterThan(0);
-
-    const colombiaChip = renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
-    }).find((node: any) => Object.prototype.hasOwnProperty.call(node.props, 'selected'));
-    expect(colombiaChip).toBeDefined();
+    const selector = renderer.root.findByProps({
+      accessibilityLabel: 'Select event for administration. Current event: BSL On Tour · Blockchain Summit Latam Chile 2026',
+    });
     await act(async () => {
-      triggerPress(colombiaChip);
+      triggerPress(selector);
+      await Promise.resolve();
+    });
+    const colombiaOption = renderer.root.findAll((node: any) =>
+      typeof node.props.accessibilityLabel === 'string' &&
+      node.props.accessibilityLabel.startsWith('BSL On Tour · Blockchain Summit Latam Colombia 2026'),
+    )[0];
+    expect(colombiaOption).toBeDefined();
+    await act(async () => {
+      triggerPress(colombiaOption);
       await Promise.resolve();
     });
     expect(renderer.root.findAllByProps({
-      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
-      selected: true,
+      accessibilityLabel: 'Select event for administration. Current event: BSL On Tour · Blockchain Summit Latam Colombia 2026',
     }).length).toBeGreaterThan(0);
   });
 
@@ -592,19 +600,15 @@ describe('AdminPanel pass codes', () => {
     await act(async () => {
       triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
     });
-    const rejectAlert = mockAlert.mock.calls.at(-1);
-    expect(rejectAlert?.[0]).toBe('Reject ticket claim?');
     mockPost.mockResolvedValueOnce({ success: false, error: 'boom' });
-    const reject = (rejectAlert?.[2] as Array<{ text: string; onPress?: () => void }>)
-      .find((button) => button.text === 'Reject');
     await act(async () => {
-      reject?.onPress?.();
+      triggerPress(renderer.root.findAllByProps({ children: 'Reject' })[0].parent);
       await Promise.resolve();
     });
     expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
       claimId: 'claim-9', eventId: 'chile2026', action: 'reject', passType: undefined, note: 'Code not in issuer list',
     }, { skipEventSegment: true });
-    expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Claim not updated');
+    expect(renderer.root.findAllByProps({ children: 'Claim not updated: boom' }).length).toBeGreaterThan(0);
 
     mockGet.mockResolvedValue({ success: true, data: { data: [] } });
     await act(async () => {

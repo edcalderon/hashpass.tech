@@ -17,6 +17,11 @@ export type ExternalTicketClaimResult = {
   pass_id?: string | null;
 };
 
+export type ExternalTicketClaimReviewFeedback = {
+  status: "submitting" | "success" | "error";
+  message: string;
+};
+
 export type ExternalTicketClaimInspection = {
   valid: boolean;
   status?: ExternalTicketClaimStatus | "unregistered";
