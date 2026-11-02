@@ -180,6 +180,55 @@ describe('email preference endpoints', () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: 'Could not save email preferences' });
   });
+
+  it('requires a linked identity and handles preference status lookup failures', async () => {
+    mockIdentity.mockResolvedValueOnce({ error: 'Unauthorized', status: 401 });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(401);
+    mockIdentity.mockResolvedValueOnce({ supabaseUserId: actor });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(403);
+
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user', email: 'User@Example.com' });
+    mockRpc.mockResolvedValueOnce({ data: false, error: null }).mockResolvedValueOnce({ data: null, error: { message: 'offline' } });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(503);
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(503);
+  });
+
+  it.each([
+    null,
+    { subscribed: 'yes', requestId: 'settings-1' },
+    { preference: 'unknown', subscribed: true, requestId: 'settings-2' },
+    { subscribed: true, requestId: 'x' },
+    { subscribed: true, requestId: 'x'.repeat(101) },
+  ])('rejects malformed email preference input: %j', async body => {
+    expect((await updatePreference(req(body, 'marketing/preferences'))).status).toBe(400);
+  });
+
+  it.each([
+    ['suppressed', 409],
+    ['inactive', 403],
+    ['invalid', 400],
+    ['request_conflict', 409],
+    ['unknown', 503],
+  ])('maps a rejected preference update (%s) to the correct status', async (result, status) => {
+    mockRpc.mockResolvedValue({ data: result, error: null });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-result-1' }, 'marketing/preferences'))).status).toBe(status);
+  });
+
+  it('handles unchanged updates, confirmation failures, and unexpected update errors', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'unchanged', error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-unchanged-1' }, 'marketing/preferences'))).status).toBe(200);
+
+    mockRpc.mockResolvedValueOnce({ data: 'updated', error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: 'lookup failed' } });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-confirm-1' }, 'marketing/preferences'))).status).toBe(503);
+
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-error-1' }, 'marketing/preferences'))).status).toBe(503);
+  });
 });
 
 describe('signup marketing consent endpoint', () => {
@@ -219,5 +268,39 @@ describe('signup marketing consent endpoint', () => {
     }, 'marketing/consent'));
     expect(response.status).toBe(400);
     expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('requires a linked account and rejects malformed consent versions or request IDs', async () => {
+    mockIdentity.mockResolvedValueOnce({ error: 'Unauthorized', status: 401 });
+    expect((await recordSignupConsent(req({}, 'marketing/consent'))).status).toBe(401);
+    mockIdentity.mockResolvedValueOnce({ supabaseUserId: actor });
+    expect((await recordSignupConsent(req({}, 'marketing/consent'))).status).toBe(403);
+
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user', email: 'User@Example.com' });
+    for (const body of [
+      { consentVersion: 'old', hashpassUpdates: true, partnerPromotions: false, requestId: 'signup-1' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: 'yes', partnerPromotions: false, requestId: 'signup-2' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: true, partnerPromotions: false, requestId: 'x' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: true, partnerPromotions: false, requestId: 'x'.repeat(101) },
+    ]) {
+      expect((await recordSignupConsent(req(body, 'marketing/consent'))).status).toBe(400);
+    }
+  });
+
+  it('reports inactive-account, storage-error, and thrown signup consent failures', async () => {
+    mockRpc.mockResolvedValue({ data: false, error: null });
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-inactive-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(409);
+
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'database unavailable' } });
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-error-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(503);
+
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-throw-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(503);
   });
 });

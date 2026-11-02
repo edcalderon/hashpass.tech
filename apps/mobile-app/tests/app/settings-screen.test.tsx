@@ -6,6 +6,7 @@ const mockPush = jest.fn();
 const mockToggleTheme = jest.fn();
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
+const mockAuth = { user: null as null | { id: string; email?: string }, signOut: jest.fn() };
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }) }));
 jest.mock('expo-haptics', () => ({
@@ -52,8 +53,7 @@ jest.mock('../../hooks/useTutorialPreferences', () => ({
   }),
 }));
 jest.mock('../../hooks/useAuth', () => {
-  const auth = { user: { id: 'u1', email: 'a@b.c' }, signOut: jest.fn() };
-  return { useAuth: () => auth };
+  return { useAuth: () => mockAuth };
 });
 jest.mock('../../lib/api-client', () => ({
   apiClient: {
@@ -77,6 +77,7 @@ import Settings from '../../app/(shared)/dashboard/settings';
 
 describe('Settings screen', () => {
   beforeEach(() => {
+    mockAuth.user = { id: 'u1', email: 'a@b.c' };
     mockApiGet.mockReset().mockImplementation(async (path: string) => path === '/marketing/preferences'
       ? { success: true, data: { success: true, subscribed: false, partnerSubscribed: false } }
       : { success: true, data: { success: true, data: { phones: [] } } });
@@ -89,6 +90,8 @@ describe('Settings screen', () => {
       },
     }));
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   it('groups rows into cards under section headings and keeps the controls working', () => {
     let view!: ReactTestRenderer;
@@ -143,6 +146,59 @@ describe('Settings screen', () => {
       expect.objectContaining({ retries: 0 }),
     );
 
+    act(() => view.unmount());
+  });
+
+  it('does not request marketing preferences before an account is linked', async () => {
+    mockAuth.user = null;
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings />); });
+
+    expect(mockApiGet).not.toHaveBeenCalledWith('/marketing/preferences', expect.anything());
+    const marketingSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    expect(marketingSwitch.props.disabled).toBe(true);
+    act(() => view.unmount());
+  });
+
+  it('locks preference switches when the saved state cannot be loaded', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mockApiGet.mockImplementation(async (path: string) => path === '/marketing/preferences'
+      ? { success: true, data: { success: true, subscribed: 'unknown', partnerSubscribed: false } }
+      : { success: true, data: { success: true, data: { phones: [] } } });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings />); });
+
+    const marketingSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    expect(marketingSwitch.props.disabled).toBe(true);
+    await act(async () => { await marketingSwitch.props.onValueChange(true); });
+    expect(mockApiPost).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    act(() => view.unmount());
+  });
+
+  it('keeps email switches unchanged when the server does not confirm a preference update', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mockApiPost.mockResolvedValue({
+      success: true,
+      data: { success: true, subscribed: false, partnerSubscribed: false },
+    });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings />); });
+
+    const marketingSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    await act(async () => { await marketingSwitch.props.onValueChange(true); });
+
+    const unchangedSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    expect(unchangedSwitch.props.value).toBe(false);
+    expect(warn).toHaveBeenCalledWith('[settings] Could not save email preferences:', expect.any(Error));
     act(() => view.unmount());
   });
 });

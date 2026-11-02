@@ -89,3 +89,15 @@ test('persists the Better Auth pooler mode during Lambda environment sync', () =
     'transaction',
   );
 });
+
+test('syncs the production marketing runner token without changing other secrets', () => {
+  const token = 'a'.repeat(64);
+  const result = runEnvironmentSync({
+    currentVariables: { NODEMAILER_HOST: 'smtp.example.test' },
+    environmentVariables: { MARKETING_RUNNER_TOKEN: token },
+  });
+
+  assert.equal(result.status.action, 'update');
+  assert.equal(result.environment.Variables.MARKETING_RUNNER_TOKEN, token);
+  assert.equal(result.environment.Variables.NODEMAILER_HOST, 'smtp.example.test');
+});

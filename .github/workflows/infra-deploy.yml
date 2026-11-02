@@ -142,6 +142,7 @@ jobs:
           EXPO_PUBLIC_API_BASE_URL: https://api.hashpass.tech/api
           EXPO_PUBLIC_BETTER_AUTH_URL: https://api.hashpass.tech/api/auth
           BETTER_AUTH_URL: https://api.hashpass.tech/api/auth
+          MARKETING_RUNNER_TOKEN: ${{ secrets.MARKETING_RUNNER_TOKEN }}
           # Lambda uses Supabase's shared transaction pooler (6543) to avoid
           # exhausting the session pooler's 15-client limit as warm instances
           # scale horizontally. Database migration jobs keep their own URL.
