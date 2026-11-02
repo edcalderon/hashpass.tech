@@ -719,7 +719,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             accessibilityRole="link"
             accessibilityLabel={t({ id: 'passes.claimExistingTicket', message: 'Claim an existing ticket' })}
             activeOpacity={0.72}
-            style={{ minHeight: isNative ? 40 : 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: uiTokens.space.sm }}
+            style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: uiTokens.space.sm }}
           >
             <Text style={{ color: colors.text.secondary, fontSize: uiTokens.type.caption, fontWeight: '700', textAlign: 'center' }}>
               {t({ id: 'passes.claimExistingTicketLink', message: 'Claim a ticket' })}
