@@ -1,6 +1,6 @@
 import React from "react";
 import { act, create } from "react-test-renderer";
-import { Pressable, ScrollView, TextInput } from "react-native";
+import { Modal, Pressable, ScrollView, TextInput } from "react-native";
 import EventAdminSelector from "../../../components/admin/EventAdminSelector";
 import type { AdminEventOption } from "../../../types/AdminEventSelector.types";
 
@@ -65,6 +65,8 @@ describe("EventAdminSelector", () => {
     expect(trigger.props.accessibilityState.expanded).toBe(false);
     act(() => trigger.props.onPress());
 
+    expect(renderer!.root.findByType(Modal).props.visible).toBe(true);
+    expect(renderer!.root.findByType(TextInput).props.autoFocus).toBe(true);
     expect(renderer!.root.findByType(TextInput).props.accessibilityLabel).toBe(
       "Search events",
     );
@@ -93,6 +95,7 @@ describe("EventAdminSelector", () => {
     );
     act(() => selectedOption.props.onPress());
     expect(onSelect).toHaveBeenCalledWith("colombia2026");
+    expect(renderer!.root.findByType(Modal).props.visible).toBe(false);
     expect(
       renderer!.root.find(
         (node) =>
@@ -145,7 +148,7 @@ describe("EventAdminSelector", () => {
         .findByType(TextInput)
         .props.onChangeText("no matching event"),
     );
-    expect(renderer!.root.findAllByType(ScrollView)).toHaveLength(1);
+    expect(renderer!.root.findAllByType(ScrollView)).toHaveLength(2);
     expect(
       renderer!.root.findAll((node) =>
         node.children.includes("No events match this search and filter."),

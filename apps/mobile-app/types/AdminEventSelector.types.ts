@@ -1,5 +1,12 @@
 export type AdminEventFilter = "upcoming" | "past" | "all";
 
+export type AdminEventSelectorAnchor = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type AdminEventOption = {
   eventId: string;
   label: string;
