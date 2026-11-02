@@ -42,6 +42,26 @@ describe('campaign validation and rendering', () => {
       expect(rendered.html).toContain(copy.imageCaption!);
     }
   });
+  it('validates and renders the BSL offer code in both languages', () => {
+    const offer = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-business-offer');
+    expect(offer).toBeDefined();
+    for (const locale of ['es', 'en'] as const) {
+      const copy = offer!.content[locale];
+      expect(validCampaignCopy(copy)).toBe(true);
+      const rendered = renderMarketingEmail(copy, null, locale);
+      expect(rendered.html).toContain(`>${copy.promoCodeLabel}</p>`);
+      expect(rendered.html).toContain(`>${copy.promoCode}</p>`);
+      expect(rendered.text).toContain(`${copy.promoCodeLabel}: ${copy.promoCode}`);
+
+      const fallback = renderMarketingEmail({ ...copy, promoCodeLabel: undefined }, null, locale);
+      const fallbackLabel = locale === 'es' ? 'CÓDIGO PROMOCIONAL' : 'PROMO CODE';
+      expect(fallback.html).toContain(fallbackLabel);
+      expect(fallback.text).toContain(`${fallbackLabel}: ${copy.promoCode}`);
+    }
+    expect(validCampaignCopy({ ...offer!.content.en, promoCode: 'invalid code' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCode: undefined, promoCodeLabel: 'CODE' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: 'bad\nlabel' })).toBe(false);
+  });
   it('allowlists normalized navigation and excludes sensitive routes and query strings', () => {
     expect(activityRoute('/contacts?card=private')).toBe('/contacts');
     expect(activityRoute('/(shared)/dashboard/contacts')).toBe('/dashboard/contacts');
