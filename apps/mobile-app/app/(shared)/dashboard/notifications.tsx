@@ -113,7 +113,15 @@ export default function NotificationsScreen() {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'ticket_claim_review_required' || notification.type === 'marketing_campaign_approval_requested') {
+    if (notification.type === 'ticket_claim_review_required') {
+      router.push({
+        pathname: '/dashboard/admin' as any,
+        params: {
+          tab: 'ticket-claims',
+          ...(notification.event_id ? { eventId: notification.event_id } : {}),
+        },
+      });
+    } else if (notification.type === 'marketing_campaign_approval_requested') {
       router.push('/dashboard/admin' as any);
     } else if (notification.type === 'business_invite_review_required') {
       router.push('/dashboard/business-invites' as any);

@@ -1,21 +1,27 @@
 import { authorizeGlobalAdmin } from "@/lib/server/global-admin";
-import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import { authorizeEventAdmin } from "@/lib/server/event-admin";
 import { createHash } from "node:crypto";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization" } });
 
 export async function GET(request: Request) {
-  const admin = await authorizeGlobalAdmin(request);
-  if ("response" in admin) return admin.response;
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
   const eventId = url.searchParams.get("eventId");
+  if (eventId && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(eventId)) {
+    return json({ error: "A valid eventId is required" }, 400);
+  }
+  const admin = eventId
+    ? await authorizeEventAdmin(request, eventId)
+    : await authorizeGlobalAdmin(request);
+  if ("response" in admin) return admin.response;
   let query = admin.supabase
     .from("external_ticket_claims")
     .select("id,event_id,issuer,claimant_user_id,ticket_code_last4,source_qr_payload,source_ticket_metadata,requested_pass_type,status,reviewer_note,hashpass_pass_id,submitted_at,reviewed_at,converted_at")
     .order("submitted_at", { ascending: false });
-  if (status) query = query.eq("status", status);
+  if (status === "open") query = query.in("status", ["pending", "validated"]);
+  else if (status) query = query.eq("status", status);
   if (eventId) query = query.eq("event_id", eventId);
   const { data, error } = await query;
   if (error) return json({ error: "Unable to load ticket claims" }, 503);
@@ -42,17 +48,23 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const admin = await authorizeGlobalAdmin(request);
-  if ("response" in admin) return admin.response;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const claimId = typeof body?.claimId === "string" ? body.claimId.trim() : "";
+  const eventId = typeof body?.eventId === "string" ? body.eventId.trim() : "";
   const action = typeof body?.action === "string" ? body.action.trim().toLowerCase() : "";
   const passType = typeof body?.passType === "string" ? body.passType.trim().toLowerCase() : null;
   const note = typeof body?.note === "string" ? body.note.trim().slice(0, 1000) : null;
   if (action === "approve" && passType && !["general", "business", "vip"].includes(passType)) {
     return json({ error: "Invalid pass type" }, 400);
   }
-  const supabase = getSupabaseServerForRequest(request);
+  if (eventId && action !== "inspect" && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(eventId)) {
+    return json({ error: "A valid eventId is required" }, 400);
+  }
+  const admin = eventId && action !== "inspect"
+    ? await authorizeEventAdmin(request, eventId)
+    : await authorizeGlobalAdmin(request);
+  if ("response" in admin) return admin.response;
+  const supabase = admin.supabase;
   if (action === "inspect") {
     const qrPayload = typeof body?.qrPayload === "string" ? body.qrPayload.trim() : "";
     if (!qrPayload) return json({ error: "A scanned QR payload is required" }, 400);
@@ -87,6 +99,15 @@ export async function POST(request: Request) {
     } });
   }
   if (!claimId || !["approve", "reject"].includes(action)) return json({ error: "A claim and review action are required" }, 400);
+  if (eventId) {
+    const { data: claim, error: claimError } = await supabase
+      .from("external_ticket_claims")
+      .select("event_id")
+      .eq("id", claimId)
+      .maybeSingle();
+    if (claimError) return json({ error: "Unable to verify ticket claim event" }, 503);
+    if (!claim || claim.event_id !== eventId) return json({ error: "Ticket claim is outside this event" }, 403);
+  }
   const { data, error } = await supabase.rpc("review_external_ticket_claim", {
     p_claim_id: claimId,
     p_actor_user_id: admin.userId,

@@ -134,7 +134,7 @@ async function requestReview(
       message,
       notificationType: "ticket_claim_review_required",
       eventId: details.eventId,
-      actionUrl: "https://hashpass.tech/dashboard/admin",
+      actionUrl: `https://hashpass.tech/dashboard/admin?tab=ticket-claims&eventId=${encodeURIComponent(details.eventId)}`,
       actionLabel: "Review request",
     })));
   results.forEach((result, index) => {

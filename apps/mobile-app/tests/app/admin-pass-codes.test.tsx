@@ -10,6 +10,8 @@ const mockPost = jest.fn();
 const mockSupabaseFrom = jest.fn();
 const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 const mockAdminUser = { id: 'admin-user' };
+let mockAdminRouteParams: { tab?: string; eventId?: string } = {};
+let mockAdminAccess: { globalRole: string | null; eventRoles: any[] } = { globalRole: 'super_admin', eventRoles: [] };
 let mountedRenderer: ReturnType<typeof create> | null = null;
 
 jest.mock('../../hooks/useTheme', () => ({
@@ -27,7 +29,7 @@ jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: mockAdminUser, isLoading: false }),
 }));
 jest.mock('../../lib/admin-access', () => ({
-  getCurrentAdminAccess: jest.fn(async () => ({ globalRole: 'super_admin', eventRoles: [] })),
+  getCurrentAdminAccess: jest.fn(async () => mockAdminAccess),
 }));
 jest.mock('../../lib/supabase', () => ({
   supabase: { from: (...args: unknown[]) => mockSupabaseFrom(...args) },
@@ -36,7 +38,10 @@ jest.mock('../../lib/api-client', () => ({
   apiClient: { get: (...args: unknown[]) => mockGet(...args), post: (...args: unknown[]) => mockPost(...args) },
 }));
 jest.mock('../../lib/event-path', () => ({ resolveActiveEventId: () => 'chile2026' }));
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ replace: jest.fn() }),
+  useLocalSearchParams: () => mockAdminRouteParams,
+}));
 jest.mock('../../components/AdminQRScanner', () => 'AdminQRScanner');
 jest.mock('../../components/admin/MarketingManager', () => 'MarketingManager');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
@@ -72,6 +77,8 @@ describe('AdminPanel pass codes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAdminRouteParams = {};
+    mockAdminAccess = { globalRole: 'super_admin', eventRoles: [] };
     const query: any = {
       select: jest.fn(() => query),
       eq: jest.fn(() => query),
@@ -123,7 +130,7 @@ describe('AdminPanel pass codes', () => {
 
     const tabScroller = renderer.root
       .findAllByType(ScrollView)
-      .find((node: any) => node.props.horizontal === true);
+      .find((node: any) => node.props.horizontal === true && typeof node.props.onLayout === 'function');
 
     expect(tabScroller).toBeTruthy();
     expect(tabScroller?.props.showsHorizontalScrollIndicator).toBe(false);
@@ -413,10 +420,10 @@ describe('AdminPanel pass codes', () => {
       reviewNote: 'The roster lists a different email.',
     }, { skipEventSegment: true });
   });
-  it('lists open ticket claims for review, including code-only claims, and approves one', async () => {
+  it('opens the cross-event review queue from its notification deep link', async () => {
     const codeOnlyClaim = {
       id: 'claim-1',
-      event_id: 'chile2026',
+      event_id: 'colombia2026',
       issuer: 'blockchain_summit_latam',
       claimant_user_id: 'user-1',
       claimant_email: 'holder@example.com',
@@ -437,14 +444,12 @@ describe('AdminPanel pass codes', () => {
     mockGet.mockImplementation(async (path: string) => path.startsWith('/admin/pass-ticket-claims')
       ? { success: true, data: { data: [codeOnlyClaim, qrClaim, rejected] } }
       : { success: true, data: { data: [] } });
+    mockAdminRouteParams = { tab: 'ticket-claims', eventId: 'colombia2026' };
     const renderer = await renderPanel();
-    await act(async () => {
-      triggerPress(renderer.root.findByProps({ children: 'Ticket Claims' }).parent);
-      await Promise.resolve();
-    });
-    await flush();
 
-    expect(mockGet).toHaveBeenCalledWith('/admin/pass-ticket-claims?eventId=chile2026', { skipEventSegment: true });
+    expect(mockGet).toHaveBeenCalledWith('/admin/pass-ticket-claims?status=open', { skipEventSegment: true });
+    expect(renderer.root.findAllByProps({ children: 'BSL On Tour · Blockchain Summit Latam Colombia 2026' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'Ticket Claims · 2' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'Typed code only (no QR)' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'Original QR attached' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'Approve' }).length).toBeGreaterThan(0);
@@ -470,10 +475,28 @@ describe('AdminPanel pass codes', () => {
     });
     expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
       claimId: 'claim-1',
+      eventId: 'colombia2026',
       action: 'approve',
       passType: 'business',
       note: undefined,
     }, { skipEventSegment: true });
+  });
+
+  it('limits an event admin claim queue to their assigned event', async () => {
+    mockAdminAccess = {
+      globalRole: null,
+      eventRoles: [{ eventId: 'colombia2026', role: 'event_admin', expiresAt: null }],
+    };
+    mockAdminRouteParams = { tab: 'ticket-claims', eventId: 'colombia2026' };
+    mockGet.mockResolvedValue({ success: true, data: { data: [] } });
+    const renderer = await renderPanel();
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/admin/pass-ticket-claims?status=open&eventId=colombia2026',
+      { skipEventSegment: true },
+    );
+    expect(renderer.root.findAllByProps({ children: 'Original ticket claims' })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ children: 'Ticket Claims' }).length).toBeGreaterThan(0);
   });
 
   it('rejects a ticket claim with a note and shows an empty queue message', async () => {
@@ -506,7 +529,7 @@ describe('AdminPanel pass codes', () => {
       await Promise.resolve();
     });
     expect(mockPost).toHaveBeenCalledWith('/admin/pass-ticket-claims', {
-      claimId: 'claim-9', action: 'reject', passType: undefined, note: 'Code not in issuer list',
+      claimId: 'claim-9', eventId: 'chile2026', action: 'reject', passType: undefined, note: 'Code not in issuer list',
     }, { skipEventSegment: true });
     expect(mockAlert.mock.calls.at(-1)?.[0]).toBe('Claim not updated');
 

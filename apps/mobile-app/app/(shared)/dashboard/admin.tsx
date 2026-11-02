@@ -30,7 +30,7 @@ import {
 import { QRScanResult } from "../../../lib/qr-system";
 import AdminQRScanner from "../../../components/AdminQRScanner";
 import LoadingScreen from "../../../components/LoadingScreen";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { resolveActiveEventId } from "../../../lib/event-path";
 import { apiClient } from "../../../lib/api-client";
 import { EVENTS } from "../../../config/events";
@@ -193,6 +193,9 @@ export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const routeParams = useLocalSearchParams<{ tab?: string | string[]; eventId?: string | string[] }>();
+  const requestedTab = Array.isArray(routeParams.tab) ? routeParams.tab[0] : routeParams.tab;
+  const requestedEventId = Array.isArray(routeParams.eventId) ? routeParams.eventId[0] : routeParams.eventId;
   const [activeTab, setActiveTab] = useState<TabType>("passes");
   const tabScrollRef = useRef<ScrollView>(null);
   const tabScrollOffsetRef = useRef(0);
@@ -205,10 +208,8 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [showQRScanner, setShowQRScanner] = useState(false);
 
-  // Event scoping — global admins keep the ambient (host-resolved) event and
-  // are unaffected by any of this. A user who is only an event_admin/
-  // moderator (event_roles, not user_roles) is scoped to the event(s) they
-  // were granted, with a switcher when they hold more than one.
+  // Global admins can switch across configured events. Event admins and
+  // moderators stay scoped to their explicit event_roles grants.
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [accessibleEvents, setAccessibleEvents] = useState<EventRoleGrant[]>(
     [],
@@ -219,6 +220,20 @@ export default function AdminPanel() {
   const [currentEventRole, setCurrentEventRole] = useState<EventRole | null>(
     null,
   );
+  const canReviewTicketClaims = isGlobalAdmin || currentEventRole === "event_admin";
+
+  const getEventAdminLabel = (eventId: string) => {
+    const event = EVENTS[eventId];
+    if (!event) return eventId;
+    const series = event.series?.trim();
+    const title = (event.title || event.name || eventId).trim();
+    return series && !title.toLowerCase().includes(series.toLowerCase())
+      ? `${series} · ${title}`
+      : title;
+  };
+
+  const isKnownEventId = (eventId?: string) =>
+    Boolean(eventId && Object.prototype.hasOwnProperty.call(EVENTS, eventId));
 
   // Pass Management State
   const [passes, setPasses] = useState<Pass[]>([]);
@@ -367,6 +382,12 @@ export default function AdminPanel() {
     }
   }, [isUserAdmin, activeTab, selectedEventId]);
 
+  useEffect(() => {
+    if (canReviewTicketClaims && requestedTab === "ticket-claims") {
+      setActiveTab("ticket-claims");
+    }
+  }, [canReviewTicketClaims, requestedTab]);
+
   // Moderators don't get pass management (see V013 / task decisions) — the
   // Passes tab is hidden for them, so bounce off it if it was the default.
   useEffect(() => {
@@ -395,6 +416,7 @@ export default function AdminPanel() {
         setIsGlobalAdmin(true);
         setIsUserAdmin(true);
         setAdminRole(access.globalRole);
+        if (requestedEventId && isKnownEventId(requestedEventId)) setSelectedEventId(requestedEventId);
         setLoading(false);
         return;
       }
@@ -412,7 +434,11 @@ export default function AdminPanel() {
       setAdminRole(null);
 
       const ambientEventId = resolveActiveEventId();
-      const defaultEventId = eventRoles.some(
+      const defaultEventId = requestedEventId && eventRoles.some(
+        (g: EventRoleGrant) => g.eventId === requestedEventId,
+      )
+        ? requestedEventId
+        : eventRoles.some(
         (g: EventRoleGrant) => g.eventId === ambientEventId,
       )
         ? ambientEventId
@@ -461,8 +487,11 @@ export default function AdminPanel() {
   const loadTicketClaims = async () => {
     setTicketClaimsLoading(true);
     try {
+      const eventFilter = isGlobalAdmin
+        ? ""
+        : `&eventId=${encodeURIComponent(selectedEventId)}`;
       const result = await apiClient.get(
-        `/admin/pass-ticket-claims?eventId=${encodeURIComponent(selectedEventId)}`,
+        `/admin/pass-ticket-claims?status=open${eventFilter}`,
         { skipEventSegment: true },
       );
       if (!result.success) throw new Error(result.error || "Unable to load ticket claims");
@@ -498,7 +527,7 @@ export default function AdminPanel() {
                 setTicketClaimsLoading(true);
                 const result = await apiClient.post(
                   "/admin/pass-ticket-claims",
-                  { claimId: claim.id, action, passType: action === "approve" ? claim.requested_pass_type : undefined, note: note || undefined },
+                  { claimId: claim.id, eventId: claim.event_id, action, passType: action === "approve" ? claim.requested_pass_type : undefined, note: note || undefined },
                   { skipEventSegment: true },
                 );
                 if (!result.success) throw new Error(result.error || "Unable to review claim");
@@ -1513,10 +1542,41 @@ export default function AdminPanel() {
         <Text style={styles.headerSubtitle}>
           Role:{" "}
           {isGlobalAdmin
-            ? adminRole || "Admin"
-            : `${currentEventRole || "admin"} @ ${selectedEventId}`}
+            ? `${adminRole || "Admin"} · ${getEventAdminLabel(selectedEventId)}`
+            : `${currentEventRole || "admin"} @ ${getEventAdminLabel(selectedEventId)}`}
         </Text>
-        {!isGlobalAdmin && accessibleEvents.length > 1 && (
+        {isGlobalAdmin ? (
+          <ScrollView
+            horizontal
+            style={styles.eventSwitcher}
+            contentContainerStyle={{ gap: 8, paddingRight: 12 }}
+            showsHorizontalScrollIndicator={false}
+            accessibilityLabel="Select event for administration"
+          >
+            {Object.keys(EVENTS).map((eventId) => (
+              <TouchableOpacity
+                key={eventId}
+                style={[
+                  styles.eventSwitcherChip,
+                  selectedEventId === eventId && styles.eventSwitcherChipActive,
+                ]}
+                onPress={() => handleSelectEvent(eventId)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedEventId === eventId }}
+              >
+                <Text
+                  style={[
+                    styles.eventSwitcherChipText,
+                    selectedEventId === eventId && styles.eventSwitcherChipTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {getEventAdminLabel(eventId)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : accessibleEvents.length > 1 && (
           <View style={styles.eventSwitcher}>
             {accessibleEvents.map((grant) => (
               <TouchableOpacity
@@ -1535,7 +1595,7 @@ export default function AdminPanel() {
                       styles.eventSwitcherChipTextActive,
                   ]}
                 >
-                  {grant.eventId}
+                  {getEventAdminLabel(grant.eventId)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -1736,7 +1796,7 @@ export default function AdminPanel() {
               </Text>
             </TouchableOpacity>
           )}
-          {isGlobalAdmin && (
+          {canReviewTicketClaims && (
             <TouchableOpacity
               style={[styles.tab, activeTab === "ticket-claims" && styles.tabActive]}
               onPress={() => setActiveTab("ticket-claims")}
@@ -1750,7 +1810,9 @@ export default function AdminPanel() {
                 numberOfLines={1}
                 style={[styles.tabText, activeTab === "ticket-claims" && styles.tabTextActive]}
               >
-                Ticket Claims
+                {ticketClaims.filter((claim) => claim.status === "pending" || claim.status === "validated").length > 0
+                  ? `Ticket Claims · ${ticketClaims.filter((claim) => claim.status === "pending" || claim.status === "validated").length}`
+                  : "Ticket Claims"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1824,7 +1886,7 @@ export default function AdminPanel() {
         {activeTab === "auth-allies" && (
           <EventAuthAllySettings
             styles={styles}
-            eventName={EVENTS[selectedEventId]?.name || selectedEventId}
+            eventName={getEventAdminLabel(selectedEventId)}
             allowedAllyIds={authAllyIds}
             loading={authAlliesLoading}
             saving={savingAuthAllies}
@@ -1928,13 +1990,14 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === "ticket-claims" && isGlobalAdmin && (
+        {activeTab === "ticket-claims" && canReviewTicketClaims && (
           <TicketClaimsTab
             styles={styles}
             colors={colors}
             claims={ticketClaims}
             reports={ticketReports}
             loading={ticketClaimsLoading}
+            eventLabel={getEventAdminLabel}
             onReview={reviewTicketClaim}
             onResolveReport={resolveTicketReport}
             onRefresh={() => {
@@ -3311,7 +3374,7 @@ function RolesTab({
   );
 }
 
-function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onReview, onResolveReport, onRefresh }: any) {
+function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onReview, onResolveReport, onRefresh, eventLabel }: any) {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const open = claims.filter(
     (claim: ExternalTicketClaimRequest) => claim.status === "pending" || claim.status === "validated",
@@ -3326,7 +3389,7 @@ function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onRevi
           <View style={styles.speakerRoleTitleWrap}>
             <Text style={styles.passNumber}>Original ticket claims</Text>
             <Text style={styles.passInfo}>
-              Check the ticket with its issuer before approving. Claims without a QR upload have only a typed code to verify.
+              Verify each original ticket with its issuer before approving. Claims without a QR have only a typed code to verify.
             </Text>
           </View>
           {loading && <ActivityIndicator size="small" color="#007AFF" />}
@@ -3337,7 +3400,7 @@ function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onRevi
               <View style={styles.speakerRoleTitleWrap}>
                 <Text style={styles.passNumber}>{claim.claimant_email || claim.claimant_user_id}</Text>
                 <Text style={styles.passInfo}>
-                  {claim.issuer} · {claim.event_id} · ticket ending {claim.ticket_code_last4}
+                  {claim.issuer} · {eventLabel(claim.event_id)} · ticket ending {claim.ticket_code_last4}
                 </Text>
               </View>
               <View style={[styles.statusBadge, styles.actionButtonWarning]}>
