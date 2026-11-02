@@ -326,7 +326,8 @@
       "db/migrations/V148__bind_pass_qr_issuance_to_owner.sql",
       "db/migrations/V150__update_pass_qr_owner_bound_callers.sql",
       "db/migrations/V168__event_scoped_ticket_claim_notifications.sql",
-      "db/migrations/V169__cast_admin_pass_status_enum.sql"
+      "db/migrations/V169__cast_admin_pass_status_enum.sql",
+      "db/migrations/V170__match_admin_pass_status_column_type.sql"
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
