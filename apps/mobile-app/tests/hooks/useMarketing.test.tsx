@@ -22,6 +22,17 @@ it('reloads after mutation and previews without a send', async () => {
   await act(async()=>{expect(await state.preview(pack.messages[0].content.en,'en','colombia2026')).toBe('preview');});
   expect(mockPost).toHaveBeenCalledWith('admin/marketing',expect.objectContaining({action:'preview',locale:'en'}),expect.objectContaining({retries:0})); act(()=>v.unmount());
 });
+it('returns approval metadata to the caller and falls back when it is absent', async () => {
+  let v!: ReactTestRenderer; await act(async()=>{v=create(<Probe id="admin"/>);});
+  const approval = { notificationSent: true, emailSent: false };
+  mockPost.mockResolvedValueOnce({ success: true, data: { data: approval } });
+  await act(async()=>{ expect(await state.act({action:'request_approval'})).toEqual(approval); });
+  mockPost.mockResolvedValueOnce({ success: true, data: {} });
+  await act(async()=>{ expect(await state.act({action:'request_approval'})).toBe(true); });
+  mockPost.mockResolvedValueOnce({ success: true, data: { data: {} } });
+  await act(async()=>{ expect(await state.preview(pack.messages[0].content.en,'en','colombia2026')).toBeNull(); });
+  act(()=>v.unmount());
+});
 it('recovers from read and write errors', async () => {
   mockGet.mockResolvedValueOnce({success:false,error:'unavailable'}); let v!:ReactTestRenderer; await act(async()=>{v=create(<Probe id="admin"/>);}); expect(state.error).toBe('unavailable');
   mockPost.mockRejectedValueOnce(new Error('offline')); await act(async()=>{expect(await state.act({action:'seed'})).toBe(false);}); expect(state.busy).toBe(false);

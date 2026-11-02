@@ -1,3 +1,19 @@
+## [1.9.210](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.209...v1.9.210) (2026-11-02)
+
+
+### Features
+
+* **marketing:** gate campaigns on admin approval ([ee152ef](https://github.com/hashpass-tech/hashpass.tech/commit/ee152ef622abf8d7c0f60d4008cc06ca24e4faee))
+### Release Highlights
+- gate campaigns on admin approval
+
+### Release scope
+- Compared with: `v1.9.209` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.209](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.207...v1.9.209) (2026-11-02)
 
 

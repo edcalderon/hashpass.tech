@@ -7,7 +7,10 @@ const mockMarkAsRead = jest.fn().mockResolvedValue(undefined);
 const mockMarkAsUnread = jest.fn().mockResolvedValue(undefined);
 const mockArchiveNotification = jest.fn().mockResolvedValue(undefined);
 const mockDeleteNotification = jest.fn().mockResolvedValue(undefined);
+const mockRefreshNotifications = jest.fn().mockResolvedValue(undefined);
 const mockRouterPush = jest.fn();
+const mockMarketingPost = jest.fn().mockResolvedValue({ success: true });
+const mockFilterLogic: { current?: (data: any[], filters: Record<string, any>, query: string) => any[] } = {};
 type TestNotification = {
   id: string;
   type: string;
@@ -16,6 +19,7 @@ type TestNotification = {
   meeting_request_id?: string;
   meeting_request_event_id?: string;
   meeting_id?: string;
+  campaign_id?: string;
   is_urgent?: boolean;
   is_archived?: boolean;
   is_read: boolean;
@@ -56,11 +60,15 @@ jest.mock('../../i18n/i18n', () => ({
 }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons', MaterialIcons: 'MaterialIcons' }));
 jest.mock('../../lib/supabase', () => ({ supabase: {} }));
+jest.mock('../../lib/api-client', () => ({ apiClient: { post: (...args: unknown[]) => mockMarketingPost(...args) } }));
 jest.mock('../../hooks/useAuth', () => {
   const auth = { user: { id: 'u1' }, dbUserId: 'db1', isLoading: false };
   return { useAuth: () => auth };
 });
-jest.mock('../../components/UnifiedSearchAndFilter', () => 'SearchAndFilter');
+jest.mock('../../components/UnifiedSearchAndFilter', () => (props: any) => {
+  mockFilterLogic.current = props.customFilterLogic;
+  return null;
+});
 jest.mock('../../components/DynamicQRDisplay', () => 'DynamicQR');
 jest.mock('@contexts/NotificationContext', () => ({
   useNotifications: () => ({
@@ -72,7 +80,7 @@ jest.mock('@contexts/NotificationContext', () => ({
     markAllAsRead: mockMarkAllAsRead,
     archiveNotification: mockArchiveNotification,
     deleteNotification: mockDeleteNotification,
-    refreshNotifications: jest.fn().mockResolvedValue(undefined),
+    refreshNotifications: mockRefreshNotifications,
   }),
 }));
 jest.mock('../../lib/pass-system', () => ({
@@ -103,6 +111,9 @@ describe('dashboard pages share the page layout', () => {
     mockMarkAsUnread.mockReset();
     mockArchiveNotification.mockReset();
     mockDeleteNotification.mockReset();
+    mockMarketingPost.mockReset().mockResolvedValue({ success: true });
+    mockRefreshNotifications.mockReset().mockResolvedValue(undefined);
+    mockFilterLogic.current = undefined;
     (Alert.alert as jest.Mock).mockClear();
     mockNotifications.splice(0, mockNotifications.length, defaultNotification);
   });
@@ -209,6 +220,138 @@ describe('dashboard pages share the page layout', () => {
       pathname: '/events/event-from-request/networking/my-requests',
       params: { requestId: 'request-1', highlightRequest: 'true' },
     });
+    act(() => view.unmount());
+  });
+
+  it.each(['ticket_claim_review_required', 'marketing_campaign_approval_requested'])('%s opens campaign review in admin', async type => {
+    mockNotifications.splice(0, mockNotifications.length, {
+      id: 'review-notification', type, title: 'Needs review', message: 'Review details', campaign_id: 'campaign-1',
+      is_read: false, created_at: '2026-11-02T00:00:00Z',
+    });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    const card = view.root.findAllByType(TouchableOpacity).find(node => node.props.activeOpacity === 0.7);
+    expect(card).toBeTruthy();
+    await act(async () => { await card!.props.onPress(); });
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/admin');
+    act(() => view.unmount());
+  });
+
+  it('lets the assigned campaign reviewer approve or decline from the notification', async () => {
+    const confirm = jest.fn().mockReturnValue(true);
+    const alert = jest.fn();
+    const originalConfirm = Object.getOwnPropertyDescriptor(window, 'confirm');
+    const originalAlert = Object.getOwnPropertyDescriptor(window, 'alert');
+    Object.defineProperty(window, 'confirm', { configurable: true, value: confirm });
+    Object.defineProperty(window, 'alert', { configurable: true, value: alert });
+    mockNotifications.splice(0, mockNotifications.length, {
+      id: 'campaign-approval',
+      type: 'marketing_campaign_approval_requested',
+      title: 'Campaign approval requested',
+      message: 'BSL Colombia · 100% Business Experience offer · Code HASHPASS · Nov 3 at 07:35 Bogotá · opted-in audience only.',
+      campaign_id: 'campaign-1',
+      is_read: false,
+      is_urgent: true,
+      created_at: '2026-11-02T05:00:00Z',
+    });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    expect(text(view)).toContain('Code HASHPASS');
+    const approve = view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign');
+    await act(async () => { approve.props.onPress(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    if (originalConfirm) Object.defineProperty(window, 'confirm', originalConfirm);
+    else Reflect.deleteProperty(window, 'confirm');
+    if (originalAlert) Object.defineProperty(window, 'alert', originalAlert);
+    else Reflect.deleteProperty(window, 'alert');
+    expect(confirm).toHaveBeenCalledWith('center.approveCampaignTitle\n\ncenter.approveCampaignMessage');
+    expect(alert).toHaveBeenCalledWith('center.campaignDecisionSavedTitle\n\ncenter.campaignApprovedMessage');
+    expect(mockMarketingPost).toHaveBeenCalledWith('admin/marketing', { action: 'approve', id: 'campaign-1' }, { skipEventSegment: true, retries: 0 });
+    expect(mockMarkAsRead).toHaveBeenCalledWith('campaign-approval');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+    act(() => view.unmount());
+  });
+
+  it('filters all campaign lifecycle notifications together', () => {
+    let view!: ReactTestRenderer;
+    act(() => { view = create(<Notifications />); });
+    const campaign = { type: 'marketing_campaign_approval_requested' };
+    const approved = { type: 'marketing_campaign_approved' };
+    const cancelled = { type: 'marketing_campaign_cancelled' };
+    const unrelated = { type: 'system_alert' };
+    expect(mockFilterLogic.current!([campaign, approved, cancelled, unrelated], { type: 'campaign_approval' }, ''))
+      .toEqual([campaign, approved, cancelled]);
+    expect(mockFilterLogic.current!([campaign, unrelated], { type: 'system_alert' }, ''))
+      .toEqual([unrelated]);
+    expect(mockFilterLogic.current!([campaign, unrelated], {}, '')).toEqual([campaign, unrelated]);
+    act(() => view.unmount());
+  });
+
+  it('uses campaign lifecycle icons and reports failed reviewer decisions', async () => {
+    const confirm = jest.fn().mockReturnValue(true);
+    const alert = jest.fn();
+    const originalConfirm = Object.getOwnPropertyDescriptor(window, 'confirm');
+    const originalAlert = Object.getOwnPropertyDescriptor(window, 'alert');
+    Object.defineProperty(window, 'confirm', { configurable: true, value: confirm });
+    Object.defineProperty(window, 'alert', { configurable: true, value: alert });
+    mockNotifications.splice(0, mockNotifications.length,
+      { id: 'approval', type: 'marketing_campaign_approval_requested', title: 'Approval', message: 'Review', campaign_id: 'c1', is_read: false, created_at: '2026-11-02T00:00:00Z' },
+      { id: 'approved', type: 'marketing_campaign_approved', title: 'Approved', message: 'Approved', is_read: false, created_at: '2026-11-02T00:00:00Z' },
+      { id: 'declined', type: 'marketing_campaign_declined', title: 'Declined', message: 'Declined', is_read: false, created_at: '2026-11-02T00:00:00Z' },
+      { id: 'cancelled', type: 'marketing_campaign_cancelled', title: 'Cancelled', message: 'Cancelled', is_read: false, created_at: '2026-11-02T00:00:00Z' },
+    );
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    const icons = view.root.findAll(node => String(node.type) === 'MaterialIcons').map(node => node.props.name);
+    expect(icons).toContain('verified-user');
+    expect(icons).toContain('verified');
+    expect(icons).toContain('schedule');
+    expect(icons).toContain('cancel');
+
+    mockMarketingPost.mockResolvedValueOnce({ success: false, error: 'Campaign is no longer pending' });
+    const decline = view.root.find(node => node.props.accessibilityLabel === 'center.declineCampaign');
+    await act(async () => { decline.props.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    expect(mockMarketingPost).toHaveBeenCalledWith('admin/marketing', { action: 'decline', id: 'c1' }, { skipEventSegment: true, retries: 0 });
+    expect(alert).toHaveBeenCalledWith('center.campaignDecisionFailed\n\nCampaign is no longer pending');
+
+    mockMarketingPost.mockResolvedValueOnce({ success: false });
+    await act(async () => { view.root.find(node => node.props.accessibilityLabel === 'center.declineCampaign').props.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    expect(alert).toHaveBeenLastCalledWith('center.campaignDecisionFailed\n\ncenter.campaignDecisionFailed');
+
+    mockMarketingPost.mockResolvedValueOnce({ success: true });
+    await act(async () => { view.root.find(node => node.props.accessibilityLabel === 'center.declineCampaign').props.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    expect(alert).toHaveBeenLastCalledWith('center.campaignDecisionSavedTitle\n\ncenter.campaignDeclinedMessage');
+    expect(mockMarkAsRead).toHaveBeenCalledWith('approval');
+
+    mockMarketingPost.mockRejectedValueOnce('unexpected rejection');
+    const approve = view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign');
+    await act(async () => { approve.props.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    expect(alert).toHaveBeenLastCalledWith('center.campaignDecisionFailed\n\ncenter.campaignDecisionFailed');
+    if (originalConfirm) Object.defineProperty(window, 'confirm', originalConfirm);
+    else Reflect.deleteProperty(window, 'confirm');
+    if (originalAlert) Object.defineProperty(window, 'alert', originalAlert);
+    else Reflect.deleteProperty(window, 'alert');
+    act(() => view.unmount());
+  });
+
+  it('ignores duplicate taps while a campaign decision is in flight', async () => {
+    const confirm = jest.fn().mockReturnValue(true);
+    const originalConfirm = Object.getOwnPropertyDescriptor(window, 'confirm');
+    Object.defineProperty(window, 'confirm', { configurable: true, value: confirm });
+    mockNotifications.splice(0, mockNotifications.length, {
+      id: 'pending-approval', type: 'marketing_campaign_approval_requested', title: 'Approval', message: 'Review',
+      campaign_id: 'pending-campaign', is_read: false, created_at: '2026-11-02T00:00:00Z',
+    });
+    let finishRequest!: (value: { success: boolean }) => void;
+    mockMarketingPost.mockImplementationOnce(() => new Promise(resolve => { finishRequest = resolve; }));
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    await act(async () => { view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign').props.onPress(); await Promise.resolve(); });
+    await act(async () => { view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign').props.onPress(); });
+    expect(mockMarketingPost).toHaveBeenCalledTimes(1);
+    await act(async () => { finishRequest({ success: true }); await Promise.resolve(); await Promise.resolve(); });
+    if (originalConfirm) Object.defineProperty(window, 'confirm', originalConfirm);
+    else Reflect.deleteProperty(window, 'confirm');
     act(() => view.unmount());
   });
 

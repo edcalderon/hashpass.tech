@@ -2131,6 +2131,16 @@
       "markAllRead": "Mark All Read",
       "markRead": "Mark Read",
       "markUnread": "Mark Unread",
+      "approveCampaign": "Approve",
+      "declineCampaign": "Decline",
+      "approveCampaignTitle": "Approve this campaign?",
+      "approveCampaignMessage": "This schedules the reviewed campaign for its stated audience and time. It does not send immediately.",
+      "declineCampaignTitle": "Decline this campaign?",
+      "declineCampaignMessage": "The campaign will remain unscheduled until it is revised and approved.",
+      "campaignDecisionSavedTitle": "Decision recorded",
+      "campaignApprovedMessage": "Campaign approved and scheduled for its listed time. It will not send immediately.",
+      "campaignDeclinedMessage": "Campaign declined. No campaign email was sent.",
+      "campaignDecisionFailed": "Could not record the campaign decision. Refresh and try again.",
       "delete": "Delete",
       "deleteTitle": "Delete Notification",
       "deleteMessage": "Are you sure you want to delete this notification?",
@@ -2164,6 +2174,7 @@
         "meetingExpired": "Meeting Expired",
         "reminder": "Reminder",
         "boostReceived": "Boost Received",
+        "campaignApproval": "Campaign approval",
         "systemAlert": "System Alert",
         "chatMessage": "Chat Message",
         "priority": "Priority",
@@ -2228,6 +2239,18 @@
         "messageFrom": "You have a new message from {senderName}",
         "titleMeeting": "{meetingTitle}",
         "messageMeeting": "New message in {meetingTitle}"
+      },
+      "marketing_campaign_approval_requested": {
+        "title": "Campaign approval requested"
+      },
+      "marketing_campaign_approved": {
+        "title": "Campaign approved"
+      },
+      "marketing_campaign_declined": {
+        "title": "Campaign declined"
+      },
+      "marketing_campaign_cancelled": {
+        "title": "Campaign approval cancelled"
       }
     }
   },
@@ -2624,6 +2647,16 @@
     "preview": "Preview email",
     "resume": "Resume",
     "schedule": "Schedule",
+    "requestApproval": "Request approval from Edward",
+    "approval": {
+      "pending": "Pending approval",
+      "approved": "Approved",
+      "declined": "Declined",
+      "audienceEstimate": "Estimated eligible recipients",
+      "emailAndInboxSent": "Approval request added to Edward’s notifications and emailed.",
+      "inboxSentEmailFailed": "Approval request is in Edward’s notifications; its email alert could not be delivered.",
+      "reviseAfterDecline": "Update and save the campaign before requesting review again."
+    },
     "pause": "Pause",
     "cancel": "Cancel campaign",
     "close": "Close editor",

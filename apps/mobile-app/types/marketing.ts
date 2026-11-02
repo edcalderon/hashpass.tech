@@ -1,5 +1,6 @@
 export type CampaignLocale = 'es' | 'en';
 export type CampaignStatus = 'draft' | 'scheduled' | 'paused' | 'sending' | 'completed' | 'cancelled';
+export type CampaignRequirement = 'product_verified' | 'assets_published' | 'reward_terms_verified';
 export type DeliveryStatus = 'queued' | 'sending' | 'accepted' | 'failed' | 'unknown' | 'suppressed';
 export interface CampaignEmailBrand {
   name: string;
@@ -43,8 +44,11 @@ export interface MarketingCampaign {
   scheduled_at: string | null;
   time_zone: string;
   content: Record<CampaignLocale, CampaignCopy>;
-  requirements: string[];
-  readiness: Record<string, boolean>;
+  requirements: CampaignRequirement[];
+  readiness: Partial<Record<CampaignRequirement, boolean>>;
+  approval_status?: 'not_requested' | 'pending' | 'approved' | 'declined';
+  approval_requested_at?: string | null;
+  approval_estimated_recipients?: number | null;
   counts: Partial<Record<DeliveryStatus, number>>;
 }
 export interface MarketingDelivery {
@@ -95,8 +99,8 @@ export interface MarketingCampaignDraft {
   scheduledAt: string;
   timeZone: 'America/Bogota';
   content: Record<CampaignLocale, CampaignCopy>;
-  requirements: string[];
-  readiness: Record<string, boolean>;
+  requirements: CampaignRequirement[];
+  readiness: Partial<Record<CampaignRequirement, boolean>>;
 }
 export interface MarketingPanelProps {
   overview: MarketingOverview | null;
@@ -105,7 +109,7 @@ export interface MarketingPanelProps {
   busy?: boolean;
   error?: string | null;
   onRefresh: () => void;
-  onAction: (body: Record<string, unknown>) => Promise<boolean>;
+  onAction: (body: Record<string, unknown>) => Promise<boolean | { notificationSent?: boolean; emailSent?: boolean; already_requested?: boolean }>;
   onPreview: (copy: CampaignCopy, locale: CampaignLocale, eventId: string) => Promise<string | null>;
 }
 export type MarketingView = 'calendar' | 'history' | 'activity';

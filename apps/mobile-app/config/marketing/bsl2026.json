@@ -347,13 +347,14 @@
       "key": "bsl2026-business-offer",
       "eventId": "colombia2026",
       "name": "BSL Colombia 2026 · Business Experience offer",
-      "scheduledAt": "2026-11-02T07:35:00-05:00",
+      "scheduledAt": "2026-11-03T07:35:00-05:00",
       "timeZone": "America/Bogota",
       "audience": "registered_opt_in",
       "status": "draft",
       "requirements": [
         "product_verified",
-        "assets_published"
+        "assets_published",
+        "reward_terms_verified"
       ],
       "content": {
         "es": {
