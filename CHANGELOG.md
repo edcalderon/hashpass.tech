@@ -1,3 +1,23 @@
+## [1.9.209](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.207...v1.9.209) (2026-11-02)
+
+
+### Features
+
+* **marketing:** prepare BSL business offer campaign ([d6e4724](https://github.com/hashpass-tech/hashpass.tech/commit/d6e4724d05119b1b28ee07a51f692d376aa4d2ce))
+* separate marketing consent and polish mobile UI ([915ae16](https://github.com/hashpass-tech/hashpass.tech/commit/915ae16e19d1b2664c16e914e4c0ce74470c2867))
+### Release Highlights
+- separate marketing consent and polish mobile UI; prepare BSL business offer campaign
+
+### Release scope
+- Compared with: `v1.9.207` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+- Database migrations
+- Documentation
+- Release tooling
+
 ## [1.9.208](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.207...v1.9.208) (2026-11-02)
 
 
