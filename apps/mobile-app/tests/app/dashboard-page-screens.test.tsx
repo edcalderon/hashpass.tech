@@ -217,6 +217,12 @@ describe('dashboard pages share the page layout', () => {
   });
 
   it('lets the assigned campaign reviewer approve or decline from the notification', async () => {
+    const confirm = jest.fn().mockReturnValue(true);
+    const alert = jest.fn();
+    const originalConfirm = Object.getOwnPropertyDescriptor(window, 'confirm');
+    const originalAlert = Object.getOwnPropertyDescriptor(window, 'alert');
+    Object.defineProperty(window, 'confirm', { configurable: true, value: confirm });
+    Object.defineProperty(window, 'alert', { configurable: true, value: alert });
     mockNotifications.splice(0, mockNotifications.length, {
       id: 'campaign-approval',
       type: 'marketing_campaign_approval_requested',
@@ -232,8 +238,13 @@ describe('dashboard pages share the page layout', () => {
     expect(text(view)).toContain('Code HASHPASS');
     const approve = view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign');
     await act(async () => { approve.props.onPress(); });
-    const confirmApproval = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2][1];
-    await act(async () => { confirmApproval.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    if (originalConfirm) Object.defineProperty(window, 'confirm', originalConfirm);
+    else Reflect.deleteProperty(window, 'confirm');
+    if (originalAlert) Object.defineProperty(window, 'alert', originalAlert);
+    else Reflect.deleteProperty(window, 'alert');
+    expect(confirm).toHaveBeenCalledWith('center.approveCampaignTitle\n\ncenter.approveCampaignMessage');
+    expect(alert).toHaveBeenCalledWith('center.campaignDecisionSavedTitle\n\ncenter.campaignApprovedMessage');
     expect(mockMarketingPost).toHaveBeenCalledWith('admin/marketing', { action: 'approve', id: 'campaign-1' }, { skipEventSegment: true, retries: 0 });
     expect(mockMarkAsRead).toHaveBeenCalledWith('campaign-approval');
     expect(mockRouterPush).not.toHaveBeenCalled();

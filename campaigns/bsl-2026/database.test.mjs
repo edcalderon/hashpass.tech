@@ -10,7 +10,7 @@ CREATE TABLE newsletter_subscribers (email text primary key);
 CREATE TABLE public.notifications (id uuid primary key default gen_random_uuid(), user_id uuid not null, type text not null, title text not null, message text not null, is_read boolean not null default false, is_urgent boolean not null default false, read_at timestamptz);
 CREATE TABLE user_agenda_status(id uuid primary key default gen_random_uuid(), user_id uuid, agenda_id text, event_id text,status text,is_favorite boolean);
 CREATE TABLE meeting_requests(id uuid primary key default gen_random_uuid(),requester_id uuid,speaker_id uuid,event_id text,status text);`);
-for (const name of ['V127__contacts_network.sql','V132__marketing_campaigns.sql','V133__marketing_activity_snapshots.sql','V166__marketing_campaign_approval.sql']) await db.exec(readFileSync(`db/migrations/${name}`,'utf8'));
+for (const name of ['V127__contacts_network.sql','V132__marketing_campaigns.sql','V133__marketing_activity_snapshots.sql','V166__marketing_campaign_approval.sql','V167__close_cancelled_campaign_approvals.sql']) await db.exec(readFileSync(`db/migrations/${name}`,'utf8'));
 let checks=0;
 const ok = (actual, expected) => { assert.deepEqual(actual, expected); checks++; };
 const user='00000000-0000-4000-8000-000000000001', peer='00000000-0000-4000-8000-000000000002', noConsent='00000000-0000-4000-8000-000000000003';
@@ -61,6 +61,18 @@ await q("UPDATE marketing_deliveries SET claimed_at=now()-interval '16 minutes' 
 ok((await claim()).length,0);
 ok((await q('select status from marketing_deliveries where id=$1',[stale[0].id]))[0].status,'unknown');
 ok((await q('select marketing_ack($1,$2,$3) x',[stale[0].id,stale[0].claim_token,'accepted']))[0].x,false);
+
+// Cancelling a campaign closes its pending approval and replaces the actionable notification.
+const cancelDraft={...draft,key:'test-cancel-pending',name:'Pending campaign to cancel'};
+await action('save',{draft:cancelDraft});
+const cancelId=(await q("select id from marketing_campaigns where key='test-cancel-pending'"))[0].id;
+await q('select marketing_request_approval($1,$2,$3)',[user,cancelId,peer]);
+await action('cancel',{id:cancelId});
+ok((await q('select status from marketing_campaigns where id=$1',[cancelId]))[0].status,'cancelled');
+ok((await q('select approval_status from marketing_campaigns where id=$1',[cancelId]))[0].approval_status,'cancelled');
+ok((await q("select type from notifications where campaign_id=$1 and user_id=$2",[cancelId,peer]))[0].type,'marketing_campaign_cancelled');
+ok((await q("select is_read from notifications where campaign_id=$1 and user_id=$2",[cancelId,peer]))[0].is_read,true);
+await assert.rejects(q("select marketing_decide_approval($1,$2,'approve')",[peer,cancelId]),/no longer pending/);checks++;
 
 // Server triggers use real Contacts migration, no synthetic points for navigation.
 await q('INSERT INTO contact_profiles(id,name,topics)VALUES($1,$2,$3)',[user,'User',['AI','Web3']]);

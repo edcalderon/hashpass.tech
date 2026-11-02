@@ -2236,6 +2236,9 @@
       "marketing_campaign_declined": {
         "title": "캠페인 거절됨"
       },
+      "marketing_campaign_cancelled": {
+        "title": "캠페인 승인 취소됨"
+      },
       "chat_message": {
         "title": "새 채팅 메시지",
         "message": "{senderName}님이 메시지를 보냈습니다",

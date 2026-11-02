@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNotifications, type Notification } from '@contexts/NotificationContext';
 import { MaterialIcons } from '../../../lib/vector-icons';
@@ -13,6 +13,7 @@ import { useTranslation } from '../../../i18n/i18n';
 import { apiClient } from '../../../lib/api-client';
 import { translateNotification } from '../../../lib/notification-translations';
 import { buildNotificationEventPath } from '../../../lib/notification-navigation';
+import { confirmMarketingCampaignAction, showMarketingCampaignResult } from '../../../lib/marketing-approval-dialog';
 import {
   getNotificationsForInboxTab,
   groupChatNotifications,
@@ -169,39 +170,39 @@ export default function NotificationsScreen() {
   const decideCampaignApproval = (notification: NotificationInboxItem, decision: 'approve' | 'decline') => {
     if (!notification.campaign_id || decidingCampaigns.has(notification.campaign_id)) return;
     const approve = decision === 'approve';
-    Alert.alert(
-      approve ? t('center.approveCampaignTitle') : t('center.declineCampaignTitle'),
-      approve ? t('center.approveCampaignMessage') : t('center.declineCampaignMessage'),
-      [
-        { text: t('center.cancel'), style: 'cancel' },
-        {
-          text: approve ? t('center.approveCampaign') : t('center.declineCampaign'),
-          style: approve ? 'default' : 'destructive',
-          onPress: () => {
-            void (async () => {
-              setDecidingCampaigns(current => new Set(current).add(notification.campaign_id!));
-              try {
-                const result = await apiClient.post('admin/marketing', {
-                  action: decision,
-                  id: notification.campaign_id,
-                }, { skipEventSegment: true, retries: 0 });
-                if (!result.success) throw new Error(result.error || t('center.campaignDecisionFailed'));
-                await Promise.all(notification.notificationIds.map((id: string) => markAsRead(id)));
-                await refreshNotifications();
-                Alert.alert(t('center.campaignDecisionSavedTitle'), approve ? t('center.campaignApprovedMessage') : t('center.campaignDeclinedMessage'));
-              } catch (error) {
-                Alert.alert(t('center.campaignDecisionFailed'), error instanceof Error ? error.message : t('center.campaignDecisionFailed'));
-              } finally {
-                setDecidingCampaigns(current => {
-                  const next = new Set(current);
-                  next.delete(notification.campaign_id!);
-                  return next;
-                });
-              }
-            })();
-          },
-        },
-      ],
+    const title = approve ? t('center.approveCampaignTitle') : t('center.declineCampaignTitle');
+    const message = approve ? t('center.approveCampaignMessage') : t('center.declineCampaignMessage');
+    const submitDecision = () => {
+      void (async () => {
+        setDecidingCampaigns(current => new Set(current).add(notification.campaign_id!));
+        try {
+          const result = await apiClient.post('admin/marketing', {
+            action: decision,
+            id: notification.campaign_id,
+          }, { skipEventSegment: true, retries: 0 });
+          if (!result.success) throw new Error(result.error || t('center.campaignDecisionFailed'));
+          await Promise.all(notification.notificationIds.map((id: string) => markAsRead(id)));
+          await refreshNotifications();
+          showMarketingCampaignResult(Platform.OS, t('center.campaignDecisionSavedTitle'), approve ? t('center.campaignApprovedMessage') : t('center.campaignDeclinedMessage'));
+        } catch (error) {
+          showMarketingCampaignResult(Platform.OS, t('center.campaignDecisionFailed'), error instanceof Error ? error.message : t('center.campaignDecisionFailed'));
+        } finally {
+          setDecidingCampaigns(current => {
+            const next = new Set(current);
+            next.delete(notification.campaign_id!);
+            return next;
+          });
+        }
+      })();
+    };
+    confirmMarketingCampaignAction(
+      Platform.OS,
+      title,
+      message,
+      approve ? t('center.approveCampaign') : t('center.declineCampaign'),
+      t('center.cancel'),
+      !approve,
+      submitDecision,
     );
   };
 
@@ -277,6 +278,8 @@ export default function NotificationsScreen() {
       case 'business_invite_rejected':
       case 'marketing_campaign_declined':
         return 'schedule';
+      case 'marketing_campaign_cancelled':
+        return 'cancel';
       case 'system_alert':
         return 'info';
       default:
@@ -297,6 +300,8 @@ export default function NotificationsScreen() {
       case 'business_invite_rejected':
       case 'marketing_campaign_declined':
         return palette.danger;
+      case 'marketing_campaign_cancelled':
+        return palette.muted;
       default:
         return palette.accent;
     }

@@ -4,6 +4,7 @@ const notificationTypes = [
   ['marketing_campaign_approval_requested', 'Campaign approval requested'],
   ['marketing_campaign_approved', 'Campaign approved'],
   ['marketing_campaign_declined', 'Campaign declined'],
+  ['marketing_campaign_cancelled', 'Campaign approval cancelled'],
 ] as const;
 
 describe('marketing campaign notifications', () => {

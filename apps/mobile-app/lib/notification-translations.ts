@@ -289,6 +289,11 @@ export function translateNotification(
         translatedTitle = t('types.marketing_campaign_declined.title');
         translatedMessage = message;
         break;
+
+      case 'marketing_campaign_cancelled':
+        translatedTitle = t('types.marketing_campaign_cancelled.title');
+        translatedMessage = message;
+        break;
     }
   } catch (error) {
     // If translation fails, return original

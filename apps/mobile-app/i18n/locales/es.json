@@ -2247,6 +2247,9 @@
       },
       "marketing_campaign_declined": {
         "title": "Campaña rechazada"
+      },
+      "marketing_campaign_cancelled": {
+        "title": "Aprobación de campaña cancelada"
       }
     }
   },
