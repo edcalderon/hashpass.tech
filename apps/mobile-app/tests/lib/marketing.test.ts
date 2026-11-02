@@ -1,9 +1,11 @@
 import pack from '../../config/marketing/bsl2026.json';
 import { activityRoute, renderMarketingEmail, safeCampaignUrl, validCampaignCopy, validCampaignDraft, validZonedTime, formatCampaignTime } from '../../lib/marketing';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 
 describe('campaign validation and rendering', () => {
-  it('validates all seven bilingual scheduled campaign drafts', () => {
-    expect(pack.messages).toHaveLength(7);
+  it('validates all eight bilingual scheduled campaign drafts', () => {
+    expect(pack.messages).toHaveLength(8);
     for (const m of pack.messages) expect(validCampaignDraft({ ...m, readiness: {} })).toBe(true);
     expect(new Date(pack.messages[0].scheduledAt).toISOString()).toBe('2026-10-26T14:00:00.000Z');
     expect(formatCampaignTime(pack.messages[0].scheduledAt)).toContain('09:00');
@@ -41,6 +43,35 @@ describe('campaign validation and rendering', () => {
       expect(rendered.html).toContain(copy.imageUrl!);
       expect(rendered.html).toContain(copy.imageCaption!);
     }
+  });
+  it('validates and renders the BSL offer code in both languages', () => {
+    const offer = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-business-offer');
+    expect(offer).toBeDefined();
+    for (const locale of ['es', 'en'] as const) {
+      const copy = offer!.content[locale];
+      expect(validCampaignCopy(copy)).toBe(true);
+      const rendered = renderMarketingEmail(copy, null, locale);
+      expect(rendered.html).toContain(`>${copy.promoCodeLabel}</p>`);
+      expect(rendered.html).toContain(`>${copy.promoCode}</p>`);
+      expect(rendered.text).toContain(`${copy.promoCodeLabel}: ${copy.promoCode}`);
+
+      const fallback = renderMarketingEmail({ ...copy, promoCodeLabel: undefined }, null, locale);
+      const fallbackHtmlLabel = locale === 'es' ? 'CÓDIGO PROMOCIONAL' : 'PROMO CODE';
+      const fallbackTextLabel = locale === 'es' ? 'Código promocional' : 'Promo code';
+      expect(fallback.html).toContain(fallbackHtmlLabel);
+      expect(fallback.text).toContain(`${fallbackTextLabel}: ${copy.promoCode}`);
+    }
+    expect(validCampaignCopy({ ...offer!.content.en, promoCode: 'invalid code' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCode: undefined, promoCodeLabel: 'CODE' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: 'bad\nlabel' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: undefined })).toBe(true);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: '   ' })).toBe(false);
+  });
+  it('publishes the offer hero in the production attendee static asset tree', () => {
+    const offer = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-business-offer');
+    expect(offer).toBeDefined();
+    expect(offer!.content.en.imageUrl).toBe('https://hashpass.tech/campaigns/bsl-2026/business-offer-hero-v2.png');
+    expect(existsSync(path.resolve(__dirname, '../../public/campaigns/bsl-2026/business-offer-hero-v2.png'))).toBe(true);
   });
   it('allowlists normalized navigation and excludes sensitive routes and query strings', () => {
     expect(activityRoute('/contacts?card=private')).toBe('/contacts');

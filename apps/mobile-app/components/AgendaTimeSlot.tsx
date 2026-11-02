@@ -23,7 +23,7 @@ export default function AgendaTimeSlot({
   const palette = uiPalette(isDark ? 'dark' : 'light');
   const nowColor = palette.danger;
   const line = (
-    <View pointerEvents="none" style={styles.nowRow}>
+    <View style={[styles.nowRow, { pointerEvents: 'none' }]}>
       <View style={styles.nowGutter}>
         <Text style={[styles.nowLabel, { color: nowColor }]}>{nowLine?.label}</Text>
       </View>

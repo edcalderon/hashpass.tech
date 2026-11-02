@@ -10,6 +10,8 @@ jest.mock('../../lib/email', () => ({ marketingSenderReady: () => mockReady() })
 import { GET as overview, POST as admin } from '../../app/api/admin/marketing+api';
 import { GET as unsubscribePage, POST as unsubscribe } from '../../app/api/marketing/unsubscribe+api';
 import { POST as activity } from '../../app/api/marketing/activity+api';
+import { GET as preferenceStatus, POST as updatePreference } from '../../app/api/marketing/preferences+api';
+import { POST as recordSignupConsent } from '../../app/api/marketing/consent+api';
 
 const actor = '00000000-0000-4000-8000-000000000001';
 const req = (body: unknown, path = 'admin/marketing') => new Request(`https://api.hashpass.tech/api/${path}`, { method: 'POST', body: JSON.stringify(body) });
@@ -114,5 +116,191 @@ describe('recipient and activity endpoints', () => {
     expect((await activity(req({ path: '/auth/callback?code=secret' }))).status).toBe(400);
     mockIdentity.mockResolvedValue({ supabaseUserId: actor }); expect((await activity(req({ path: '/contacts' }))).status).toBe(403);
     mockIdentity.mockResolvedValue({ error: 'Unauthorized', status: 401 }); expect((await activity(req({ path: '/contacts' }))).status).toBe(401);
+  });
+});
+describe('email preference endpoints', () => {
+  beforeEach(() => {
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user', email: 'User@Example.com' });
+  });
+
+  it('returns the persisted preference for the authenticated account', async () => {
+    mockRpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: false, error: null });
+    const response = await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    await expect(response.json()).resolves.toEqual({ success: true, subscribed: true, partnerSubscribed: false });
+    expect(mockRpc).toHaveBeenCalledWith('get_marketing_email_preference', {
+      p_user_id: 'registry-user',
+      p_email: 'user@example.com',
+    });
+    expect(mockRpc).toHaveBeenCalledWith('get_marketing_partner_preference', {
+      p_user_id: 'registry-user',
+      p_email: 'user@example.com',
+    });
+  });
+
+  it('records opt-in and opt-out with unique request IDs', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'updated', error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: false, error: null });
+    const response = await updatePreference(req({ subscribed: true, requestId: 'settings-enable-1' }, 'marketing/preferences'));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ success: true, subscribed: true, partnerSubscribed: false });
+    expect(mockRpc).toHaveBeenNthCalledWith(1, 'set_marketing_email_preference', expect.objectContaining({
+      p_user_id: 'registry-user', p_email: 'user@example.com', p_subscribed: true, p_source: 'settings',
+    }));
+    expect(mockRpc).toHaveBeenNthCalledWith(2, 'get_marketing_email_preference', expect.any(Object));
+    expect(mockRpc).toHaveBeenNthCalledWith(3, 'get_marketing_partner_preference', expect.any(Object));
+
+    mockRpc.mockReset().mockResolvedValueOnce({ data: 'updated', error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: false, error: null });
+    const optOut = await updatePreference(req({ subscribed: false, requestId: 'settings-disable-1' }, 'marketing/preferences'));
+    expect(optOut.status).toBe(200);
+    await expect(optOut.json()).resolves.toEqual({ success: true, subscribed: false, partnerSubscribed: false });
+  });
+
+  it('stores partner-offer consent separately from HASHPASS updates', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'updated', error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    const response = await updatePreference(req({
+      preference: 'partner_promotions', subscribed: true, requestId: 'settings-partners-1',
+    }, 'marketing/preferences'));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ success: true, subscribed: false, partnerSubscribed: true });
+    expect(mockRpc).toHaveBeenNthCalledWith(1, 'set_marketing_partner_preference', expect.objectContaining({
+      p_user_id: 'registry-user', p_email: 'user@example.com', p_subscribed: true, p_source: 'settings',
+    }));
+  });
+
+  it('does not claim the setting was saved when storage is unavailable', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'function unavailable' } });
+    const response = await updatePreference(req({ subscribed: true, requestId: 'settings-enable-2' }, 'marketing/preferences'));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'Could not save email preferences' });
+  });
+
+  it('requires a linked identity and handles preference status lookup failures', async () => {
+    mockIdentity.mockResolvedValueOnce({ error: 'Unauthorized', status: 401 });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(401);
+    mockIdentity.mockResolvedValueOnce({ supabaseUserId: actor });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(403);
+
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user', email: 'User@Example.com' });
+    mockRpc.mockResolvedValueOnce({ data: false, error: null }).mockResolvedValueOnce({ data: null, error: { message: 'offline' } });
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(503);
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await preferenceStatus(new Request('https://api.hashpass.tech/api/marketing/preferences'))).status).toBe(503);
+  });
+
+  it.each([
+    null,
+    { subscribed: 'yes', requestId: 'settings-1' },
+    { preference: 'unknown', subscribed: true, requestId: 'settings-2' },
+    { subscribed: true, requestId: 'x' },
+    { subscribed: true, requestId: 'x'.repeat(101) },
+  ])('rejects malformed email preference input: %j', async body => {
+    expect((await updatePreference(req(body, 'marketing/preferences'))).status).toBe(400);
+  });
+
+  it.each([
+    ['suppressed', 409],
+    ['inactive', 403],
+    ['invalid', 400],
+    ['request_conflict', 409],
+    ['unknown', 503],
+  ])('maps a rejected preference update (%s) to the correct status', async (result, status) => {
+    mockRpc.mockResolvedValue({ data: result, error: null });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-result-1' }, 'marketing/preferences'))).status).toBe(status);
+  });
+
+  it('handles unchanged updates, confirmation failures, and unexpected update errors', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'unchanged', error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-unchanged-1' }, 'marketing/preferences'))).status).toBe(200);
+
+    mockRpc.mockResolvedValueOnce({ data: 'updated', error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: 'lookup failed' } });
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-confirm-1' }, 'marketing/preferences'))).status).toBe(503);
+
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await updatePreference(req({ subscribed: true, requestId: 'settings-error-1' }, 'marketing/preferences'))).status).toBe(503);
+  });
+});
+
+describe('signup marketing consent endpoint', () => {
+  beforeEach(() => {
+    mockIdentity.mockResolvedValue({
+      supabaseUserId: actor,
+      registryUserId: 'registry-user',
+      email: 'User@Example.com',
+    });
+  });
+
+  it('records only the separately selected purposes', async () => {
+    mockRpc.mockResolvedValue({ data: true, error: null });
+    const response = await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2',
+      requestId: 'signup-consent-1',
+      hashpassUpdates: false,
+      partnerPromotions: true,
+    }, 'marketing/consent'));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ success: true });
+    expect(mockRpc).toHaveBeenCalledWith('record_signup_marketing_preferences', expect.objectContaining({
+      p_user_id: 'registry-user',
+      p_email: 'user@example.com',
+      p_hashpass_updates: false,
+      p_partner_promotions: true,
+      p_consent_version: 'signup-marketing-v2',
+    }));
+  });
+
+  it('rejects signup without an affirmative email choice', async () => {
+    const response = await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2',
+      requestId: 'signup-consent-2',
+      hashpassUpdates: false,
+      partnerPromotions: false,
+    }, 'marketing/consent'));
+    expect(response.status).toBe(400);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('requires a linked account and rejects malformed consent versions or request IDs', async () => {
+    mockIdentity.mockResolvedValueOnce({ error: 'Unauthorized', status: 401 });
+    expect((await recordSignupConsent(req({}, 'marketing/consent'))).status).toBe(401);
+    mockIdentity.mockResolvedValueOnce({ supabaseUserId: actor });
+    expect((await recordSignupConsent(req({}, 'marketing/consent'))).status).toBe(403);
+
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user', email: 'User@Example.com' });
+    for (const body of [
+      { consentVersion: 'old', hashpassUpdates: true, partnerPromotions: false, requestId: 'signup-1' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: 'yes', partnerPromotions: false, requestId: 'signup-2' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: true, partnerPromotions: false, requestId: 'x' },
+      { consentVersion: 'signup-marketing-v2', hashpassUpdates: true, partnerPromotions: false, requestId: 'x'.repeat(101) },
+    ]) {
+      expect((await recordSignupConsent(req(body, 'marketing/consent'))).status).toBe(400);
+    }
+  });
+
+  it('reports inactive-account, storage-error, and thrown signup consent failures', async () => {
+    mockRpc.mockResolvedValue({ data: false, error: null });
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-inactive-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(409);
+
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'database unavailable' } });
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-error-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(503);
+
+    mockRpc.mockRejectedValue(new Error('database unavailable'));
+    expect((await recordSignupConsent(req({
+      consentVersion: 'signup-marketing-v2', requestId: 'signup-throw-1', hashpassUpdates: true, partnerPromotions: false,
+    }, 'marketing/consent'))).status).toBe(503);
   });
 });

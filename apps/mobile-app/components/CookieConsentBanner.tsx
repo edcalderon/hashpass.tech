@@ -83,8 +83,8 @@ export default function CookieConsentBanner() {
   const styles = getStyles(isDark, colors);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inner}>
+      <View style={[styles.container, { pointerEvents: 'none' }]}>
+      <View style={[styles.inner, { pointerEvents: 'auto' }]}>
         <View style={styles.textBlock}>
           <Text style={styles.heading}>
             {t('consentTitle', 'Cookie preferences')}
@@ -129,7 +129,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingHorizontal: 16,
       paddingBottom: 16,
       paddingTop: 8,
-      pointerEvents: 'box-none' as any,
     },
     inner: {
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',

@@ -288,6 +288,10 @@ const syncKeys = [
   'BETTER_AUTH_URL',
   'BETTER_AUTH_DATABASE_POOLER_MODE',
   'SENTRY_DSN',
+  // Campaign worker bearer token is supplied only by the production workflow
+  // when the repository secret is configured. The deploy sync preserves it
+  // when absent and never logs the secret value.
+  'MARKETING_RUNNER_TOKEN',
   // PIN second-factor pepper (lib/server/pin-auth.ts). Only callers that have
   // it in their own environment sync it (a local deploy with the repo .env
   // exported); CI never sets it, and this merge never deletes keys, so a CI

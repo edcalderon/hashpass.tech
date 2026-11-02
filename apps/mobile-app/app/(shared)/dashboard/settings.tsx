@@ -40,6 +40,12 @@ export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [biometricAuth, setBiometricAuth] = useState(false);
   const [dataUsage, setDataUsage] = useState(false);
+  const [marketingEmails, setMarketingEmails] = useState(false);
+  const [partnerPromotions, setPartnerPromotions] = useState(false);
+  const [marketingEmailsLoading, setMarketingEmailsLoading] = useState(true);
+  const [marketingEmailsSaving, setMarketingEmailsSaving] = useState(false);
+  const [marketingEmailsLoadFailed, setMarketingEmailsLoadFailed] = useState(false);
+  const [marketingEmailsRefresh, setMarketingEmailsRefresh] = useState(0);
   const { isDark, toggleTheme, colors } = useTheme();
   const { locale, setLocale } = useLanguage();
   const { animationsEnabled, setAnimationsEnabled } = useAnimations();
@@ -77,11 +83,6 @@ export default function SettingsScreen() {
   const otpInputRef = useRef<TextInput>(null);
   const styles = getStyles(isDark, colors);
   
-  // Debug: Log modal state changes
-  useEffect(() => {
-    console.log('showDeleteConfirm state changed:', showDeleteConfirm);
-  }, [showDeleteConfirm]);
-
   // Focus the OTP input when it becomes visible
   useEffect(() => {
     if (otpSent && showDeleteConfirm && otpInputRef.current) {
@@ -116,6 +117,117 @@ export default function SettingsScreen() {
       cancelled = true;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setMarketingEmails(false);
+    setPartnerPromotions(false);
+    setMarketingEmailsLoading(true);
+    setMarketingEmailsLoadFailed(false);
+
+    if (!user?.id) {
+      setMarketingEmailsLoading(false);
+      setMarketingEmailsLoadFailed(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (apiClient.get('/marketing/preferences', {
+      skipEventSegment: true,
+      retries: 0,
+    }) as Promise<ApiClientResponse<{
+      success?: boolean;
+      subscribed?: boolean;
+      partnerSubscribed?: boolean;
+    }>>)
+      .then((response) => {
+        if (cancelled) return;
+        if (
+          !response.success ||
+          response.data?.success !== true ||
+          typeof response.data.subscribed !== 'boolean' ||
+          typeof response.data.partnerSubscribed !== 'boolean'
+        ) {
+          setMarketingEmailsLoadFailed(true);
+          return;
+        }
+        setMarketingEmails(response.data.subscribed);
+        setPartnerPromotions(response.data.partnerSubscribed);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.warn('[settings] Could not load email preferences:', error);
+        setMarketingEmailsLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setMarketingEmailsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, marketingEmailsRefresh]);
+
+  const handleMarketingPreferenceToggle = async (
+    preference: 'hashpass_updates' | 'partner_promotions',
+    enabled: boolean,
+  ) => {
+    if (!user?.id || marketingEmailsLoading || marketingEmailsSaving || marketingEmailsLoadFailed) return;
+
+    setMarketingEmailsSaving(true);
+    try {
+      const requestId = `settings-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const response = (await apiClient.post(
+        '/marketing/preferences',
+        { preference, subscribed: enabled, requestId },
+        { skipEventSegment: true, retries: 0 },
+      )) as ApiClientResponse<{
+        success?: boolean;
+        subscribed?: boolean;
+        partnerSubscribed?: boolean;
+      }>;
+
+      const expectedHashpass = preference === 'hashpass_updates' ? enabled : marketingEmails;
+      const expectedPartners = preference === 'partner_promotions' ? enabled : partnerPromotions;
+      if (
+        !response.success ||
+        response.data?.success !== true ||
+        response.data.subscribed !== expectedHashpass ||
+        response.data.partnerSubscribed !== expectedPartners
+      ) {
+        throw new Error(response.success ? 'Preference update could not be confirmed' : response.error);
+      }
+
+      setMarketingEmails(response.data.subscribed);
+      setPartnerPromotions(response.data.partnerSubscribed);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+      const isPartnerPreference = preference === 'partner_promotions';
+      if (enabled) {
+        showSuccess(
+          tSettings('marketingEmailsSavedTitle', 'Email preference saved'),
+          isPartnerPreference
+            ? tSettings('partnerPromotionsEnabledMessage', 'Partner offers are on.')
+            : tSettings('marketingEmailsEnabledMessage', 'HASHPASS email updates are on.'),
+        );
+      } else {
+        showInfo(
+          tSettings('marketingEmailsSavedTitle', 'Email preference saved'),
+          isPartnerPreference
+            ? tSettings('partnerPromotionsDisabledMessage', 'Partner offers are off.')
+            : tSettings('marketingEmailsDisabledMessage', 'HASHPASS email updates are off.'),
+        );
+      }
+    } catch (error) {
+      console.warn('[settings] Could not save email preferences:', error);
+      showError(
+        tSettings('marketingEmailsSaveFailedTitle', 'Could not save email preference'),
+        tSettings('marketingEmailsSaveFailedBody', 'Please check your connection and try again.'),
+      );
+    } finally {
+      setMarketingEmailsSaving(false);
+    }
+  };
   
   const handleAnimationsToggle = async (enabled: boolean) => {
     try {
@@ -860,6 +972,70 @@ export default function SettingsScreen() {
           })}
 
           {renderSettingItem({
+            icon: 'mail-outline',
+            title: tSettings('marketingEmails', 'HASHPASS updates'),
+            subtitle: marketingEmailsLoading
+              ? tSettings('marketingEmailsLoading', 'Loading email preferences...')
+              : marketingEmailsLoadFailed
+                ? tSettings('marketingEmailsLoadFailed', 'Preference unavailable. Tap to retry.')
+                : marketingEmailsSaving
+                  ? tSettings('marketingEmailsSaving', 'Saving preference...')
+                  : marketingEmails
+                    ? tSettings('marketingEmailsEnabled', 'Email updates on · Unsubscribe anytime.')
+                    : tSettings('marketingEmailsDisabled', 'Optional email updates · Turn on anytime.'),
+            rightComponent: (
+              <Switch
+                value={marketingEmails}
+                onValueChange={(enabled) => handleMarketingPreferenceToggle('hashpass_updates', enabled)}
+                disabled={marketingEmailsLoading || marketingEmailsSaving || marketingEmailsLoadFailed}
+                accessibilityLabel={tSettings('marketingEmails', 'HASHPASS updates')}
+                accessibilityState={{
+                  checked: marketingEmails,
+                  disabled: marketingEmailsLoading || marketingEmailsSaving || marketingEmailsLoadFailed,
+                }}
+                trackColor={{ false: '#e5e7eb', true: colors.primary }}
+                thumbColor={marketingEmails ? '#4f46e5' : '#f3f4f6'}
+              />
+            ),
+            onPress: marketingEmailsLoadFailed
+              ? () => setMarketingEmailsRefresh((current) => current + 1)
+              : undefined,
+            showChevron: marketingEmailsLoadFailed,
+          })}
+
+          {renderSettingItem({
+            icon: 'people-outline',
+            title: tSettings('partnerPromotions', 'Partner offers'),
+            subtitle: marketingEmailsLoading
+              ? tSettings('marketingEmailsLoading', 'Loading email preferences...')
+              : marketingEmailsLoadFailed
+                ? tSettings('marketingEmailsLoadFailed', 'Preference unavailable. Tap to retry.')
+                : marketingEmailsSaving
+                  ? tSettings('marketingEmailsSaving', 'Saving preference...')
+                  : partnerPromotions
+                    ? tSettings('partnerPromotionsEnabled', 'Contact sharing on · Change anytime.')
+                    : tSettings('partnerPromotionsDisabled', 'Optional partner offers.'),
+            rightComponent: (
+              <Switch
+                value={partnerPromotions}
+                onValueChange={(enabled) => handleMarketingPreferenceToggle('partner_promotions', enabled)}
+                disabled={marketingEmailsLoading || marketingEmailsSaving || marketingEmailsLoadFailed}
+                accessibilityLabel={tSettings('partnerPromotions', 'Partner offers')}
+                accessibilityState={{
+                  checked: partnerPromotions,
+                  disabled: marketingEmailsLoading || marketingEmailsSaving || marketingEmailsLoadFailed,
+                }}
+                trackColor={{ false: '#e5e7eb', true: colors.primary }}
+                thumbColor={partnerPromotions ? '#4f46e5' : '#f3f4f6'}
+              />
+            ),
+            onPress: marketingEmailsLoadFailed
+              ? () => setMarketingEmailsRefresh((current) => current + 1)
+              : undefined,
+            showChevron: marketingEmailsLoadFailed,
+          })}
+
+          {renderSettingItem({
             icon: 'trash-outline',
             title: tSettings('clearCache', 'Clear Cache'),
             subtitle: clearingCache ? tSettings('clearingCache', 'Clearing...') : tSettings('clearCacheSubtitle', 'Free up storage space'),
@@ -1306,6 +1482,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   iconContainer: {
     width: 44,
@@ -1318,6 +1495,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   settingItemContent: {
     flex: 1,
+    minWidth: 0,
   },
   settingItemTitle: {
     fontSize: 16,
@@ -1332,6 +1510,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   settingItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
+    marginLeft: 12,
   },
   signOutSection: {
     marginTop: 32,

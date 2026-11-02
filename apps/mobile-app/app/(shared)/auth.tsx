@@ -76,6 +76,7 @@ import {
 } from "../../lib/event-auth-allies";
 import { normalizeSafeReturnToPath } from "../../lib/auth/return-to";
 import { isMcpLoginContinuation } from "../../lib/auth/mcp-login";
+import { stageSignupMarketingConsent } from "../../lib/marketing-consent-pending";
 import type {
   SmsEnrollmentFlow,
   SmsPhoneVerificationResponse,
@@ -724,6 +725,8 @@ export default function AuthScreen({
     embedded ? "otp-code" : "magic-link",
   );
   const [email, setEmail] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [partnerPromotionsOptIn, setPartnerPromotionsOptIn] = useState(false);
   const [otpDigits, setOtpDigits] = useState<string[]>(
     new Array(OTP_CODE_LENGTH).fill(""),
   );
@@ -1147,6 +1150,43 @@ export default function AuthScreen({
     return normalized;
   }, [email, t]);
 
+  const saveMarketingOptInSelection = useCallback(
+    async (
+      selected: boolean,
+      emailForConsent?: string | null,
+      partnerSelected = false,
+    ) => {
+      try {
+        await stageSignupMarketingConsent(
+          { hashpassUpdates: selected, partnerPromotions: partnerSelected },
+          emailForConsent,
+        );
+      } catch (error) {
+        // Email preference storage must never prevent account access.
+        console.warn("[auth] Could not stage marketing email preference:", error);
+      }
+    },
+    [],
+  );
+
+  const handleToggleMarketingOptIn = () => {
+    const nextValue = !marketingOptIn;
+    setMarketingOptIn(nextValue);
+    if (otpSent || magicLinkSentAt !== null) {
+      // The user can change this preference after requesting a verification
+      // code or magic link, before they finish authentication.
+      void saveMarketingOptInSelection(nextValue, email, partnerPromotionsOptIn);
+    }
+  };
+
+  const handleTogglePartnerPromotionsOptIn = () => {
+    const nextValue = !partnerPromotionsOptIn;
+    setPartnerPromotionsOptIn(nextValue);
+    if (otpSent || magicLinkSentAt !== null) {
+      void saveMarketingOptInSelection(marketingOptIn, email, nextValue);
+    }
+  };
+
   const resetMagicLinkConfirmation = () => {
     setMagicLinkSentAt(null);
     setMagicLinkTimerNow(Date.now());
@@ -1167,6 +1207,8 @@ export default function AuthScreen({
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
+
+    await saveMarketingOptInSelection(marketingOptIn, normalizedEmail, partnerPromotionsOptIn);
 
     setBusyAction("magic-link");
     setOtpError("");
@@ -1218,6 +1260,7 @@ export default function AuthScreen({
       setMagicLinkSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
     } catch (error: any) {
+      await saveMarketingOptInSelection(false);
       const message = extractApiError(
         error?.message,
         t("magicLinkFailed", "Could not send magic link. Please try again."),
@@ -1250,6 +1293,10 @@ export default function AuthScreen({
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
+
+    if (!options?.trustedPhoneRequest) {
+      await saveMarketingOptInSelection(marketingOptIn, normalizedEmail, partnerPromotionsOptIn);
+    }
 
     let normalizedPhone = "";
     if (otpDeliveryMethod === "sms") {
@@ -1343,6 +1390,9 @@ export default function AuthScreen({
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
     } catch (error: any) {
+      if (!options?.trustedPhoneRequest) {
+        await saveMarketingOptInSelection(false);
+      }
       const message = extractApiError(
         error?.message,
         t(
@@ -1395,6 +1445,8 @@ export default function AuthScreen({
       );
       return;
     }
+
+    await saveMarketingOptInSelection(marketingOptIn, normalizedEmail, partnerPromotionsOptIn);
 
     setBusyAction("otp-verify");
     setOtpError("");
@@ -1573,6 +1625,9 @@ export default function AuthScreen({
     setOtpError,
     showError,
     showSuccess,
+    saveMarketingOptInSelection,
+    marketingOptIn,
+    partnerPromotionsOptIn,
     smsRegistrationChallengeId,
     smsRegistrationPhoneVerified,
     smsEnrollmentFlow,
@@ -1701,6 +1756,7 @@ export default function AuthScreen({
     let keepOAuthBusy = false;
 
     try {
+      await saveMarketingOptInSelection(marketingOptIn, undefined, partnerPromotionsOptIn);
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "google_oauth");
@@ -1740,6 +1796,7 @@ export default function AuthScreen({
         );
       }
     } catch (error: any) {
+      await saveMarketingOptInSelection(false);
       const message = extractApiError(
         error?.message,
         t("oauthError", "Google sign-in failed. Please try again."),
@@ -1769,6 +1826,7 @@ export default function AuthScreen({
     let keepOAuthBusy = false;
 
     try {
+      await saveMarketingOptInSelection(marketingOptIn, undefined, partnerPromotionsOptIn);
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "apple_oauth");
@@ -1789,6 +1847,7 @@ export default function AuthScreen({
         t("welcomeBack", "Welcome back!"),
       );
     } catch (error: any) {
+      await saveMarketingOptInSelection(false);
       const message = extractApiError(
         error?.message,
         t("appleOauthError", "Apple sign-in failed. Please try again."),
@@ -1820,6 +1879,7 @@ export default function AuthScreen({
     let keepOAuthBusy = false;
 
     try {
+      await saveMarketingOptInSelection(marketingOptIn, undefined, partnerPromotionsOptIn);
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(PASSWORDLESS_CALLBACK_MARKER);
         window.localStorage.setItem("auth_signin_method", "twitter_oauth");
@@ -1836,6 +1896,7 @@ export default function AuthScreen({
       }
       // The user dismissed the native X sheet: no session, and not an error.
       if (!result.session && !result.user) {
+        await saveMarketingOptInSelection(false);
         return;
       }
 
@@ -1844,6 +1905,7 @@ export default function AuthScreen({
         t("welcomeBack", "Welcome back!"),
       );
     } catch (error: any) {
+      await saveMarketingOptInSelection(false);
       const message = extractApiError(
         error?.message,
         t("xOauthError", "X sign-in failed. Please try again."),
@@ -2050,6 +2112,7 @@ export default function AuthScreen({
 
   const handleUseAnotherEmail = () => {
     if (isBusy) return;
+    void saveMarketingOptInSelection(false);
     setEmail("");
     setEmailError("");
     setEmailSuggestionsDismissed(false);
@@ -3101,6 +3164,66 @@ export default function AuthScreen({
                     </View>
                   ) : null}
 
+                  <TouchableOpacity
+                    style={styles.marketingOptInOption}
+                    onPress={handleToggleMarketingOptIn}
+                    disabled={isBusy}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={marketingOptIn
+                      ? `${t("marketingOptInTitle", "HASHPASS updates")}. ${t("marketingOptInSelectedDescription", "Selected · Unsubscribe anytime.")}`
+                      : `${t("marketingOptInTitle", "HASHPASS updates")}. ${t("marketingOptInDescription", "Optional emails · Unsubscribe anytime.")}`}
+                    accessibilityState={{ checked: marketingOptIn, disabled: isBusy }}
+                    dataSet={{ authEnterIgnore: "true" }}
+                  >
+                    <View style={styles.marketingOptInIcon}>
+                      <Ionicons
+                        name={marketingOptIn ? "checkbox" : "checkbox-outline"}
+                        size={24}
+                        color={marketingOptIn ? uiPalette(isDark).accentFill : colors.text.secondary}
+                      />
+                    </View>
+                    <View style={styles.marketingOptInCopy}>
+                      <Text style={styles.marketingOptInTitle}>
+                        {t("marketingOptInTitle", "HASHPASS updates")}
+                      </Text>
+                      <Text style={styles.marketingOptInDescription}>
+                        {marketingOptIn
+                          ? t("marketingOptInSelectedDescription", "Selected · Unsubscribe anytime.")
+                          : t("marketingOptInDescription", "Optional emails · Unsubscribe anytime.")}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.marketingOptInOption, styles.partnerPromotionsOption]}
+                    onPress={handleTogglePartnerPromotionsOptIn}
+                    disabled={isBusy}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={partnerPromotionsOptIn
+                      ? `${t("partnerPromotionsTitle", "Partner offers")}. ${t("partnerPromotionsSelectedDescription", "Email sharing enabled · Tap to turn off.")}`
+                      : `${t("partnerPromotionsTitle", "Partner offers")}. ${t("partnerPromotionsDescription", "Share my email and contact details with partners for offers.")}`}
+                    accessibilityState={{ checked: partnerPromotionsOptIn, disabled: isBusy }}
+                    dataSet={{ authEnterIgnore: "true" }}
+                  >
+                    <View style={styles.marketingOptInIcon}>
+                      <Ionicons
+                        name={partnerPromotionsOptIn ? "checkbox" : "checkbox-outline"}
+                        size={24}
+                        color={partnerPromotionsOptIn ? uiPalette(isDark).accentFill : colors.text.secondary}
+                      />
+                    </View>
+                    <View style={styles.marketingOptInCopy}>
+                      <Text style={styles.marketingOptInTitle}>
+                        {t("partnerPromotionsTitle", "Partner offers")}
+                      </Text>
+                      <Text style={styles.marketingOptInDescription}>
+                        {partnerPromotionsOptIn
+                          ? t("partnerPromotionsSelectedDescription", "Email sharing enabled · Tap to turn off.")
+                          : t("partnerPromotionsDescription", "Share my email and contact details with partners for offers.")}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
                   <View style={styles.footer}>
                     <Text style={styles.footerText}>
                       {t("privacy.text", "By signing in, you agree to our")}{" "}
@@ -3638,6 +3761,45 @@ const getStyles = (
       fontWeight: "600",
       color: isDark ? "#e9ecf2" : "#2d3240",
     },
+    marketingOptInOption: {
+      width: "100%",
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      gap: 12,
+      marginTop: uiTokens.space.md,
+      paddingVertical: 6,
+    },
+    partnerPromotionsOption: {
+      marginTop: 2,
+    },
+    marketingOptInIcon: {
+      width: 24,
+      height: 24,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    marketingOptInCopy: {
+      flexShrink: 1,
+      minWidth: 0,
+      flex: 1,
+      alignItems: "flex-start",
+      gap: 2,
+    },
+    marketingOptInTitle: {
+      color: colors.text.primary,
+      fontSize: uiTokens.type.caption + 1,
+      lineHeight: uiTokens.type.caption + 5,
+      fontWeight: "700",
+      textAlign: "left",
+    },
+    marketingOptInDescription: {
+      color: colors.text.secondary,
+      fontSize: uiTokens.type.caption,
+      lineHeight: uiTokens.type.caption + 4,
+      textAlign: "left",
+    },
     methodTabs: {
       flexDirection: "row",
       borderRadius: 12,
@@ -4012,7 +4174,7 @@ const getStyles = (
       flexDirection: "row",
       alignItems: "center",
       width: "100%",
-      marginVertical: 22,
+      marginVertical: uiTokens.space.md,
     },
     dividerLine: {
       flex: 1,
@@ -4118,7 +4280,7 @@ const getStyles = (
       textAlign: "center",
     },
     footer: {
-      marginTop: 22,
+      marginTop: uiTokens.space.md,
       alignItems: "center",
       paddingHorizontal: 6,
     },

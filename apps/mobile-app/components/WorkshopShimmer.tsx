@@ -34,9 +34,8 @@ export default function WorkshopShimmer({ color, isDark = false, testID }: Works
   return (
     <View
       testID={testID}
-      pointerEvents="none"
       onLayout={onLayout}
-      style={StyleSheet.absoluteFill}
+      style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >

@@ -23,7 +23,9 @@ describe('WorkshopShimmer', () => {
     mockMotion.mockReturnValue(true);
     const renderer = await render({ isDark: true });
     expect(renderer.root.findAllByType('SafeLinearGradient' as any)).toHaveLength(2);
-    expect(renderer.root.findAll((node: any) => node.props.testID === 'fx' && node.props.onLayout)[0].props.pointerEvents).toBe('none');
+    expect(renderer.root.findAll((node: any) => node.props.testID === 'fx' && node.props.onLayout)[0].props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ pointerEvents: 'none' })]),
+    );
     await act(async () => renderer.unmount());
   });
 

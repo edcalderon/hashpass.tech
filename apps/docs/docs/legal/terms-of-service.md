@@ -5,7 +5,7 @@ description: Terms governing HASHPASS services operated by HASHPASS TECHNOLOGIES
 
 # HASHPASS Terms of Service
 
-**Effective date:** 25 September 2026.<br />
+**Effective date:** 1 November 2026.<br />
 **Operator:** HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)<br />
 **Registered office:** Narva mnt 5, Tallinn, Estonia.<br />
 **Website:** [hashpass.tech](https://hashpass.tech)<br />
@@ -351,11 +351,17 @@ To the extent permitted by law, business
 
 ## 25. ELECTRONIC COMMUNICATIONS
 
-You consent to transactional electronic
-    communications necessary to operate the Services, including
-    authentication, security, credential, transaction, service, and
-    legally required notices. Marketing communications remain subject to
-    applicable consent and opt-out rules.
+You consent to transactional electronic communications necessary to
+    operate the Services, including authentication, security, credential,
+    transaction, service, and legally required notices. HASHPASS product
+    and event promotions are optional and are sent only when you enable
+    HASHPASS updates in your account. A separate, unchecked choice lets
+    you share your email address and contact details with participating
+    event partners and allies so they can send their offers. You can
+    change either choice in Settings or use an unsubscribe link in an
+    email. Declining these choices does not affect your account or
+    access to the Services. Agreeing to these Terms does not enable either
+    promotional choice.
 
 ## 26. GOVERNING LAW AND DISPUTES
 

@@ -490,6 +490,8 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   "call-outline": "call",
   "camera-outline": "camera-alt",
   "checkmark-circle": "check-circle",
+  checkbox: "check-box",
+  "checkbox-outline": "check-box-outline-blank",
   "chevron-down": "keyboard-arrow-down",
   "chevron-forward": "chevron-right",
   close: "close",

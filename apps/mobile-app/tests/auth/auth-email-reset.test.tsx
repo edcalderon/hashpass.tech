@@ -3,6 +3,7 @@ import { act, create, ReactTestRenderer } from "react-test-renderer";
 import {
   Animated,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -24,6 +25,10 @@ const mockT = (key: string, fallback: unknown) =>
   typeof fallback === "string" ? fallback : key;
 const mockShowError = jest.fn();
 const mockShowSuccess = jest.fn();
+const mockStageMarketingConsent = jest.fn();
+jest.mock("../../lib/marketing-consent-pending", () => ({
+  stageSignupMarketingConsent: (...args: unknown[]) => mockStageMarketingConsent(...args),
+}));
 jest.mock("../../lib/api-client", () => ({
   apiClient: { post: (...args: unknown[]) => mockPost(...args) },
   eventApiPath: jest.fn(),
@@ -125,6 +130,7 @@ describe("passwordless email reset", () => {
     mockFocus.mockClear();
     mockShowError.mockReset();
     mockShowSuccess.mockReset();
+    mockStageMarketingConsent.mockReset().mockResolvedValue(undefined);
     await act(async () => {
       renderer = create(<AuthScreen />, {
         createNodeMock: () => ({ focus: mockFocus }),
@@ -156,6 +162,59 @@ describe("passwordless email reset", () => {
       button(label).props.onPress();
     });
   };
+
+  const marketingConsentToggles = () =>
+    renderer.root
+      .findAllByType(TouchableOpacity)
+      .filter((node) => node.props.accessibilityRole === "checkbox");
+
+  it("keeps both optional consent controls left aligned, unchecked, and accessible", async () => {
+    const [consent, partnerConsent] = marketingConsentToggles();
+    const consentStyle = StyleSheet.flatten(consent.props.style);
+    expect(consentStyle.justifyContent).toBe("flex-start");
+    expect(consentStyle.minHeight).toBeGreaterThanOrEqual(48);
+    expect(consent.props.accessibilityState.checked).toBe(false);
+    expect(partnerConsent.props.accessibilityState.checked).toBe(false);
+    expect(partnerConsent.props.accessibilityLabel).toContain("partners for offers");
+    expect(consent.findAll((node) => node.props.name === "checkbox-outline")).toHaveLength(1);
+
+    const title = renderer.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "HASHPASS updates")!;
+    expect(StyleSheet.flatten(title.props.style).textAlign).toBe("left");
+
+    await act(async () => { consent.props.onPress(); });
+    const selected = marketingConsentToggles()[0];
+    expect(selected.props.accessibilityState.checked).toBe(true);
+    expect(selected.props.accessibilityLabel).toContain("Selected · Unsubscribe anytime.");
+
+    await act(async () => { selected.props.onPress(); });
+    expect(marketingConsentToggles()[0].props.accessibilityState.checked).toBe(false);
+    expect(mockStageMarketingConsent).not.toHaveBeenCalled();
+  });
+
+  it("stages the independent consent choices for email and social sign-in", async () => {
+    const [hashpassConsent, partnerConsent] = marketingConsentToggles();
+    await act(async () => { hashpassConsent.props.onPress(); });
+    await act(async () => { partnerConsent.props.onPress(); });
+    act(() => emailInput().props.onChangeText("person@example.com"));
+    await press("Send Magic Link");
+    expect(mockStageMarketingConsent).toHaveBeenCalledWith(
+      { hashpassUpdates: true, partnerPromotions: true },
+      "person@example.com",
+    );
+
+    const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
+    mockAuth = { ...mockAuth, signInWithOAuth };
+    await act(async () => renderer.update(<AuthScreen key="marketing-social" />));
+    await act(async () => { marketingConsentToggles()[1].props.onPress(); });
+    await press("Sign in with Google");
+    expect(mockStageMarketingConsent).toHaveBeenLastCalledWith(
+      { hashpassUpdates: false, partnerPromotions: true },
+      undefined,
+    );
+    expect(signInWithOAuth).toHaveBeenCalledWith("google");
+  });
 
   it("offers the existing Google flow inside the modal and prevents duplicate pending requests", async () => {
     const signInWithOAuth = jest.fn().mockResolvedValue({ pending: true });
