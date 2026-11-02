@@ -534,6 +534,19 @@ describe('AdminPanel pass codes', () => {
     expect(renderer.root.findAllByProps({
       accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
     }).length).toBeGreaterThan(0);
+
+    const chileChip = renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
+    }).find((node: any) => Object.prototype.hasOwnProperty.call(node.props, 'selected'));
+    expect(chileChip).toBeDefined();
+    await act(async () => {
+      triggerPress(chileChip);
+      await Promise.resolve();
+    });
+    expect(renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
+      selected: true,
+    }).length).toBeGreaterThan(0);
   });
 
   it('uses the shared filter chip for global-admin event selection', async () => {
@@ -543,6 +556,19 @@ describe('AdminPanel pass codes', () => {
 
     expect(renderer.root.findAllByProps({
       accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
+    }).length).toBeGreaterThan(0);
+
+    const colombiaChip = renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
+    }).find((node: any) => Object.prototype.hasOwnProperty.call(node.props, 'selected'));
+    expect(colombiaChip).toBeDefined();
+    await act(async () => {
+      triggerPress(colombiaChip);
+      await Promise.resolve();
+    });
+    expect(renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
+      selected: true,
     }).length).toBeGreaterThan(0);
   });
 
