@@ -22,6 +22,7 @@ describe("CBWeek migration plans", () => {
         "V166__marketing_campaign_approval.sql",
         "V167__close_cancelled_campaign_approvals.sql",
         "V168__event_scoped_ticket_claim_notifications.sql",
+        "V169__cast_admin_pass_status_enum.sql",
       ]) {
         expect(migrations).toContain(`db/migrations/${migration}`);
       }
