@@ -2,8 +2,8 @@ import pack from '../../config/marketing/bsl2026.json';
 import { activityRoute, renderMarketingEmail, safeCampaignUrl, validCampaignCopy, validCampaignDraft, validZonedTime, formatCampaignTime } from '../../lib/marketing';
 
 describe('campaign validation and rendering', () => {
-  it('validates all seven bilingual scheduled campaign drafts', () => {
-    expect(pack.messages).toHaveLength(7);
+  it('validates all eight bilingual scheduled campaign drafts', () => {
+    expect(pack.messages).toHaveLength(8);
     for (const m of pack.messages) expect(validCampaignDraft({ ...m, readiness: {} })).toBe(true);
     expect(new Date(pack.messages[0].scheduledAt).toISOString()).toBe('2026-10-26T14:00:00.000Z');
     expect(formatCampaignTime(pack.messages[0].scheduledAt)).toContain('09:00');
