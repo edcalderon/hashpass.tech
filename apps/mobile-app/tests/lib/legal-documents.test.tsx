@@ -17,7 +17,7 @@ const sampleDocument: LegalDocument = {
   id: 'privacy',
   title: 'Privacy Policy',
   description: 'Privacy details',
-  revision: '26 September 2026',
+  revision: '2 November 2026',
   sourcePath: 'apps/docs/docs/legal/privacy-policy.md',
   sourceUrl: 'https://hashpass.club/documentation/legal/privacy-policy/',
   blocks: [
@@ -123,7 +123,7 @@ it('renders every canonical block type as read-only text with no links', async (
 it('keeps a newer bundled policy when the deployed Club artifact is stale', async () => {
   const staleDocument: LegalDocument = {
     ...sampleDocument,
-    revision: '24 September 2026',
+    revision: '31 October 2026',
     blocks: [{ type: 'paragraph', text: 'Outdated binding copy' }],
   };
   jest.mocked(globalThis.fetch).mockResolvedValue(response(staleDocument));
@@ -134,13 +134,13 @@ it('keeps a newer bundled policy when the deployed Club artifact is stale', asyn
   });
 
   expect(rendered().root.findAllByProps({ children: 'Outdated binding copy' })).toHaveLength(0);
-  expect(JSON.stringify(rendered().toJSON())).toContain('25 September 2026');
+  expect(JSON.stringify(rendered().toJSON())).toContain('1 November 2026');
 });
 
 it('keeps the bundled policy when equal revision labels contain different text', async () => {
   const mismatchedDocument: LegalDocument = {
     ...sampleDocument,
-    revision: '25 September 2026',
+    revision: '1 November 2026',
     blocks: [{ type: 'paragraph', text: 'Same-date stale binding copy' }],
   };
   jest.mocked(globalThis.fetch).mockResolvedValue(response(mismatchedDocument));
@@ -156,7 +156,7 @@ it('keeps the bundled policy when equal revision labels contain different text',
 it('accepts a deployed Club policy with a newer revision', async () => {
   const newerDocument: LegalDocument = {
     ...sampleDocument,
-    revision: '26 September 2026',
+    revision: '3 November 2026',
     blocks: [{ type: 'paragraph', text: 'Newer binding copy' }],
   };
   jest.mocked(globalThis.fetch).mockResolvedValue(response(newerDocument));

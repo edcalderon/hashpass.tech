@@ -64,6 +64,8 @@ describe('campaign validation and rendering', () => {
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: 'invalid code' })).toBe(false);
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: undefined, promoCodeLabel: 'CODE' })).toBe(false);
     expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: 'bad\nlabel' })).toBe(false);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: undefined })).toBe(true);
+    expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: '   ' })).toBe(false);
   });
   it('publishes the offer hero in the production attendee static asset tree', () => {
     const offer = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-business-offer');
