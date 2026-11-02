@@ -499,6 +499,53 @@ describe('AdminPanel pass codes', () => {
     expect(renderer.root.findAllByProps({ children: 'Ticket Claims' }).length).toBeGreaterThan(0);
   });
 
+  it('opens Colombia claim notifications for an event admin granted at the BSL hub', async () => {
+    mockAdminAccess = {
+      globalRole: null,
+      eventRoles: [{ eventId: 'bsl', role: 'event_admin' }],
+    };
+    mockAdminRouteParams = { tab: 'ticket-claims', eventId: 'colombia2026' };
+    mockGet.mockResolvedValue({ success: true, data: { data: [] } });
+
+    const renderer = await renderPanel();
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/admin/pass-ticket-claims?status=open&eventId=colombia2026',
+      { skipEventSegment: true },
+    );
+    expect(renderer.root.findAllByProps({ children: 'Ticket Claims' }).length).toBeGreaterThan(0);
+  });
+
+  it('uses the shared filter chip for event-admin event selection', async () => {
+    mockAdminAccess = {
+      globalRole: null,
+      eventRoles: [
+        { eventId: 'colombia2026', role: 'event_admin' },
+        { eventId: 'chile2026', role: 'event_admin' },
+      ],
+    };
+    mockGet.mockResolvedValue({ success: true, data: { data: [] } });
+
+    const renderer = await renderPanel();
+
+    expect(renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
+    }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Chile 2026',
+    }).length).toBeGreaterThan(0);
+  });
+
+  it('uses the shared filter chip for global-admin event selection', async () => {
+    mockGet.mockResolvedValue({ success: true, data: { data: [] } });
+
+    const renderer = await renderPanel();
+
+    expect(renderer.root.findAllByProps({
+      accessibilityLabel: 'Manage BSL On Tour · Blockchain Summit Latam Colombia 2026',
+    }).length).toBeGreaterThan(0);
+  });
+
   it('rejects a ticket claim with a note and shows an empty queue message', async () => {
     mockGet.mockImplementation(async (path: string) => path.startsWith('/admin/pass-ticket-claims')
       ? { success: true, data: { data: [{

@@ -41,12 +41,13 @@ import {
   type AuthAllyId,
 } from "../../../lib/event-auth-allies";
 import {
-  highestEventRole,
+  effectiveEventRoleForEvent,
   EventRole,
   EventRoleGrant,
 } from "../../../lib/event-admin-access";
 import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
 import { uiTokens } from "@hashpass/ui/tokens";
+import { FilterChip } from "@hashpass/ui/primitives";
 
 type TabType =
   | "passes"
@@ -434,9 +435,10 @@ export default function AdminPanel() {
       setAdminRole(null);
 
       const ambientEventId = resolveActiveEventId();
-      const defaultEventId = requestedEventId && eventRoles.some(
-        (g: EventRoleGrant) => g.eventId === requestedEventId,
-      )
+      const requestedEventRole = requestedEventId
+        ? effectiveEventRoleForEvent(eventRoles, requestedEventId)
+        : null;
+      const defaultEventId = requestedEventId && requestedEventRole
         ? requestedEventId
         : eventRoles.some(
         (g: EventRoleGrant) => g.eventId === ambientEventId,
@@ -444,7 +446,7 @@ export default function AdminPanel() {
         ? ambientEventId
         : eventRoles[0].eventId;
       setSelectedEventId(defaultEventId);
-      setCurrentEventRole(highestEventRole(eventRoles, defaultEventId));
+      setCurrentEventRole(effectiveEventRoleForEvent(eventRoles, defaultEventId));
       setLoading(false);
     } catch (error) {
       console.error("Error checking admin access:", error);
@@ -456,7 +458,7 @@ export default function AdminPanel() {
   const handleSelectEvent = (eventId: string) => {
     setSelectedEventId(eventId);
     if (!isGlobalAdmin) {
-      setCurrentEventRole(highestEventRole(accessibleEvents, eventId));
+      setCurrentEventRole(effectiveEventRoleForEvent(accessibleEvents, eventId));
     }
   };
 
@@ -1554,50 +1556,27 @@ export default function AdminPanel() {
             accessibilityLabel="Select event for administration"
           >
             {Object.keys(EVENTS).map((eventId) => (
-              <TouchableOpacity
+              <FilterChip
                 key={eventId}
-                style={[
-                  styles.eventSwitcherChip,
-                  selectedEventId === eventId && styles.eventSwitcherChipActive,
-                ]}
+                mode={isDark ? "dark" : "light"}
+                label={getEventAdminLabel(eventId)}
+                selected={selectedEventId === eventId}
                 onPress={() => handleSelectEvent(eventId)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedEventId === eventId }}
-              >
-                <Text
-                  style={[
-                    styles.eventSwitcherChipText,
-                    selectedEventId === eventId && styles.eventSwitcherChipTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {getEventAdminLabel(eventId)}
-                </Text>
-              </TouchableOpacity>
+                accessibilityLabel={`Manage ${getEventAdminLabel(eventId)}`}
+              />
             ))}
           </ScrollView>
         ) : accessibleEvents.length > 1 && (
           <View style={styles.eventSwitcher}>
             {accessibleEvents.map((grant) => (
-              <TouchableOpacity
+              <FilterChip
                 key={grant.eventId}
-                style={[
-                  styles.eventSwitcherChip,
-                  selectedEventId === grant.eventId &&
-                    styles.eventSwitcherChipActive,
-                ]}
+                mode={isDark ? "dark" : "light"}
+                label={getEventAdminLabel(grant.eventId)}
+                selected={selectedEventId === grant.eventId}
                 onPress={() => handleSelectEvent(grant.eventId)}
-              >
-                <Text
-                  style={[
-                    styles.eventSwitcherChipText,
-                    selectedEventId === grant.eventId &&
-                      styles.eventSwitcherChipTextActive,
-                  ]}
-                >
-                  {getEventAdminLabel(grant.eventId)}
-                </Text>
-              </TouchableOpacity>
+                accessibilityLabel={`Manage ${getEventAdminLabel(grant.eventId)}`}
+              />
             ))}
           </View>
         )}
@@ -4067,26 +4046,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexWrap: "wrap",
       gap: 8,
       marginTop: 12,
-    },
-    eventSwitcherChip: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      backgroundColor: colors.background.default,
-    },
-    eventSwitcherChipActive: {
-      backgroundColor: "#007AFF",
-      borderColor: "#007AFF",
-    },
-    eventSwitcherChipText: {
-      fontSize: 13,
-      fontWeight: "500",
-      color: colors.text.secondary,
-    },
-    eventSwitcherChipTextActive: {
-      color: "#fff",
     },
     tabsWrapper: {
       backgroundColor: colors.background.paper,
