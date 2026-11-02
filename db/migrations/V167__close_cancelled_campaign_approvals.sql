@@ -21,6 +21,24 @@ ALTER TABLE public.notifications
     'marketing_campaign_cancelled'
   ])) NOT VALID;
 
+WITH cancelled_pending AS (
+  UPDATE public.marketing_campaigns
+  SET approval_status = 'cancelled', approval_decided_at = coalesce(approval_decided_at, now()), updated_at = now()
+  WHERE status = 'cancelled' AND approval_status = 'pending'
+  RETURNING id, approval_requested_to
+)
+UPDATE public.notifications n
+SET type = 'marketing_campaign_cancelled',
+    title = 'Campaign approval cancelled',
+    message = n.message || E'\n\nThis campaign was cancelled. The approval request is closed; no email was sent.',
+    is_read = true,
+    read_at = now(),
+    is_urgent = false
+FROM cancelled_pending c
+WHERE n.campaign_id = c.id
+  AND n.user_id = c.approval_requested_to
+  AND n.type = 'marketing_campaign_approval_requested';
+
 CREATE OR REPLACE FUNCTION public.close_cancelled_marketing_campaign_approval()
 RETURNS trigger
 LANGUAGE plpgsql
