@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611022010, // Updated to current timestamp
+  buildNumber: 202611022125, // Updated to current timestamp
   releaseDate: '2026-11-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'improve claim reviews and event selection',
-    'include pending claim and campaign migrations'
+    'cast admin pass status enum'
   ],
   breakingChanges: [],
-  notes: 'improve claim reviews and event selection; include pending claim and campaign migrations'
+  notes: 'cast admin pass status enum'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.213': {
+    version: '1.9.213',
+    buildNumber: 202611022125,
+    releaseDate: '2026-11-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'cast admin pass status enum'
+    ],
+    breakingChanges: [],
+    notes: 'cast admin pass status enum'
+  },
   '1.9.212': {
     version: '1.9.212',
     buildNumber: 202611021935,
