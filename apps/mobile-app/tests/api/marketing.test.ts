@@ -4,9 +4,23 @@ const mockIdentity = jest.fn();
 const mockRoles = jest.fn();
 const mockRpc = jest.fn();
 const mockReady = jest.fn();
+const mockApprover = jest.fn();
+const mockCampaign = jest.fn();
+const mockSendAdminCampaignEmail = jest.fn();
 jest.mock('../../lib/server/resolve-notification-identity', () => ({ resolveNotificationIdentity: (...args: unknown[]) => mockIdentity(...args), isResolveIdentityError: (value: Record<string, unknown>) => 'error' in value }));
-jest.mock('../../lib/supabase-server', () => ({ getSupabaseServerForRequest: () => ({ rpc: (...args: unknown[]) => mockRpc(...args), from: () => ({ select: () => ({ eq: () => ({ in: () => mockRoles() }) }) }) }) }));
-jest.mock('../../lib/email', () => ({ marketingSenderReady: () => mockReady() }));
+jest.mock('../../lib/supabase-server', () => ({ getSupabaseServerForRequest: () => ({
+  rpc: (...args: unknown[]) => mockRpc(...args),
+  from: (table: string) => {
+    const chain: any = {
+      select: () => chain,
+      eq: () => chain,
+      in: () => table === 'user_roles' ? mockRoles() : chain,
+      maybeSingle: () => table === 'user' ? mockApprover() : mockCampaign(),
+    };
+    return chain;
+  },
+}) }));
+jest.mock('../../lib/email', () => ({ marketingSenderReady: () => mockReady(), sendAdminCampaignEmail: (...args: unknown[]) => mockSendAdminCampaignEmail(...args) }));
 import { GET as overview, POST as admin } from '../../app/api/admin/marketing+api';
 import { GET as unsubscribePage, POST as unsubscribe } from '../../app/api/marketing/unsubscribe+api';
 import { POST as activity } from '../../app/api/marketing/activity+api';
@@ -14,12 +28,16 @@ import { GET as preferenceStatus, POST as updatePreference } from '../../app/api
 import { POST as recordSignupConsent } from '../../app/api/marketing/consent+api';
 
 const actor = '00000000-0000-4000-8000-000000000001';
+const approver = '00000000-0000-4000-8000-000000000002';
 const req = (body: unknown, path = 'admin/marketing') => new Request(`https://api.hashpass.tech/api/${path}`, { method: 'POST', body: JSON.stringify(body) });
 beforeEach(() => {
   jest.clearAllMocks();
   mockIdentity.mockResolvedValue({ supabaseUserId: actor, registryUserId: 'registry-user' });
   mockRoles.mockResolvedValue({ data: [{ role: 'admin', expires_at: null }], error: null });
   mockRpc.mockResolvedValue({ data: {}, error: null }); mockReady.mockResolvedValue(true);
+  mockApprover.mockResolvedValue({ data: { email: 'edward@hashpass.app', status: 'active', deleted_at: null, provider_ids: { supabase: approver } }, error: null });
+  mockCampaign.mockResolvedValue({ data: { name: 'BSL offer', event_id: 'colombia2026' }, error: null });
+  mockSendAdminCampaignEmail.mockResolvedValue({ success: true, messageId: 'approval-1' });
 });
 describe('global campaign administration', () => {
   it.each([{ error: 'Sign in', status: 401 }, { registryUserId: actor }])('rejects identities without global administrative auth: %j', async identity => {
@@ -62,6 +80,35 @@ describe('global campaign administration', () => {
   it('cannot activate without a configured sender', async () => {
     mockReady.mockResolvedValue(false);
     expect((await admin(req({ action: 'schedule', id: actor }))).status).toBe(503); expect(mockRpc).not.toHaveBeenCalled();
+  });
+  it('sends a targeted approval notification and email to the active global approver', async () => {
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: actor, message: 'Full review details', already_requested: false }, error: null });
+    const response = await admin(req({ action: 'request_approval', id: actor }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: { campaign_id: actor, message: 'Full review details', already_requested: false, notificationSent: true, emailSent: true } });
+    expect(mockRpc).toHaveBeenCalledWith('marketing_request_approval', { p_actor: actor, p_campaign: actor, p_approver: approver });
+    expect(mockSendAdminCampaignEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'edward@hashpass.app', eventId: 'colombia2026', actionUrl: 'https://hashpass.tech/dashboard/notifications', message: expect.stringContaining('Full review details') }));
+  });
+  it('keeps the in-app approval request when the SMTP alert fails and avoids duplicate email sends', async () => {
+    mockSendAdminCampaignEmail.mockResolvedValue({ success: false, error: 'offline' });
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: actor, already_requested: false }, error: null });
+    const sent = await admin(req({ action: 'request_approval', id: actor }));
+    await expect(sent.json()).resolves.toEqual({ data: { campaign_id: actor, already_requested: false, notificationSent: true, emailSent: false } });
+
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: actor, already_requested: true }, error: null });
+    const repeated = await admin(req({ action: 'request_approval', id: actor }));
+    await expect(repeated.json()).resolves.toEqual({ data: { campaign_id: actor, already_requested: true, notificationSent: true, emailSent: false } });
+    expect(mockSendAdminCampaignEmail).toHaveBeenCalledTimes(1);
+  });
+  it('requires a separate active approver and records decisions through the database guard', async () => {
+    mockIdentity.mockResolvedValue({ supabaseUserId: approver });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+    expect(mockRpc).not.toHaveBeenCalled();
+    mockIdentity.mockResolvedValue({ supabaseUserId: actor });
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: actor, approval_status: 'approved' }, error: null });
+    const decision = await admin(req({ action: 'approve', id: actor }));
+    expect(decision.status).toBe(200);
+    expect(mockRpc).toHaveBeenCalledWith('marketing_decide_approval', { p_actor: actor, p_campaign: actor, p_decision: 'approve' });
   });
   it.each(['not-a-time', '2999-01-01T00:00:00Z', '2026-10-22T09:00'])('requires an explicit past snapshot cutoff: %s', async cutoff => expect((await admin(req({ action: 'snapshot', cutoff }))).status).toBe(400));
   it('prepares a canonical sorted SHA-256 manifest and returns only RPC metadata', async () => {

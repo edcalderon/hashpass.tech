@@ -2,11 +2,12 @@ import { createHash } from 'node:crypto';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { isResolveIdentityError, resolveNotificationIdentity } from './resolve-notification-identity';
 import { isRoleActive } from '../role-summary';
-import { marketingSenderReady } from '../email';
+import { marketingSenderReady, sendAdminCampaignEmail } from '../email';
 import { renderMarketingEmail, validCampaignCopy, validCampaignDraft, validZonedTime } from '../marketing';
 import campaignPack from '../../config/marketing/bsl2026.json';
 
 export const marketingUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const campaignApproverEmail = 'edward@hashpass.app';
 export const marketingReply = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store', Vary: 'Authorization, Cookie' } });
 
 export async function authorizeMarketingAdmin(request: Request) {
@@ -46,9 +47,60 @@ export async function marketingAdminRequest(request: Request, write = false) {
       return saved.error ? marketingReply({ error: 'Snapshot preparation failed; reload activity and retry' }, 409) : marketingReply({ data: saved.data });
     }
     if (body.action === 'save' && !validCampaignDraft(body.draft)) return marketingReply({ error: 'Check the bilingual copy, campaign key, prerequisites and explicit timezone' }, 400);
-    if (['schedule', 'pause', 'resume', 'cancel'].includes(body.action) && !marketingUuid.test(body.id || '')) return marketingReply({ error: 'A valid campaign is required' }, 400);
-    if (!['seed', 'save', 'schedule', 'pause', 'resume', 'cancel'].includes(body.action)) return marketingReply({ error: 'Unsupported campaign action' }, 400);
+    if (['schedule', 'pause', 'resume', 'cancel', 'request_approval', 'approve', 'decline'].includes(body.action) && !marketingUuid.test(body.id || '')) return marketingReply({ error: 'A valid campaign is required' }, 400);
+    if (!['seed', 'save', 'schedule', 'pause', 'resume', 'cancel', 'request_approval', 'approve', 'decline'].includes(body.action)) return marketingReply({ error: 'Unsupported campaign action' }, 400);
     if (['schedule', 'resume'].includes(body.action) && !await marketingSenderReady()) return marketingReply({ error: 'Configure the marketing sender before activating a campaign' }, 503);
+
+    if (body.action === 'request_approval') {
+      if (!await marketingSenderReady()) return marketingReply({ error: 'Configure the campaign sender before requesting approval' }, 503);
+      const { data: approver, error: approverError } = await auth.client.from('user')
+        .select('email,status,deleted_at,provider_ids').eq('email', campaignApproverEmail).maybeSingle();
+      if (approverError || !approver || approver.status !== 'active' || approver.deleted_at || String(approver.email).toLowerCase() !== campaignApproverEmail) {
+        return marketingReply({ error: 'The assigned campaign approver is not available in this environment' }, 503);
+      }
+      const approverId = approver.provider_ids?.supabase;
+      if (!marketingUuid.test(approverId || '')) return marketingReply({ error: 'The assigned approver needs a linked administrator identity' }, 409);
+      const { data: roles, error: roleError } = await auth.client.from('user_roles')
+        .select('role,expires_at').eq('user_id', approverId).in('role', ['admin', 'super_admin']);
+      if (roleError || !(roles || []).some((role: { role: string; expires_at: string | null }) => ['admin', 'super_admin'].includes(role.role) && isRoleActive(role.expires_at))) {
+        return marketingReply({ error: 'The assigned campaign approver must have active global administrator access' }, 409);
+      }
+      if (auth.actor === approverId) return marketingReply({ error: 'A different administrator must submit this campaign for approval' }, 409);
+
+      const requested = await auth.client.rpc('marketing_request_approval', {
+        p_actor: auth.actor, p_campaign: body.id, p_approver: approverId,
+      });
+      if (requested.error) return marketingReply({ error: requested.error.code === 'P0001' ? requested.error.message : 'Unable to create the campaign approval request' }, requested.error.code === 'P0001' ? 409 : 503);
+      const requestData = requested.data as { already_requested?: boolean; message?: string; campaign_id?: string };
+      let emailSent = false;
+      if (!requestData.already_requested) {
+        const { data: campaign } = await auth.client.from('marketing_campaigns')
+          .select('name,event_id').eq('id', body.id).maybeSingle();
+        const emailResult = await sendAdminCampaignEmail({
+          to: campaignApproverEmail,
+          subject: `Approval requested: ${campaign?.name || 'HASHPASS campaign'}`,
+          heading: 'Please review this HASHPASS campaign',
+          message: `${requestData.message || 'A new marketing campaign is awaiting your approval.'}\n\nOpen Notifications in the HASHPASS dashboard to approve or decline. Approval schedules it for the listed future time; it does not send immediately.`,
+          actionUrl: 'https://hashpass.tech/dashboard/notifications',
+          actionLabel: 'Review campaign request',
+          eventId: campaign?.event_id,
+          template: 'branded',
+        });
+        emailSent = emailResult.success;
+      }
+      return marketingReply({ data: { ...requestData, notificationSent: true, emailSent } });
+    }
+
+    if (body.action === 'approve' || body.action === 'decline') {
+      const decision = await auth.client.rpc('marketing_decide_approval', {
+        p_actor: auth.actor, p_campaign: body.id,
+        p_decision: body.action === 'approve' ? 'approve' : 'decline',
+      });
+      return decision.error
+        ? marketingReply({ error: decision.error.code === 'P0001' ? decision.error.message : 'Unable to record the approval decision' }, decision.error.code === 'P0001' ? 409 : 503)
+        : marketingReply({ data: decision.data });
+    }
+
     const payload = body.action === 'seed' ? { campaigns: campaignPack.messages } : body;
     const result = await auth.client.rpc('marketing_campaign_action', { p_actor: auth.actor, p_action: body.action, p_payload: payload });
     return result.error ? marketingReply({ error: result.error.code === 'P0001' ? 'The campaign is locked, its prerequisites are incomplete, or its schedule needs a future date.' : 'Unable to save campaign changes' }, result.error.code === 'P0001' ? 409 : 503) : marketingReply({ data: result.data });

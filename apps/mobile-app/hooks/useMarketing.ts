@@ -42,7 +42,8 @@ export function useMarketing(owner: string | null) {
   const act = useCallback(async (body: Record<string, unknown>) => {
     const result = await request(body);
     if (!result) return false;
-    await reload(); return true;
+    await reload();
+    return body.action === 'request_approval' ? (result.data?.data || true) : true;
   }, [request, reload]);
   const preview = useCallback(async (copy: CampaignCopy, locale: CampaignLocale, eventId: string) => {
     const result = await request({ action: 'preview', copy, locale, eventId });

@@ -4,6 +4,7 @@ import { ActionButton, Badge, FilterChip, FormField, SegmentedTabs, Surface } fr
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import { formatCampaignTime, MARKETING_REQUIREMENTS, validCampaignDraft } from '../../lib/marketing';
+import type { CampaignRequirement } from '../../types/marketing';
 import EmailPreviewFrame from '../EmailPreviewFrame';
 import type { CampaignCopy, CampaignLocale, MarketingCampaign, MarketingCampaignDraft, MarketingPanelProps, MarketingView } from '../../types/marketing';
 
@@ -23,7 +24,8 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
   const [locale, setLocale] = useState<CampaignLocale>('es');
   const [html, setHtml] = useState<string | null>(null);
   const [cutoff, setCutoff] = useState('');
-  const campaigns = overview?.campaigns || [];
+  const [approvalNotice, setApprovalNotice] = useState<string | null>(null);
+  const campaigns: MarketingCampaign[] = overview?.campaigns || [];
   const cells = useMemo(() => {
     const start = new Date(`${month}-01T12:00:00Z`);
     const total = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
@@ -35,7 +37,7 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
   const title = { ...text, fontSize: uiTokens.type.title, fontWeight: '600' as const, lineHeight: 32 };
   const shiftMonth = (offset: number) => { const d = new Date(`${month}-01T12:00:00Z`); d.setUTCMonth(d.getUTCMonth() + offset); setMonth(d.toISOString().slice(0, 7)); setDay(null); };
   const edit = (campaign?: MarketingCampaign) => {
-    setSelected(campaign || null); setDirty(false); setHtml(null);
+    setSelected(campaign || null); setDirty(false); setHtml(null); setApprovalNotice(null);
     setDraft(campaign ? { key: campaign.key, name: campaign.name, eventId: campaign.event_id, scheduledAt: campaign.scheduled_at || '', timeZone: 'America/Bogota', content: campaign.content, requirements: campaign.requirements, readiness: campaign.readiness } : {
       key: '', name: '', eventId: 'colombia2026', scheduledAt: `${localTime(new Date(Date.now() + 86400000).toISOString())}-05:00`, timeZone: 'America/Bogota', content: { es: { ...blankCopy }, en: { ...blankCopy } }, requirements: ['product_verified', 'assets_published'], readiness: {},
     });
@@ -43,7 +45,7 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
   const update = (change: Partial<MarketingCampaignDraft>) => { if (draft) { setDraft({ ...draft, ...change }); setDirty(true); setHtml(null); } };
   const updateCopy = (key: keyof CampaignCopy, value: string) => { if (draft) update({ content: { ...draft.content, [locale]: { ...draft.content[locale], [key]: value } } }); };
   const liveSelected = campaigns.find(c => c.key === draft?.key);
-  const locked = !!liveSelected && (!['draft', 'paused'].includes(liveSelected.status) || Object.values(liveSelected.counts).some(n => (n || 0) > 0));
+  const locked = !!liveSelected && (liveSelected.approval_status === 'pending' || !['draft', 'paused'].includes(liveSelected.status) || Object.values(liveSelected.counts).some(n => (n || 0) > 0));
   const requirements = {
     product_verified: t('productVerified', 'Product links and flows verified'), assets_published: t('assetsPublished', 'Campaign assets published'), reward_terms_verified: t('rewardTermsVerified', 'Reward terms verified for this message'),
   };
@@ -70,15 +72,20 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
         {draft && <Surface mode={mode}>
           <Text style={title}>{t('editor', 'Campaign editor')}</Text>
           <Text style={muted}>{locked ? t('locked', 'Copy is locked once active or queued. Pause or cancel this campaign; create a new campaign for revised copy.') : t('draftHint', 'Save the copy and prerequisites before scheduling. Saving a draft does not send email.')}</Text>
+          {liveSelected?.approval_status && liveSelected.approval_status !== 'not_requested' && <View style={[styles.row, styles.top]}><Badge mode={mode} tone="neutral" tint={liveSelected.approval_status === 'approved' ? palette.success : liveSelected.approval_status === 'declined' ? palette.danger : palette.accent}>{t(`approval.${liveSelected.approval_status}`, liveSelected.approval_status)}</Badge>{liveSelected.approval_estimated_recipients != null && <Text style={muted}>{t('approval.audienceEstimate', 'Estimated eligible recipients')}: {liveSelected.approval_estimated_recipients}</Text>}</View>}
+          {approvalNotice && <Text accessibilityLiveRegion="polite" style={[muted, styles.top]}>{approvalNotice}</Text>}
           <FormField mode={mode} label={t('key', 'Campaign key')} value={draft.key} editable={!selected && !busy} onChangeText={key => update({ key })} autoCapitalize="none" />
           <FormField mode={mode} label={t('name', 'Campaign name')} value={draft.name} editable={!locked && !busy} onChangeText={name => update({ name })} />
           <FormField mode={mode} label={t('eventId', 'Event ID')} value={draft.eventId} editable={!selected && !busy} onChangeText={eventId => update({ eventId })} autoCapitalize="none" />
           <FormField mode={mode} label={t('scheduleTime', 'Send time · YYYY-MM-DDTHH:mm · Bogotá UTC−5')} value={draft.scheduledAt ? localTime(draft.scheduledAt) : ''} editable={!locked && !busy} onChangeText={value => update({ scheduledAt: `${value}-05:00` })} />
           <SegmentedTabs mode={mode} value={locale} onChange={value => { setLocale(value); setHtml(null); }} tabs={[{ id: 'es', label: 'Español' }, { id: 'en', label: 'English' }]} />
           {(['subject', 'preheader', 'heading', 'message', 'actionLabel', 'actionUrl', 'imageUrl', 'imageAlt', 'guideUrl'] as const).map(key => <FormField key={key} mode={mode} label={t(`field.${key}`, ({ subject: 'Subject', preheader: 'Preview text', heading: 'Heading', message: 'Message', actionLabel: 'Button label', actionUrl: 'Destination URL', imageUrl: 'Image URL (optional)', imageAlt: 'Image description', guideUrl: 'Video / guide URL (optional)' })[key])} value={draft.content[locale][key] || ''} editable={!locked && !busy} multiline={key === 'message'} style={key === 'message' ? { minHeight: 160, textAlignVertical: 'top' } : undefined} onChangeText={value => updateCopy(key, value)} />)}
-          {MARKETING_REQUIREMENTS.map(key => <View key={key} style={styles.row}><Switch accessibilityLabel={requirements[key as keyof typeof requirements]} disabled={locked || busy} value={draft.requirements.includes(key)} onValueChange={enabled => update({ requirements: enabled ? [...draft.requirements, key] : draft.requirements.filter(r => r !== key) })} /><Text style={[text, styles.grow]}>{requirements[key as keyof typeof requirements]}</Text>{draft.requirements.includes(key) && <Switch accessibilityLabel={`${t('ready', 'Ready')}: ${requirements[key as keyof typeof requirements]}`} disabled={locked || busy} value={draft.readiness[key] === true} onValueChange={ready => update({ readiness: { ...draft.readiness, [key]: ready } })} />}</View>)}
+          {MARKETING_REQUIREMENTS.map((key: CampaignRequirement) => <View key={key} style={styles.row}><Switch accessibilityLabel={requirements[key]} disabled={locked || busy} value={draft.requirements.includes(key)} onValueChange={enabled => update({ requirements: enabled ? [...draft.requirements, key] : draft.requirements.filter(r => r !== key) })} /><Text style={[text, styles.grow]}>{requirements[key]}</Text>{draft.requirements.includes(key) && <Switch accessibilityLabel={`${t('ready', 'Ready')}: ${requirements[key]}`} disabled={locked || busy} value={draft.readiness[key] === true} onValueChange={ready => update({ readiness: { ...draft.readiness, [key]: ready } })} />}</View>)}
           <View style={[styles.row, styles.top]}><ActionButton mode={mode} label={t('save', 'Save draft')} disabled={locked || busy || !validCampaignDraft(draft)} onPress={async () => { if (await onAction({ action: 'save', draft })) setDirty(false); }} /><ActionButton mode={mode} variant="secondary" label={t('preview', 'Preview email')} disabled={busy} onPress={async () => setHtml(await onPreview(draft.content[locale], locale, draft.eventId))} />
-            {liveSelected && (['draft', 'paused'].includes(liveSelected.status) ? <ActionButton mode={mode} label={liveSelected.status === 'paused' ? t('resume', 'Resume') : t('schedule', 'Schedule')} disabled={busy || dirty} onPress={() => { void onAction({ action: liveSelected.status === 'paused' ? 'resume' : 'schedule', id: liveSelected.id }); }} /> : ['scheduled', 'sending'].includes(liveSelected.status) && <ActionButton mode={mode} label={t('pause', 'Pause')} disabled={busy} onPress={() => { void onAction({ action: 'pause', id: liveSelected.id }); }} />)}
+            {liveSelected && ['draft', 'paused'].includes(liveSelected.status) && liveSelected.approval_status === 'approved' && <ActionButton mode={mode} label={liveSelected.status === 'paused' ? t('resume', 'Resume') : t('schedule', 'Schedule')} disabled={busy || dirty} onPress={() => { void onAction({ action: liveSelected.status === 'paused' ? 'resume' : 'schedule', id: liveSelected.id }); }} />}
+            {liveSelected && ['draft', 'paused'].includes(liveSelected.status) && ['not_requested', undefined].includes(liveSelected.approval_status) && <ActionButton mode={mode} variant="secondary" label={t('requestApproval', 'Request approval from Edward')} disabled={busy || dirty || liveSelected.requirements.some(key => liveSelected.readiness[key] !== true)} onPress={async () => { const outcome = await onAction({ action: 'request_approval', id: liveSelected.id }); if (outcome && typeof outcome === 'object') setApprovalNotice(outcome.emailSent ? t('approval.emailAndInboxSent', 'Approval request added to Edward’s notifications and emailed.') : t('approval.inboxSentEmailFailed', 'Approval request is in Edward’s notifications; its email alert could not be delivered.')); }} />}
+            {liveSelected?.approval_status === 'declined' && <Text style={muted}>{t('approval.reviseAfterDecline', 'Update and save the campaign before requesting review again.')}</Text>}
+            {liveSelected && (['scheduled', 'sending'].includes(liveSelected.status) && <ActionButton mode={mode} label={t('pause', 'Pause')} disabled={busy} onPress={() => { void onAction({ action: 'pause', id: liveSelected.id }); }} />)}
             {liveSelected && !['completed', 'cancelled'].includes(liveSelected.status) && <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Cancel campaign')} disabled={busy} onPress={() => { void onAction({ action: 'cancel', id: liveSelected.id }); }} />}
             <ActionButton mode={mode} variant="ghost" label={t('close', 'Close editor')} onPress={() => { setDraft(null); setHtml(null); }} />
           </View>{html && <View style={styles.top}><EmailPreviewFrame html={html} height={600} /></View>}

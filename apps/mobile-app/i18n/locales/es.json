@@ -2130,6 +2130,16 @@
       "markAllRead": "Marcar todas como leídas",
       "markRead": "Marcar como leída",
       "markUnread": "Marcar como no leída",
+      "approveCampaign": "Aprobar",
+      "declineCampaign": "Rechazar",
+      "approveCampaignTitle": "¿Aprobar esta campaña?",
+      "approveCampaignMessage": "Esto programa la campaña revisada para la audiencia y la hora indicadas. No se enviará de inmediato.",
+      "declineCampaignTitle": "¿Rechazar esta campaña?",
+      "declineCampaignMessage": "La campaña quedará sin programar hasta que se modifique y apruebe.",
+      "campaignDecisionSavedTitle": "Decisión registrada",
+      "campaignApprovedMessage": "Campaña aprobada y programada para la hora indicada. No se enviará de inmediato.",
+      "campaignDeclinedMessage": "Campaña rechazada. No se envió ningún correo de campaña.",
+      "campaignDecisionFailed": "No se pudo registrar la decisión. Actualiza e inténtalo de nuevo.",
       "delete": "Eliminar",
       "deleteTitle": "Eliminar notificación",
       "deleteMessage": "¿Estás seguro de que quieres eliminar esta notificación?",
@@ -2163,6 +2173,7 @@
         "meetingExpired": "Reunión expirada",
         "reminder": "Recordatorio",
         "boostReceived": "Impulso recibido",
+        "campaignApproval": "Aprobación de campaña",
         "systemAlert": "Alerta del sistema",
         "chatMessage": "Mensaje de chat",
         "priority": "Prioridad",
@@ -2227,6 +2238,15 @@
         "messageFrom": "Tienes un nuevo mensaje de {senderName}",
         "titleMeeting": "{meetingTitle}",
         "messageMeeting": "Nuevo mensaje en {meetingTitle}"
+      },
+      "marketing_campaign_approval_requested": {
+        "title": "Solicitud de aprobación de campaña"
+      },
+      "marketing_campaign_approved": {
+        "title": "Campaña aprobada"
+      },
+      "marketing_campaign_declined": {
+        "title": "Campaña rechazada"
       }
     }
   },
@@ -2619,6 +2639,16 @@
     "preview": "Vista previa",
     "resume": "Reanudar",
     "schedule": "Programar",
+    "requestApproval": "Solicitar aprobación de Edward",
+    "approval": {
+      "pending": "Pendiente de aprobación",
+      "approved": "Aprobada",
+      "declined": "Rechazada",
+      "audienceEstimate": "Destinatarios elegibles estimados",
+      "emailAndInboxSent": "La solicitud se agregó a las notificaciones de Edward y se envió por correo.",
+      "inboxSentEmailFailed": "La solicitud está en las notificaciones de Edward, pero no se pudo enviar el aviso por correo.",
+      "reviseAfterDecline": "Actualiza y guarda la campaña antes de volver a solicitar una revisión."
+    },
     "pause": "Pausar",
     "cancel": "Cancelar campaña",
     "close": "Cerrar editor",

@@ -274,6 +274,21 @@ export function translateNotification(
           }
         }
         break;
+
+      case 'marketing_campaign_approval_requested':
+        translatedTitle = t('types.marketing_campaign_approval_requested.title');
+        translatedMessage = message;
+        break;
+
+      case 'marketing_campaign_approved':
+        translatedTitle = t('types.marketing_campaign_approved.title');
+        translatedMessage = message;
+        break;
+
+      case 'marketing_campaign_declined':
+        translatedTitle = t('types.marketing_campaign_declined.title');
+        translatedMessage = message;
+        break;
     }
   } catch (error) {
     // If translation fails, return original

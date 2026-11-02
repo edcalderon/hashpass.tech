@@ -8,6 +8,7 @@ const mockMarkAsUnread = jest.fn().mockResolvedValue(undefined);
 const mockArchiveNotification = jest.fn().mockResolvedValue(undefined);
 const mockDeleteNotification = jest.fn().mockResolvedValue(undefined);
 const mockRouterPush = jest.fn();
+const mockMarketingPost = jest.fn().mockResolvedValue({ success: true });
 type TestNotification = {
   id: string;
   type: string;
@@ -16,6 +17,7 @@ type TestNotification = {
   meeting_request_id?: string;
   meeting_request_event_id?: string;
   meeting_id?: string;
+  campaign_id?: string;
   is_urgent?: boolean;
   is_archived?: boolean;
   is_read: boolean;
@@ -56,6 +58,7 @@ jest.mock('../../i18n/i18n', () => ({
 }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons', MaterialIcons: 'MaterialIcons' }));
 jest.mock('../../lib/supabase', () => ({ supabase: {} }));
+jest.mock('../../lib/api-client', () => ({ apiClient: { post: (...args: unknown[]) => mockMarketingPost(...args) } }));
 jest.mock('../../hooks/useAuth', () => {
   const auth = { user: { id: 'u1' }, dbUserId: 'db1', isLoading: false };
   return { useAuth: () => auth };
@@ -103,6 +106,7 @@ describe('dashboard pages share the page layout', () => {
     mockMarkAsUnread.mockReset();
     mockArchiveNotification.mockReset();
     mockDeleteNotification.mockReset();
+    mockMarketingPost.mockReset().mockResolvedValue({ success: true });
     (Alert.alert as jest.Mock).mockClear();
     mockNotifications.splice(0, mockNotifications.length, defaultNotification);
   });
@@ -209,6 +213,30 @@ describe('dashboard pages share the page layout', () => {
       pathname: '/events/event-from-request/networking/my-requests',
       params: { requestId: 'request-1', highlightRequest: 'true' },
     });
+    act(() => view.unmount());
+  });
+
+  it('lets the assigned campaign reviewer approve or decline from the notification', async () => {
+    mockNotifications.splice(0, mockNotifications.length, {
+      id: 'campaign-approval',
+      type: 'marketing_campaign_approval_requested',
+      title: 'Campaign approval requested',
+      message: 'BSL Colombia · 100% Business Experience offer · Code HASHPASS · Nov 3 at 07:35 Bogotá · opted-in audience only.',
+      campaign_id: 'campaign-1',
+      is_read: false,
+      is_urgent: true,
+      created_at: '2026-11-02T05:00:00Z',
+    });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+    expect(text(view)).toContain('Code HASHPASS');
+    const approve = view.root.find(node => node.props.accessibilityLabel === 'center.approveCampaign');
+    await act(async () => { approve.props.onPress(); });
+    const confirmApproval = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2][1];
+    await act(async () => { confirmApproval.onPress(); await Promise.resolve(); await Promise.resolve(); });
+    expect(mockMarketingPost).toHaveBeenCalledWith('admin/marketing', { action: 'approve', id: 'campaign-1' }, { skipEventSegment: true, retries: 0 });
+    expect(mockMarkAsRead).toHaveBeenCalledWith('campaign-approval');
+    expect(mockRouterPush).not.toHaveBeenCalled();
     act(() => view.unmount());
   });
 

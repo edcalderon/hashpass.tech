@@ -10,6 +10,7 @@ import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { ActionButton, Badge, SegmentedTabs } from '@hashpass/ui/primitives';
 import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
+import { apiClient } from '../../../lib/api-client';
 import { translateNotification } from '../../../lib/notification-translations';
 import { buildNotificationEventPath } from '../../../lib/notification-navigation';
 import {
@@ -38,6 +39,7 @@ export default function NotificationsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({});
   const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
+  const [decidingCampaigns, setDecidingCampaigns] = useState<Set<string>>(new Set());
 
   // Separate the inbox by intent. Messages stay available in All, but their
   // dedicated tab avoids letting a busy conversation bury action-required
@@ -110,7 +112,7 @@ export default function NotificationsScreen() {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'ticket_claim_review_required') {
+    if (notification.type === 'ticket_claim_review_required' || notification.type === 'marketing_campaign_approval_requested') {
       router.push('/dashboard/admin' as any);
     } else if (notification.type === 'business_invite_review_required') {
       router.push('/dashboard/business-invites' as any);
@@ -162,6 +164,45 @@ export default function NotificationsScreen() {
       // Navigate to speaker details
       router.push(buildNotificationEventPath(notification, null, `speakers/${notification.speaker_id}`) as any);
     }
+  };
+
+  const decideCampaignApproval = (notification: NotificationInboxItem, decision: 'approve' | 'decline') => {
+    if (!notification.campaign_id || decidingCampaigns.has(notification.campaign_id)) return;
+    const approve = decision === 'approve';
+    Alert.alert(
+      approve ? t('center.approveCampaignTitle') : t('center.declineCampaignTitle'),
+      approve ? t('center.approveCampaignMessage') : t('center.declineCampaignMessage'),
+      [
+        { text: t('center.cancel'), style: 'cancel' },
+        {
+          text: approve ? t('center.approveCampaign') : t('center.declineCampaign'),
+          style: approve ? 'default' : 'destructive',
+          onPress: () => {
+            void (async () => {
+              setDecidingCampaigns(current => new Set(current).add(notification.campaign_id!));
+              try {
+                const result = await apiClient.post('admin/marketing', {
+                  action: decision,
+                  id: notification.campaign_id,
+                }, { skipEventSegment: true, retries: 0 });
+                if (!result.success) throw new Error(result.error || t('center.campaignDecisionFailed'));
+                await Promise.all(notification.notificationIds.map((id: string) => markAsRead(id)));
+                await refreshNotifications();
+                Alert.alert(t('center.campaignDecisionSavedTitle'), approve ? t('center.campaignApprovedMessage') : t('center.campaignDeclinedMessage'));
+              } catch (error) {
+                Alert.alert(t('center.campaignDecisionFailed'), error instanceof Error ? error.message : t('center.campaignDecisionFailed'));
+              } finally {
+                setDecidingCampaigns(current => {
+                  const next = new Set(current);
+                  next.delete(notification.campaign_id!);
+                  return next;
+                });
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   const handleToggleReadStatus = async (notification: NotificationInboxItem) => {
@@ -227,11 +268,14 @@ export default function NotificationsScreen() {
         return 'trending-up';
       case 'business_invite_review_required':
       case 'ticket_claim_review_required':
+      case 'marketing_campaign_approval_requested':
         return 'verified-user';
       case 'business_invite_approved':
+      case 'marketing_campaign_approved':
         return 'verified';
       case 'business_invite_pending':
       case 'business_invite_rejected':
+      case 'marketing_campaign_declined':
         return 'schedule';
       case 'system_alert':
         return 'info';
@@ -246,10 +290,12 @@ export default function NotificationsScreen() {
     switch (type) {
       case 'meeting_accepted':
       case 'business_invite_approved':
+      case 'marketing_campaign_approved':
         return palette.success;
       case 'meeting_declined':
       case 'meeting_expired':
       case 'business_invite_rejected':
+      case 'marketing_campaign_declined':
         return palette.danger;
       default:
         return palette.accent;
@@ -309,7 +355,9 @@ export default function NotificationsScreen() {
     }
 
     if (filters.type) {
-      filtered = filtered.filter(item => item.type === filters.type);
+      filtered = filtered.filter(item => filters.type === 'campaign_approval'
+        ? item.type.startsWith('marketing_campaign_')
+        : item.type === filters.type);
     }
 
     if (filters.urgent === 'true' || filters.urgent === true) {
@@ -343,6 +391,7 @@ export default function NotificationsScreen() {
         { key: 'meeting_expired', label: t('center.filters.meetingExpired'), icon: 'schedule' },
         { key: 'meeting_reminder', label: t('center.filters.reminder'), icon: 'schedule' },
         { key: 'boost_received', label: t('center.filters.boostReceived'), icon: 'trending-up' },
+        { key: 'campaign_approval', label: t('center.filters.campaignApproval'), icon: 'campaign' },
         { key: 'system_alert', label: t('center.filters.systemAlert'), icon: 'info' },
         { key: 'chat_message', label: t('center.filters.chatMessage'), icon: 'chat' },
       ],
@@ -423,6 +472,28 @@ export default function NotificationsScreen() {
               onPress={() => handleDeleteNotification(notification)}
               style={styles.cardAction}
             />
+          ) : notification.type === 'marketing_campaign_approval_requested' && notification.campaign_id ? (
+            <>
+              <ActionButton
+                mode={mode}
+                label={t('center.approveCampaign')}
+                loading={decidingCampaigns.has(notification.campaign_id)}
+                disabled={decidingCampaigns.has(notification.campaign_id)}
+                leadingIcon={<MaterialIcons name="check-circle" size={18} color={palette.success} />}
+                onPress={() => decideCampaignApproval(notification, 'approve')}
+                style={styles.cardAction}
+              />
+              <ActionButton
+                mode={mode}
+                label={t('center.declineCampaign')}
+                variant="ghost"
+                loading={decidingCampaigns.has(notification.campaign_id)}
+                disabled={decidingCampaigns.has(notification.campaign_id)}
+                leadingIcon={<MaterialIcons name="cancel" size={18} color={palette.danger} />}
+                onPress={() => decideCampaignApproval(notification, 'decline')}
+                style={styles.cardAction}
+              />
+            </>
           ) : (
             <>
               <ActionButton

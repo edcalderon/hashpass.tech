@@ -1,7 +1,7 @@
-import type { CampaignCopy, MarketingCampaignDraft } from '../types/marketing';
+import type { CampaignCopy, CampaignRequirement, MarketingCampaignDraft } from '../types/marketing';
 
 export const MARKETING_TIME_ZONE = 'America/Bogota';
-export const MARKETING_REQUIREMENTS = ['product_verified', 'assets_published', 'reward_terms_verified'];
+export const MARKETING_REQUIREMENTS: readonly CampaignRequirement[] = ['product_verified', 'assets_published', 'reward_terms_verified'];
 export const MARKETING_STATUS_LABELS = {
   queued: 'Queued', sending: 'In flight', accepted: 'Provider accepted', failed: 'Rejected', unknown: 'Needs reconciliation', suppressed: 'Suppressed',
 };
@@ -47,7 +47,7 @@ export function validCampaignDraft(value: unknown): value is MarketingCampaignDr
     typeof draft.eventId === 'string' && /^[a-z0-9-]{1,64}$/.test(draft.eventId) && draft.timeZone === MARKETING_TIME_ZONE && validZonedTime(draft.scheduledAt) &&
     validCampaignCopy(draft.content?.es) && validCampaignCopy(draft.content?.en) && Array.isArray(draft.requirements) &&
     draft.requirements.length <= MARKETING_REQUIREMENTS.length && draft.requirements.every(key => MARKETING_REQUIREMENTS.includes(key)) && !!draft.readiness && typeof draft.readiness === 'object' && !Array.isArray(draft.readiness) &&
-    Object.entries(draft.readiness).every(([key, val]) => MARKETING_REQUIREMENTS.includes(key) && typeof val === 'boolean');
+    Object.entries(draft.readiness).every(([key, val]) => MARKETING_REQUIREMENTS.some(requirement => requirement === key) && typeof val === 'boolean');
 }
 export function validZonedTime(value: unknown): value is string {
   if (typeof value !== 'string') return false;

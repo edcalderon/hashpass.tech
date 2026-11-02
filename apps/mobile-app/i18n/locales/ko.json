@@ -2146,6 +2146,16 @@
       "hoursAgo": "{hours}시간 전",
       "daysAgo": "{days}일 전",
       "urgent": "긴급",
+      "approveCampaign": "승인",
+      "declineCampaign": "거절",
+      "approveCampaignTitle": "이 캠페인을 승인할까요?",
+      "approveCampaignMessage": "검토한 캠페인을 안내된 대상과 시간에 예약합니다. 즉시 발송되지는 않습니다.",
+      "declineCampaignTitle": "이 캠페인을 거절할까요?",
+      "declineCampaignMessage": "수정 후 다시 승인될 때까지 캠페인은 예약되지 않습니다.",
+      "campaignDecisionSavedTitle": "결정이 기록되었습니다",
+      "campaignApprovedMessage": "캠페인이 승인되어 안내된 시간으로 예약되었습니다. 즉시 발송되지는 않습니다.",
+      "campaignDeclinedMessage": "캠페인이 거절되었습니다. 캠페인 이메일은 발송되지 않았습니다.",
+      "campaignDecisionFailed": "결정을 기록하지 못했습니다. 새로고침 후 다시 시도해 주세요.",
       "filters": {
         "readStatus": "읽음 상태",
         "all": "전체",
@@ -2159,6 +2169,7 @@
         "meetingExpired": "미팅 만료됨",
         "reminder": "알림",
         "boostReceived": "부스트 받음",
+        "campaignApproval": "캠페인 승인",
         "systemAlert": "시스템 알림",
         "chatMessage": "채팅 메시지",
         "priority": "우선순위",
@@ -2215,6 +2226,15 @@
       "system_alert": {
         "title": "시스템 알림",
         "message": "{message}"
+      },
+      "marketing_campaign_approval_requested": {
+        "title": "캠페인 승인 요청"
+      },
+      "marketing_campaign_approved": {
+        "title": "캠페인 승인됨"
+      },
+      "marketing_campaign_declined": {
+        "title": "캠페인 거절됨"
       },
       "chat_message": {
         "title": "새 채팅 메시지",
