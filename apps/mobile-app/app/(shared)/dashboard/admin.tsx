@@ -18,7 +18,12 @@ import { useTheme } from "../../../hooks/useTheme";
 import MarketingManager from '../../../components/admin/MarketingManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
-import type { ExternalTicketClaimRequest, ExternalTicketReportRequest } from "../../../types/ExternalTicketClaim.types";
+import type {
+  ExternalTicketClaimRequest,
+  ExternalTicketClaimResult,
+  ExternalTicketClaimReviewFeedback,
+  ExternalTicketReportRequest,
+} from "../../../types/ExternalTicketClaim.types";
 import { getCurrentAdminAccess } from "../../../lib/admin-access";
 import { supabase } from "../../../lib/supabase";
 import {
@@ -46,8 +51,17 @@ import {
   EventRoleGrant,
 } from "../../../lib/event-admin-access";
 import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
-import { uiTokens } from "@hashpass/ui/tokens";
-import { FilterChip } from "@hashpass/ui/primitives";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import { ActionButton } from "@hashpass/ui/primitives";
+import EventAdminSelector from "../../../components/admin/EventAdminSelector";
+import {
+  createAdminEventOptions,
+  getEventAdminLabel as getAdminEventLabel,
+  getPreferredAdminEventId,
+} from "../../../lib/admin-event-selector";
+
+const ADMIN_EVENT_OPTIONS = createAdminEventOptions(EVENTS);
+const getEventAdminLabel = (eventId: string) => getAdminEventLabel(eventId, EVENTS);
 
 type TabType =
   | "passes"
@@ -216,22 +230,12 @@ export default function AdminPanel() {
     [],
   );
   const [selectedEventId, setSelectedEventId] = useState<string>(() =>
-    resolveActiveEventId(),
+    getPreferredAdminEventId(resolveActiveEventId(), ADMIN_EVENT_OPTIONS) ?? resolveActiveEventId(),
   );
   const [currentEventRole, setCurrentEventRole] = useState<EventRole | null>(
     null,
   );
   const canReviewTicketClaims = isGlobalAdmin || currentEventRole === "event_admin";
-
-  const getEventAdminLabel = (eventId: string) => {
-    const event = EVENTS[eventId];
-    if (!event) return eventId;
-    const series = event.series?.trim();
-    const title = (event.title || event.name || eventId).trim();
-    return series && !title.toLowerCase().includes(series.toLowerCase())
-      ? `${series} · ${title}`
-      : title;
-  };
 
   const isKnownEventId = (eventId?: string) =>
     Boolean(eventId && Object.prototype.hasOwnProperty.call(EVENTS, eventId));
@@ -417,7 +421,11 @@ export default function AdminPanel() {
         setIsGlobalAdmin(true);
         setIsUserAdmin(true);
         setAdminRole(access.globalRole);
-        if (requestedEventId && isKnownEventId(requestedEventId)) setSelectedEventId(requestedEventId);
+        const defaultEventId =
+          requestedEventId && isKnownEventId(requestedEventId)
+            ? requestedEventId
+            : getPreferredAdminEventId(resolveActiveEventId(), ADMIN_EVENT_OPTIONS);
+        if (defaultEventId) setSelectedEventId(defaultEventId);
         setLoading(false);
         return;
       }
@@ -438,13 +446,15 @@ export default function AdminPanel() {
       const requestedEventRole = requestedEventId
         ? effectiveEventRoleForEvent(eventRoles, requestedEventId)
         : null;
+      const grantOptions = ADMIN_EVENT_OPTIONS.filter((event) =>
+        effectiveEventRoleForEvent(eventRoles, event.eventId),
+      );
+      const currentGrantEventId = effectiveEventRoleForEvent(eventRoles, ambientEventId)
+        ? ambientEventId
+        : null;
       const defaultEventId = requestedEventId && requestedEventRole
         ? requestedEventId
-        : eventRoles.some(
-        (g: EventRoleGrant) => g.eventId === ambientEventId,
-      )
-        ? ambientEventId
-        : eventRoles[0].eventId;
+        : getPreferredAdminEventId(currentGrantEventId, grantOptions) ?? eventRoles[0].eventId;
       setSelectedEventId(defaultEventId);
       setCurrentEventRole(effectiveEventRoleForEvent(eventRoles, defaultEventId));
       setLoading(false);
@@ -508,42 +518,43 @@ export default function AdminPanel() {
     }
   };
 
-  const reviewTicketClaim = (claim: ExternalTicketClaimRequest, action: "approve" | "reject", reviewNote = "") => {
+  const reviewTicketClaim = async (
+    claim: ExternalTicketClaimRequest,
+    action: "approve" | "reject",
+    reviewNote = "",
+  ): Promise<ExternalTicketClaimResult> => {
     const note = reviewNote.trim();
     if (action === "reject" && !note) {
-      Alert.alert("Add a note", "Explain why the claim is declined so the claimant knows what to fix.");
-      return;
+      throw new Error("Add a review note before rejecting this claim.");
     }
-    const verb = action === "approve" ? "Approve" : "Reject";
-    Alert.alert(
-      `${verb} ticket claim?`,
-      `${verb} the ${claim.requested_pass_type.toUpperCase()} claim for ticket ending in ${claim.ticket_code_last4}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: verb,
-          style: action === "reject" ? "destructive" : "default",
-          onPress: () => {
-            void (async () => {
-              try {
-                setTicketClaimsLoading(true);
-                const result = await apiClient.post(
-                  "/admin/pass-ticket-claims",
-                  { claimId: claim.id, eventId: claim.event_id, action, passType: action === "approve" ? claim.requested_pass_type : undefined, note: note || undefined },
-                  { skipEventSegment: true },
-                );
-                if (!result.success) throw new Error(result.error || "Unable to review claim");
-                await loadTicketClaims();
-              } catch (error: any) {
-                Alert.alert("Claim not updated", error.message || "Please try again.");
-              } finally {
-                setTicketClaimsLoading(false);
-              }
-            })();
-          },
-        },
-      ],
+    const result = await apiClient.post(
+      "/admin/pass-ticket-claims",
+      {
+        claimId: claim.id,
+        eventId: claim.event_id,
+        action,
+        passType: action === "approve" ? claim.requested_pass_type : undefined,
+        note: note || undefined,
+      },
+      { skipEventSegment: true },
     );
+    if (!result.success) throw new Error(result.error || "Unable to review claim");
+
+    const reviewed = (result.data as { data?: ExternalTicketClaimResult } | null)?.data;
+    if (!reviewed || reviewed.id !== claim.id) {
+      throw new Error("The server did not confirm this claim review. Refresh the queue and try again.");
+    }
+    if (action === "approve" && (reviewed.status !== "converted" || !reviewed.pass_id)) {
+      throw new Error("The claim was not approved because no HashPass pass was assigned.");
+    }
+    if (action === "reject" && reviewed.status !== "rejected") {
+      throw new Error("This claim was not rejected. Refresh the queue and check its current status.");
+    }
+
+    // The review response confirms the database transaction. Refresh the queue
+    // separately so a read failure cannot turn a successful approval into an error.
+    void loadTicketClaims();
+    return reviewed;
   };
 
   const resolveTicketReport = (report: ExternalTicketReportRequest, action: "confirm" | "dismiss", reviewNote = "") => {
@@ -1535,6 +1546,11 @@ export default function AdminPanel() {
   }
 
   const canManagePasses = isGlobalAdmin || currentEventRole === "event_admin";
+  const selectableAdminEvents = isGlobalAdmin
+    ? ADMIN_EVENT_OPTIONS
+    : ADMIN_EVENT_OPTIONS.filter((event) =>
+        effectiveEventRoleForEvent(accessibleEvents, event.eventId),
+      );
 
   return (
     <View style={styles.container}>
@@ -1547,39 +1563,14 @@ export default function AdminPanel() {
             ? `${adminRole || "Admin"} · ${getEventAdminLabel(selectedEventId)}`
             : `${currentEventRole || "admin"} @ ${getEventAdminLabel(selectedEventId)}`}
         </Text>
-        {isGlobalAdmin ? (
-          <ScrollView
-            horizontal
-            style={styles.eventSwitcher}
-            contentContainerStyle={{ gap: 8, paddingRight: 12 }}
-            showsHorizontalScrollIndicator={false}
-            accessibilityLabel="Select event for administration"
-          >
-            {Object.keys(EVENTS).map((eventId) => (
-              <FilterChip
-                key={eventId}
-                mode={isDark ? "dark" : "light"}
-                label={getEventAdminLabel(eventId)}
-                selected={selectedEventId === eventId}
-                onPress={() => handleSelectEvent(eventId)}
-                accessibilityLabel={`Manage ${getEventAdminLabel(eventId)}`}
-              />
-            ))}
-          </ScrollView>
-        ) : accessibleEvents.length > 1 && (
-          <View style={styles.eventSwitcher}>
-            {accessibleEvents.map((grant) => (
-              <FilterChip
-                key={grant.eventId}
-                mode={isDark ? "dark" : "light"}
-                label={getEventAdminLabel(grant.eventId)}
-                selected={selectedEventId === grant.eventId}
-                onPress={() => handleSelectEvent(grant.eventId)}
-                accessibilityLabel={`Manage ${getEventAdminLabel(grant.eventId)}`}
-              />
-            ))}
-          </View>
-        )}
+        {selectableAdminEvents.length > 1 ? (
+          <EventAdminSelector
+            options={selectableAdminEvents}
+            selectedEventId={selectedEventId}
+            mode={isDark ? "dark" : "light"}
+            onSelect={handleSelectEvent}
+          />
+        ) : null}
       </View>
 
       {/* Tabs stay on one row; scroll instead of wrapping actions into a second line. */}
@@ -1976,6 +1967,7 @@ export default function AdminPanel() {
             claims={ticketClaims}
             reports={ticketReports}
             loading={ticketClaimsLoading}
+            mode={isDark ? "dark" : "light"}
             eventLabel={getEventAdminLabel}
             onReview={reviewTicketClaim}
             onResolveReport={resolveTicketReport}
@@ -3353,11 +3345,68 @@ function RolesTab({
   );
 }
 
-function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onReview, onResolveReport, onRefresh, eventLabel }: any) {
+function TicketClaimsTab({ styles, colors, claims, reports = [], loading, mode, onReview, onResolveReport, onRefresh, eventLabel }: any) {
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [reviewFeedback, setReviewFeedback] = useState<Record<string, ExternalTicketClaimReviewFeedback>>({});
+  const palette = uiPalette(mode);
   const open = claims.filter(
     (claim: ExternalTicketClaimRequest) => claim.status === "pending" || claim.status === "validated",
   );
+
+  const submitReview = async (claim: ExternalTicketClaimRequest, action: "approve" | "reject") => {
+    const note = notes[claim.id] || "";
+    if (action === "reject" && !note.trim()) {
+      setReviewFeedback((current) => ({
+        ...current,
+        [claim.id]: { status: "error", message: "Add a review note before rejecting this claim." },
+      }));
+      return;
+    }
+
+    setReviewFeedback((current) => ({
+      ...current,
+      [claim.id]: { status: "submitting", message: action === "approve" ? "Approving claim…" : "Rejecting claim…" },
+    }));
+
+    try {
+      const result: ExternalTicketClaimResult = await onReview(claim, action, note);
+      const message = action === "approve"
+        ? `Claim approved. The ${claim.requested_pass_type.toUpperCase()} pass is assigned to ${claim.claimant_email || "the claimant"} (ID ending ${result.pass_id?.slice(-6)}).`
+        : `Claim rejected for ${claim.claimant_email || "the claimant"}.`;
+      setReviewFeedback((current) => ({
+        ...current,
+        [claim.id]: { status: "success", message },
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setReviewFeedback((current) => ({
+        ...current,
+        [claim.id]: { status: "error", message: `Claim not updated: ${message}` },
+      }));
+    }
+  };
+
+  const renderFeedback = (feedback: ExternalTicketClaimReviewFeedback, key: string) => {
+    const isError = feedback.status === "error";
+    const isPending = feedback.status === "submitting";
+    const color = isError ? palette.danger : palette.success;
+    return (
+      <View
+        key={key}
+        accessibilityLiveRegion="polite"
+        accessibilityRole={isError ? "alert" : "text"}
+        style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 10 }}
+      >
+        {isPending ? (
+          <ActivityIndicator size="small" color={palette.accent} />
+        ) : (
+          <MaterialIcons name={isError ? "error-outline" : "check-circle-outline"} size={18} color={color} />
+        )}
+        <Text style={[styles.passInfo, { color, flex: 1 }]}>{feedback.message}</Text>
+      </View>
+    );
+  };
+
   return (
     <View>
       <TouchableOpacity style={styles.actionButton} onPress={onRefresh} disabled={loading}>
@@ -3373,7 +3422,15 @@ function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onRevi
           </View>
           {loading && <ActivityIndicator size="small" color="#007AFF" />}
         </View>
-        {open.map((claim: ExternalTicketClaimRequest) => (
+        {Object.entries(reviewFeedback)
+          .filter(([, feedback]) => feedback.status === "success")
+          .map(([claimId, feedback]) => renderFeedback(feedback, `completed-${claimId}`))}
+        {open.map((claim: ExternalTicketClaimRequest) => {
+          const feedback = reviewFeedback[claim.id];
+          const isSubmitting = feedback?.status === "submitting";
+          const isApproving = isSubmitting && feedback.message.startsWith("Approving");
+          const isRejecting = isSubmitting && feedback.message.startsWith("Rejecting");
+          return (
           <View key={claim.id} style={[styles.passCard, { marginTop: 10 }]}>
             <View style={styles.passCardHeader}>
               <View style={styles.speakerRoleTitleWrap}>
@@ -3401,22 +3458,31 @@ function TicketClaimsTab({ styles, colors, claims, reports = [], loading, onRevi
               maxLength={1000}
               multiline
             />
+            {feedback && feedback.status !== "success" ? renderFeedback(feedback, `feedback-${claim.id}`) : null}
             <View style={styles.passActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.actionButtonSuccess]}
-                onPress={() => onReview(claim, "approve", notes[claim.id])}
-              >
-                <Text style={styles.actionButtonText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => onReview(claim, "reject", notes[claim.id])}
-              >
-                <Text style={styles.actionButtonText}>Reject</Text>
-              </TouchableOpacity>
+              <ActionButton
+                mode={mode}
+                label={isApproving ? "Approving…" : "Approve"}
+                loading={isApproving}
+                disabled={loading || isSubmitting || feedback?.status === "success"}
+                onPress={() => void submitReview(claim, "approve")}
+                style={{ minWidth: 120 }}
+                skin={{ fill: palette.success, onFill: "#fff", accent: palette.success, soft: palette.surface, border: palette.border }}
+              />
+              <ActionButton
+                mode={mode}
+                variant="secondary"
+                label={isRejecting ? "Rejecting…" : "Reject"}
+                loading={isRejecting}
+                disabled={loading || isSubmitting || feedback?.status === "success"}
+                onPress={() => void submitReview(claim, "reject")}
+                style={{ minWidth: 110 }}
+                skin={{ fill: palette.danger, onFill: "#fff", accent: palette.danger, soft: palette.surface, border: palette.border }}
+              />
             </View>
           </View>
-        ))}
+          );
+        })}
         {!loading && open.length === 0 && (
           <Text style={styles.emptyText}>No ticket claims awaiting review</Text>
         )}

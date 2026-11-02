@@ -288,11 +288,12 @@ describe("/api/admin/pass-ticket-claims", () => {
 
   it("lets an event admin review claims only for their granted event", async () => {
     mockFrom.mockReturnValueOnce(chain({ data: { event_id: "colombia2026" } }));
-    mockRpc.mockResolvedValueOnce({ data: { status: "converted" }, error: null });
+    mockRpc.mockResolvedValueOnce({ data: { status: "converted", pass_id: "pass-1" }, error: null });
     const response = await load().POST(post(ADMIN_URL, {
       claimId: "claim-1", eventId: "colombia2026", action: "approve", passType: "business",
     }));
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { status: "converted", pass_id: "pass-1" } });
     expect(mockAuthorizeEventAdmin).toHaveBeenCalledWith(expect.any(Request), "colombia2026");
     expect(mockRpc).toHaveBeenCalledWith("review_external_ticket_claim", expect.objectContaining({
       p_claim_id: "claim-1", p_actor_user_id: "event-admin-1", p_action: "approve",
@@ -379,18 +380,30 @@ describe("/api/admin/pass-ticket-claims", () => {
   });
 
   it("reviews a claim through the service RPC", async () => {
-    const rpc = jest.fn().mockResolvedValue({ data: { status: "converted" }, error: null });
+    const rpc = jest.fn().mockResolvedValue({ data: { id: "c1", status: "converted", pass_id: "pass-1" }, error: null });
     mockAuthorizeAdmin.mockResolvedValue({ userId: "admin-1", supabase: adminSupabase });
     // The handler builds its own client for RPCs.
     mockRpc.mockImplementation(rpc);
     const res = await load().POST(post(ADMIN_URL, {
       claimId: "c1", action: "APPROVE", passType: "VIP", note: "n".repeat(2000),
     }));
-    expect(await res.json()).toEqual({ data: { status: "converted" } });
+    expect(await res.json()).toEqual({ data: { id: "c1", status: "converted", pass_id: "pass-1" } });
     const [fn, args] = mockRpc.mock.calls[0];
     expect(fn).toBe("review_external_ticket_claim");
     expect(args).toMatchObject({ p_claim_id: "c1", p_actor_user_id: "admin-1", p_action: "approve", p_pass_type: "vip" });
     expect(args.p_note).toHaveLength(1000);
+  });
+
+  it("does not confirm an approval without an assigned pass id", async () => {
+    mockRpc.mockResolvedValueOnce({ data: { id: "c1", status: "converted", pass_id: null }, error: null });
+    const response = await load().POST(post(ADMIN_URL, {
+      claimId: "c1", action: "approve", passType: "business",
+    }));
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "The claim was not approved because no HashPass pass was assigned.",
+    });
   });
 
   it("reports review failures", async () => {

@@ -1,3 +1,20 @@
+## [1.9.212](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.211...v1.9.212) (2026-11-02)
+
+
+### Bug Fixes
+
+* **db:** include pending claim and campaign migrations ([23097d4](https://github.com/hashpass-tech/hashpass.tech/commit/23097d411b2741828b5d66ab29ea14e6d6768930))
+### Release Highlights
+- improve claim reviews and event selection; include pending claim and campaign migrations
+
+### Release scope
+- Compared with: `v1.9.211` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
+
 ## [1.9.211](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.210...v1.9.211) (2026-11-02)
 
 

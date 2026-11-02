@@ -324,7 +324,8 @@
       "db/migrations/V146__harden_pass_transfer_qr_revocation.sql",
       "db/migrations/V147__harden_pass_entitlement_transitions.sql",
       "db/migrations/V148__bind_pass_qr_issuance_to_owner.sql",
-      "db/migrations/V150__update_pass_qr_owner_bound_callers.sql"
+      "db/migrations/V150__update_pass_qr_owner_bound_callers.sql",
+      "db/migrations/V168__event_scoped_ticket_claim_notifications.sql"
     ],
     "admin-pass-identity": [
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
@@ -343,7 +344,9 @@
       "db/migrations/V135__contact_profile_avatars.sql",
       "db/migrations/V163__explicit_signup_marketing_optin.sql",
       "db/migrations/V164__marketing_email_preferences.sql",
-      "db/migrations/V165__separate_partner_marketing_preferences.sql"
+      "db/migrations/V165__separate_partner_marketing_preferences.sql",
+      "db/migrations/V166__marketing_campaign_approval.sql",
+      "db/migrations/V167__close_cancelled_campaign_approvals.sql"
     ],
     "non-custodial-wallet": [
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",

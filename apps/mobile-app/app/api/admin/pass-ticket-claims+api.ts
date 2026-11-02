@@ -119,5 +119,15 @@ export async function POST(request: Request) {
     console.error("[ticket-claim] review failed:", error);
     return json({ error: "Unable to review the ticket claim" }, 503);
   }
+
+  const review = data as { status?: unknown; pass_id?: unknown } | null;
+  if (action === "approve" &&
+      (review?.status !== "converted" || typeof review?.pass_id !== "string" || !review.pass_id.trim())) {
+    return json({ error: "The claim was not approved because no HashPass pass was assigned." }, 503);
+  }
+  if (action === "reject" && review?.status !== "rejected") {
+    return json({ error: "This claim could not be rejected. Refresh the queue and check its current status." }, 409);
+  }
+
   return json({ data });
 }
