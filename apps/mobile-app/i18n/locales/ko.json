@@ -17,7 +17,160 @@
     "back": "뒤로"
   },
   "passes": {
-    "claimExistingTicketLink": "티켓 등록"
+    "tiersTitle": "패스 등급",
+    "tierMeetingRequests": "미팅 요청",
+    "tierBoostPoints": "부스트 포인트",
+    "yourPass": "내 패스",
+    "acquireTicket": "티켓 구매",
+    "title": "나의 이벤트 패스",
+    "loading": "패스 정보를 불러오는 중...",
+    "loadingSubtitle": "잠시만 기다려 주세요.",
+    "loadingSlow": "패스를 계속 불러오는 중...",
+    "loadingSlowSubtitle": "평소보다 시간이 걸리고 있어요. 잠시만 기다리거나 연결 상태를 확인해 주세요.",
+    "loadingRetrying": "다시 시도하는 중...",
+    "loadingRetryingSubtitle": "첫 번째 시도가 오래 걸렸어요. 지금 다시 시도하고 있습니다.",
+    "showFullDetails": "전체 상세보기",
+    "alert": {
+      "createdTitle": "패스가 생성되었습니다! 🎉",
+      "ok": "확인",
+      "errorTitle": "오류",
+      "createFail": "패스를 생성할 수 없습니다. 다시 시도해주세요.",
+      "paymentTitle": "결제 연동",
+      "paymentMessage": "여기에 결제 시스템이 구현될 예정입니다"
+    },
+    "button": {
+      "passRequired": "패스 필요",
+      "limitReached": "한도 도달",
+      "requestMeeting": "미팅 요청"
+    },
+    "cancel": "취소",
+    "resetMeetingRequestLimit": "한도 재설정 · Boost 50포인트",
+    "resetMeetingRequestLimitTitle": "미팅 요청 한도를 재설정할까요?",
+    "resetMeetingRequestLimitDescription": "미팅 요청을 복원하려면 Boost 포인트 50점을 사용합니다.",
+    "resetMeetingRequestLimitSuccessTitle": "한도가 재설정되었습니다",
+    "resetMeetingRequestLimitSuccessDescription": "미팅 요청을 다시 사용할 수 있습니다.",
+    "resetMeetingRequestLimitFailure": "다시 시도해 주세요.",
+    "copiedTitle": "패스 정보가 복사되었습니다",
+    "copiedMessage": "패스 정보가 클립보드에 복사되었습니다. 공유하려면 어디든지 붙여넣기 하세요.",
+    "copyError": "패스를 공유할 수 없습니다. 다시 시도해주세요.",
+    "type": {
+      "business": "비즈니스",
+      "vip": "VIP",
+      "general": "일반",
+      "event": "이벤트"
+    },
+    "access": {
+      "business": "B2B + 클로징 파티",
+      "vip": "모든 VIP 혜택",
+      "general": "일반 입장",
+      "event": "이벤트 입장"
+    },
+    "meetingRequests": "미팅 요청",
+    "boostPoints": "부스트 포인트",
+    "passSummary": "패스 요약",
+    "quickOverview": "빠른 개요",
+    "requestsLeft": "남은 요청",
+    "boostLeft": "남은 부스트",
+    "accessIncluded": "포함된 액세스",
+    "used": "사용됨",
+    "passNumber": "패스 #{pass_number}",
+    "noPassFound": "패스를 찾을 수 없습니다",
+    "contactSupport": "이벤트 패스를 받으려면 지원팀에 문의하세요",
+    "loadTimeoutTitle": "패스를 불러오는 데 시간이 너무 오래 걸립니다",
+    "loadTimeoutMessage": "연결을 확인하고 다시 시도하세요.",
+    "loadErrorTitle": "패스를 불러올 수 없습니다",
+    "loadErrorMessage": "현재 패스 정보에 연결할 수 없습니다.",
+    "sessionPendingTitle": "패스 세션이 아직 로드 중입니다",
+    "sessionPendingMessage": "계정을 연결하는 중입니다. 잠시 후 다시 시도하세요.",
+    "tryAgain": "다시 시도",
+    "noPassMessage": {
+      "demo": "연사와의 미팅을 요청하려면 패스가 필요합니다. 패스 없이는 미팅 요청을 보낼 수 없습니다. 패스 유형을 선택하세요:",
+      "production": "연사와의 미팅을 요청하려면 유효한 이벤트 패스가 필요합니다. 계속하려면 패스를 구매해주세요."
+    },
+    "passTypes": {
+      "all": "모든 패스 유형 및 가격",
+      "open": "열림",
+      "closed": "닫힘"
+    },
+    "passComparison": {
+      "compare": "기능을 비교하고 필요에 맞는 패스를 선택하세요"
+    },
+    "passPerks": {
+      "general": {
+        "conferences": "컨퍼런스만"
+      },
+      "business": {
+        "networking": "+ 네트워킹 및 B2B 세션"
+      },
+      "vip": {
+        "networking": "+ 연사와의 VIP 네트워킹"
+      },
+      "features": {
+        "allSessions": "모든 컨퍼런스 세션 이용",
+        "mainAreas": "행사 주요 구역 이용",
+        "networkingSessions": "네트워킹 및 B2B 세션",
+        "businessLounge": "비즈니스 라운지 이용",
+        "vipNetworking": "연사와의 VIP 네트워킹",
+        "vipLounge": "VIP 라운지 이용",
+        "prioritySeating": "우선 좌석",
+        "networkingTools": "네트워킹 도구",
+        "businessSupport": "비즈니스 지원",
+        "conciergeService": "컨시어지 서비스",
+        "premiumSwag": "프리미엄 기념품",
+        "closingParty": "공식 폐막 파티"
+      }
+    },
+    "purchasePass": "이벤트 패스 구매",
+    "purchasePass.description": "연사 미팅 및 네트워킹 기회에 액세스하려면 사용 가능한 패스 유형 중에서 선택하세요.",
+    "currentPass": "현재 패스",
+    "unknown": "알 수 없음",
+    "requestAllowed": "미팅 요청을 보낼 수 있습니다.",
+    "requestPending": "미팅 요청 대기 중",
+    "requestPendingDescription": "요청이 발표자의 응답을 기다리고 있습니다.",
+    "requestInProgressDescription": "이 발표자에게 이미 활성 요청이 있습니다.",
+    "viewRequest": "요청 보기",
+    "status": {
+      "active": "활성",
+      "inactive": "비활성",
+      "expired": "만료됨",
+      "revoked": "취소됨",
+      "pending": "대기 중"
+    },
+    "canRequestMeeting": "미팅 요청 가능",
+    "cannotRequestMeeting": "미팅 요청 불가",
+    "qrCode": "QR 코드",
+    "details": "세부 정보",
+    "share": "공유",
+    "bslDate": "BSL 2025 • 2025년 11월 12-14일",
+    "date": "2025년 11월 12-14일",
+    "pass": "패스",
+    "viewFullDetails": "전체 세부 정보 보기",
+    "flipBack": "뒤로",
+    "qrCodeModalTitle": "패스 QR 코드",
+    "shareIntro": "제 패스를 확인해 보세요",
+    "wallet": {
+      "searchPlaceholder": "패스 검색",
+      "noMatches": "필터와 일치하는 패스가 없습니다",
+      "showMore": "더 보기",
+      "showing": "표시 중",
+      "timeline": {
+        "live": "진행 중",
+        "upcoming": "예정",
+        "past": "지난 행사"
+      },
+      "filter": {
+        "when": "시기",
+        "passType": "패스 종류"
+      },
+      "stat": {
+        "total": "패스",
+        "active": "예정",
+        "past": "지난"
+      },
+      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요",
+      "reload": "패스 새로고침",
+      "refreshing": "패스를 새로고침하는 중…"
+    }
   },
   "newsletter": {
     "title": "뉴스레터 구독",
@@ -412,6 +565,10 @@
     "title": "환영합니다",
     "welcomeHeading": "환영합니다",
     "subtitle": "로그인하여 디지털 라이프를 시작하세요.",
+    "marketingOptInTitle": "HASHPASS 소식",
+    "marketingOptInDescription": "이메일 선택 수신 · 언제든 구독 취소 가능.",
+    "marketingOptInSelectedTitle": "HASHPASS 소식",
+    "marketingOptInSelectedDescription": "수신 중 · 언제든 구독 취소 가능.",
     "desktopHero": {
       "eyebrow": "{mode}를 위한 HASHPASS",
       "title": "어디서나 함께하는 {mode} 레이어.",
@@ -524,7 +681,10 @@
       "connectDoneLabel": "완료 — 클럽으로 돌아가기",
       "connectInvalidTitle": "이 링크에 정보가 누락되었습니다",
       "connectInvalidSubtitle": "hashpass.club로 돌아가서 \"웹 앱으로 로그인\"을 다시 클릭해 새 링크를 받으세요."
-    }
+    },
+    "partnerPromotionsTitle": "파트너 혜택",
+    "partnerPromotionsDescription": "파트너 혜택을 위해 연락처를 공유합니다.",
+    "partnerPromotionsSelectedDescription": "공유 중 · 언제든 해제할 수 있습니다."
   },
   "pwaPrompt": {
     "installAction": "HASHPASS 설치",
@@ -704,6 +864,17 @@
     "privacy_section": "개인정보",
     "dataUsage": "데이터 사용",
     "dataUsageSubtitle": "앱 개선을 위한 사용 데이터 수집 허용",
+    "marketingEmails": "HASHPASS 소식",
+    "marketingEmailsEnabled": "이메일 수신 중 · 언제든 구독 취소 가능.",
+    "marketingEmailsDisabled": "선택 이메일 업데이트 · 언제든 켤 수 있습니다.",
+    "marketingEmailsLoading": "이메일 설정 불러오는 중...",
+    "marketingEmailsSaving": "설정 저장 중...",
+    "marketingEmailsLoadFailed": "설정을 불러올 수 없습니다. 탭하여 다시 시도하세요.",
+    "marketingEmailsSavedTitle": "이메일 설정 저장됨",
+    "marketingEmailsEnabledMessage": "HASHPASS 이메일 업데이트가 켜졌습니다.",
+    "marketingEmailsDisabledMessage": "HASHPASS 이메일 업데이트가 꺼졌습니다.",
+    "marketingEmailsSaveFailedTitle": "이메일 설정을 저장할 수 없습니다",
+    "marketingEmailsSaveFailedBody": "연결을 확인하고 다시 시도하세요.",
     "clearCache": "캐시 지우기",
     "clearCacheSubtitle": "저장 공간 확보",
     "clearingCache": "지우는 중...",
@@ -739,7 +910,12 @@
       "deleting": "삭제 중...",
       "placeholder": "6자리 코드 입력",
       "cancel": "취소"
-    }
+    },
+    "partnerPromotions": "파트너 혜택",
+    "partnerPromotionsEnabled": "공유 중 · 언제든 변경 가능.",
+    "partnerPromotionsDisabled": "파트너 혜택을 위해 연락처 공유.",
+    "partnerPromotionsEnabledMessage": "파트너 혜택을 받도록 설정했습니다.",
+    "partnerPromotionsDisabledMessage": "파트너 혜택을 받지 않도록 설정했습니다."
   },
   "index": {
     "tagline": "당신의 이벤트 - 당신의 커뮤니티 - 당신의 혜택",
@@ -1291,162 +1467,6 @@
       "closeFilters": "필터 닫기",
       "roomPassRequired": "패스 필요",
       "roomPassRequiredBody": "이벤트 룸에 참여하려면 활성 패스가 필요합니다."
-    }
-  },
-  "passes": {
-    "tiersTitle": "패스 등급",
-    "tierMeetingRequests": "미팅 요청",
-    "tierBoostPoints": "부스트 포인트",
-    "yourPass": "내 패스",
-    "acquireTicket": "티켓 구매",
-    "title": "나의 이벤트 패스",
-    "loading": "패스 정보를 불러오는 중...",
-    "loadingSubtitle": "잠시만 기다려 주세요.",
-    "loadingSlow": "패스를 계속 불러오는 중...",
-    "loadingSlowSubtitle": "평소보다 시간이 걸리고 있어요. 잠시만 기다리거나 연결 상태를 확인해 주세요.",
-    "loadingRetrying": "다시 시도하는 중...",
-    "loadingRetryingSubtitle": "첫 번째 시도가 오래 걸렸어요. 지금 다시 시도하고 있습니다.",
-    "showFullDetails": "전체 상세보기",
-    "alert": {
-      "createdTitle": "패스가 생성되었습니다! 🎉",
-      "ok": "확인",
-      "errorTitle": "오류",
-      "createFail": "패스를 생성할 수 없습니다. 다시 시도해주세요.",
-      "paymentTitle": "결제 연동",
-      "paymentMessage": "여기에 결제 시스템이 구현될 예정입니다"
-    },
-    "button": {
-      "passRequired": "패스 필요",
-      "limitReached": "한도 도달",
-      "requestMeeting": "미팅 요청"
-    },
-    "cancel": "취소",
-    "resetMeetingRequestLimit": "한도 재설정 · Boost 50포인트",
-    "resetMeetingRequestLimitTitle": "미팅 요청 한도를 재설정할까요?",
-    "resetMeetingRequestLimitDescription": "미팅 요청을 복원하려면 Boost 포인트 50점을 사용합니다.",
-    "resetMeetingRequestLimitSuccessTitle": "한도가 재설정되었습니다",
-    "resetMeetingRequestLimitSuccessDescription": "미팅 요청을 다시 사용할 수 있습니다.",
-    "resetMeetingRequestLimitFailure": "다시 시도해 주세요.",
-    "copiedTitle": "패스 정보가 복사되었습니다",
-    "copiedMessage": "패스 정보가 클립보드에 복사되었습니다. 공유하려면 어디든지 붙여넣기 하세요.",
-    "copyError": "패스를 공유할 수 없습니다. 다시 시도해주세요.",
-    "type": {
-      "business": "비즈니스",
-      "vip": "VIP",
-      "general": "일반",
-      "event": "이벤트"
-    },
-    "access": {
-      "business": "B2B + 클로징 파티",
-      "vip": "모든 VIP 혜택",
-      "general": "일반 입장",
-      "event": "이벤트 입장"
-    },
-    "meetingRequests": "미팅 요청",
-    "boostPoints": "부스트 포인트",
-    "passSummary": "패스 요약",
-    "quickOverview": "빠른 개요",
-    "requestsLeft": "남은 요청",
-    "boostLeft": "남은 부스트",
-    "accessIncluded": "포함된 액세스",
-    "used": "사용됨",
-    "passNumber": "패스 #{pass_number}",
-    "noPassFound": "패스를 찾을 수 없습니다",
-    "contactSupport": "이벤트 패스를 받으려면 지원팀에 문의하세요",
-    "loadTimeoutTitle": "패스를 불러오는 데 시간이 너무 오래 걸립니다",
-    "loadTimeoutMessage": "연결을 확인하고 다시 시도하세요.",
-    "loadErrorTitle": "패스를 불러올 수 없습니다",
-    "loadErrorMessage": "현재 패스 정보에 연결할 수 없습니다.",
-    "sessionPendingTitle": "패스 세션이 아직 로드 중입니다",
-    "sessionPendingMessage": "계정을 연결하는 중입니다. 잠시 후 다시 시도하세요.",
-    "tryAgain": "다시 시도",
-    "noPassMessage": {
-      "demo": "연사와의 미팅을 요청하려면 패스가 필요합니다. 패스 없이는 미팅 요청을 보낼 수 없습니다. 패스 유형을 선택하세요:",
-      "production": "연사와의 미팅을 요청하려면 유효한 이벤트 패스가 필요합니다. 계속하려면 패스를 구매해주세요."
-    },
-    "passTypes": {
-      "all": "모든 패스 유형 및 가격",
-      "open": "열림",
-      "closed": "닫힘"
-    },
-    "passComparison": {
-      "compare": "기능을 비교하고 필요에 맞는 패스를 선택하세요"
-    },
-    "passPerks": {
-      "general": {
-        "conferences": "컨퍼런스만"
-      },
-      "business": {
-        "networking": "+ 네트워킹 및 B2B 세션"
-      },
-      "vip": {
-        "networking": "+ 연사와의 VIP 네트워킹"
-      },
-      "features": {
-        "allSessions": "모든 컨퍼런스 세션 이용",
-        "mainAreas": "행사 주요 구역 이용",
-        "networkingSessions": "네트워킹 및 B2B 세션",
-        "businessLounge": "비즈니스 라운지 이용",
-        "vipNetworking": "연사와의 VIP 네트워킹",
-        "vipLounge": "VIP 라운지 이용",
-        "prioritySeating": "우선 좌석",
-        "networkingTools": "네트워킹 도구",
-        "businessSupport": "비즈니스 지원",
-        "conciergeService": "컨시어지 서비스",
-        "premiumSwag": "프리미엄 기념품",
-        "closingParty": "공식 폐막 파티"
-      }
-    },
-    "purchasePass": "이벤트 패스 구매",
-    "purchasePass.description": "연사 미팅 및 네트워킹 기회에 액세스하려면 사용 가능한 패스 유형 중에서 선택하세요.",
-    "currentPass": "현재 패스",
-    "unknown": "알 수 없음",
-    "requestAllowed": "미팅 요청을 보낼 수 있습니다.",
-    "requestPending": "미팅 요청 대기 중",
-    "requestPendingDescription": "요청이 발표자의 응답을 기다리고 있습니다.",
-    "requestInProgressDescription": "이 발표자에게 이미 활성 요청이 있습니다.",
-    "viewRequest": "요청 보기",
-    "status": {
-      "active": "활성",
-      "inactive": "비활성",
-      "expired": "만료됨",
-      "revoked": "취소됨",
-      "pending": "대기 중"
-    },
-    "canRequestMeeting": "미팅 요청 가능",
-    "cannotRequestMeeting": "미팅 요청 불가",
-    "qrCode": "QR 코드",
-    "details": "세부 정보",
-    "share": "공유",
-    "bslDate": "BSL 2025 • 2025년 11월 12-14일",
-    "date": "2025년 11월 12-14일",
-    "pass": "패스",
-    "viewFullDetails": "전체 세부 정보 보기",
-    "flipBack": "뒤로",
-    "qrCodeModalTitle": "패스 QR 코드",
-    "shareIntro": "제 패스를 확인해 보세요",
-    "wallet": {
-      "searchPlaceholder": "패스 검색",
-      "noMatches": "필터와 일치하는 패스가 없습니다",
-      "showMore": "더 보기",
-      "showing": "표시 중",
-      "timeline": {
-        "live": "진행 중",
-        "upcoming": "예정",
-        "past": "지난 행사"
-      },
-      "filter": {
-        "when": "시기",
-        "passType": "패스 종류"
-      },
-      "stat": {
-        "total": "패스",
-        "active": "예정",
-        "past": "지난"
-      },
-      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요",
-      "reload": "패스 새로고침",
-      "refreshing": "패스를 새로고침하는 중…"
     }
   },
   "networking": {

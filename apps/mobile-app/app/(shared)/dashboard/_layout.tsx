@@ -1851,16 +1851,11 @@ function AuthenticatedDashboardLayout() {
           </CopilotStep>
 
           <View
-            // React Native's `box-none` is not emitted as a CSS pointer-events
-            // rule by React Native Web. The logo wrapper spans the entire
-            // header, so its web hit box otherwise sits above the hamburger.
-            // Use CSS pass-through on web and retain native box-none semantics.
-            {...(Platform.OS === "web"
-              ? {}
-              : { pointerEvents: "box-none" as const })}
             style={[
               styles.headerLogoContainer,
-              Platform.OS === "web" ? { pointerEvents: "none" } : undefined,
+              Platform.OS === "web"
+                ? { pointerEvents: "none" }
+                : { pointerEvents: "box-none" },
             ]}
           >
             <TouchableOpacity
@@ -2234,8 +2229,8 @@ const getStyles = (
       zIndex: 0,
       alignItems: "center",
       justifyContent: "center",
-      // Web receives pointer-events: none at render time; native receives the
-      // box-none prop above so the centered logo remains independently tappable.
+      // Web receives pointer-events: none at render time; native uses the
+      // box-none style above so the centered logo remains independently tappable.
     },
     headerLogoButton: {
       width: 180,

@@ -195,7 +195,9 @@
       "db/migrations/V152__external_ticket_ownership_and_reports.sql",
       "db/migrations/V153__ticket_claim_review_and_guards.sql"
     ],
-    "event-auth-allies": ["db/migrations/V083__event_auth_allies.sql"],
+    "event-auth-allies": [
+      "db/migrations/V083__event_auth_allies.sql"
+    ],
     "event-search-aliases": [
       "db/migrations/V097__add_event_search_aliases.sql"
     ],
@@ -218,12 +220,18 @@
       "db/migrations/V056__admin_email_delivery_template.sql",
       "db/migrations/V057__admin_event_scoped_attendees.sql"
     ],
-    "core": ["db/migrations-mobile-bootstrap/V001__init_core_schema.sql"],
+    "core": [
+      "db/migrations-mobile-bootstrap/V001__init_core_schema.sql"
+    ],
     "events": [
       "db/migrations-mobile-bootstrap/V002__meeting_requests_system.sql"
     ],
-    "security": ["db/migrations-mobile-bootstrap/V003__row_level_security.sql"],
-    "wallet": ["db/migrations-mobile-bootstrap/V004__wallet_auth.sql"],
+    "security": [
+      "db/migrations-mobile-bootstrap/V003__row_level_security.sql"
+    ],
+    "wallet": [
+      "db/migrations-mobile-bootstrap/V004__wallet_auth.sql"
+    ],
     "auth": [
       "db/migrations-mobile-bootstrap/V005__otp_codes.sql",
       "db/migrations/V128__user_setup_and_pin.sql",
@@ -332,7 +340,10 @@
       "db/migrations/V132__marketing_campaigns.sql",
       "db/migrations/V133__marketing_activity_snapshots.sql",
       "db/migrations/V134__contact_identity_modes.sql",
-      "db/migrations/V135__contact_profile_avatars.sql"
+      "db/migrations/V135__contact_profile_avatars.sql",
+      "db/migrations/V163__explicit_signup_marketing_optin.sql",
+      "db/migrations/V164__marketing_email_preferences.sql",
+      "db/migrations/V165__separate_partner_marketing_preferences.sql"
     ],
     "non-custodial-wallet": [
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",
@@ -343,7 +354,11 @@
     "speaker-directory-status": [
       "db/migrations/V139__speaker_directory_status.sql"
     ],
-    "chat-key-backup": ["db/migrations/V075__chat_key_backup_restore.sql"],
-    "event-public-flags": ["db/migrations/V109__add_event_agenda_speakers_public_flags.sql"]
+    "chat-key-backup": [
+      "db/migrations/V075__chat_key_backup_restore.sql"
+    ],
+    "event-public-flags": [
+      "db/migrations/V109__add_event_agenda_speakers_public_flags.sql"
+    ]
   }
 }

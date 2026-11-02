@@ -8,7 +8,10 @@ const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }) }));
-jest.mock('expo-haptics', () => ({}));
+jest.mock('expo-haptics', () => ({
+  ImpactFeedbackStyle: { Light: 'light' },
+  impactAsync: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('@lingui/macro', () => ({ t: ({ message }: { message: string }) => message }));
 jest.mock('@lingui/core', () => ({ i18n: { _: (d: any) => (typeof d === 'string' ? d : d?.message ?? d?.id), activate: jest.fn() } }));
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -74,11 +77,17 @@ import Settings from '../../app/(shared)/dashboard/settings';
 
 describe('Settings screen', () => {
   beforeEach(() => {
-    mockApiGet.mockReset().mockResolvedValue({
+    mockApiGet.mockReset().mockImplementation(async (path: string) => path === '/marketing/preferences'
+      ? { success: true, data: { success: true, subscribed: false, partnerSubscribed: false } }
+      : { success: true, data: { success: true, data: { phones: [] } } });
+    mockApiPost.mockReset().mockImplementation(async (_path: string, payload: { preference: string; subscribed: boolean }) => ({
       success: true,
-      data: { success: true, data: { phones: [] } },
-    });
-    mockApiPost.mockReset();
+      data: {
+        success: true,
+        subscribed: payload.preference === 'hashpass_updates' ? payload.subscribed : false,
+        partnerSubscribed: payload.preference === 'partner_promotions' ? payload.subscribed : false,
+      },
+    }));
   });
 
   it('groups rows into cards under section headings and keeps the controls working', () => {
@@ -92,6 +101,48 @@ describe('Settings screen', () => {
     expect(mockToggleTheme).toHaveBeenCalled();
     const rows = view.root.findAllByType(TouchableOpacity);
     expect(rows.length).toBeGreaterThan(5);
+    act(() => view.unmount());
+  });
+
+  it('loads and updates the independent HASHPASS and partner email preferences', async () => {
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings />); });
+
+    const marketingSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    expect(marketingSwitch.props.value).toBe(false);
+    expect(marketingSwitch.props.disabled).toBe(false);
+
+    await act(async () => { await marketingSwitch.props.onValueChange(true); });
+    expect(mockApiPost).toHaveBeenLastCalledWith(
+      '/marketing/preferences',
+      expect.objectContaining({ preference: 'hashpass_updates', subscribed: true, requestId: expect.any(String) }),
+      expect.objectContaining({ retries: 0 }),
+    );
+
+    const optedInSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'HASHPASS updates',
+    );
+    expect(optedInSwitch.props.value).toBe(true);
+    await act(async () => { await optedInSwitch.props.onValueChange(false); });
+    expect(mockApiPost).toHaveBeenLastCalledWith(
+      '/marketing/preferences',
+      expect.objectContaining({ preference: 'hashpass_updates', subscribed: false, requestId: expect.any(String) }),
+      expect.objectContaining({ retries: 0 }),
+    );
+
+    const partnerSwitch = view.root.find(
+      node => node.type === Switch && node.props.accessibilityLabel === 'Partner offers',
+    );
+    expect(partnerSwitch.props.value).toBe(false);
+    await act(async () => { await partnerSwitch.props.onValueChange(true); });
+    expect(mockApiPost).toHaveBeenLastCalledWith(
+      '/marketing/preferences',
+      expect.objectContaining({ preference: 'partner_promotions', subscribed: true, requestId: expect.any(String) }),
+      expect.objectContaining({ retries: 0 }),
+    );
+
     act(() => view.unmount());
   });
 });

@@ -6,13 +6,13 @@ export const GENERATED_LEGAL_DOCUMENTS = {
     "id": "terms",
     "title": "HASHPASS Terms of Service",
     "description": "Terms governing HASHPASS services operated by HASHPASS TECHNOLOGIES OÜ.",
-    "revision": "25 September 2026",
+    "revision": "1 November 2026",
     "sourcePath": "apps/docs/docs/legal/terms-of-service.md",
     "sourceUrl": "https://hashpass.club/documentation/legal/terms-of-service/",
     "blocks": [
       {
         "type": "paragraph",
-        "text": "Effective date: 25 September 2026.\nOperator: HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)\nRegistered office: Narva mnt 5, Tallinn, Estonia.\nWebsite: hashpass.tech (https://hashpass.tech)\nContact: contact@hashpass.tech"
+        "text": "Effective date: 1 November 2026.\nOperator: HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)\nRegistered office: Narva mnt 5, Tallinn, Estonia.\nWebsite: hashpass.tech (https://hashpass.tech)\nContact: contact@hashpass.tech"
       },
       {
         "type": "paragraph",
@@ -280,7 +280,7 @@ export const GENERATED_LEGAL_DOCUMENTS = {
       },
       {
         "type": "paragraph",
-        "text": "You consent to transactional electronic communications necessary to operate the Services, including authentication, security, credential, transaction, service, and legally required notices. Marketing communications remain subject to applicable consent and opt-out rules."
+        "text": "You consent to transactional electronic communications necessary to operate the Services, including authentication, security, credential, transaction, service, and legally required notices. HASHPASS product and event promotions are optional and are sent only when you enable HASHPASS updates in your account. A separate, unchecked choice lets you share your email address and contact details with participating event partners and allies so they can send their offers. You can change either choice in Settings or use an unsubscribe link in an email. Declining these choices does not affect your account or access to the Services. Agreeing to these Terms does not enable either promotional choice."
       },
       {
         "type": "heading",
@@ -336,13 +336,13 @@ export const GENERATED_LEGAL_DOCUMENTS = {
     "id": "privacy",
     "title": "HASHPASS Privacy Policy",
     "description": "How HASHPASS TECHNOLOGIES OÜ processes personal data for the HASHPASS services.",
-    "revision": "25 September 2026",
+    "revision": "1 November 2026",
     "sourcePath": "apps/docs/docs/legal/privacy-policy.md",
     "sourceUrl": "https://hashpass.club/documentation/legal/privacy-policy/",
     "blocks": [
       {
         "type": "paragraph",
-        "text": "Last updated: 25 September 2026\nController: HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)\nRegistered office: Narva mnt 5, Tallinn, Estonia\nPrivacy contact: privacy@hashpass.tech"
+        "text": "Last updated: 1 November 2026\nController: HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)\nRegistered office: Narva mnt 5, Tallinn, Estonia\nPrivacy contact: privacy@hashpass.tech"
       },
       {
         "type": "paragraph",
@@ -403,6 +403,7 @@ export const GENERATED_LEGAL_DOCUMENTS = {
           "create and authenticate accounts and deliver passes, credentials, event registrations, check-in, and support;",
           "validate invitation campaigns, prevent shared-link abuse, and allow a designated reviewer to approve or decline a requested Business entitlement;",
           "communicate transactional, security, service, and legally required notices;",
+          "send HASHPASS product and event promotions only when you enable HASHPASS updates; and, only if you separately enable partner offers, share your email address and contact details with participating event partners and allies so they can send promotional offers;",
           "detect, investigate, and prevent fraud, abuse, security incidents, and misuse of credentials or APIs;",
           "comply with legal, regulatory, accounting, tax, and record-keeping obligations; and",
           "improve the reliability, performance, and accessibility of the Services, including through aggregated or appropriately anonymized analytics where permitted by law."
@@ -425,6 +426,7 @@ export const GENERATED_LEGAL_DOCUMENTS = {
         "items": [
           "event organizers for events for which you register or hold a credential;",
           "designated Business-access reviewers, only for the request information necessary to decide a submitted invitation request;",
+          "participating event partners and allies, only the email address and contact details you authorize us to share for their promotional offers;",
           "service providers acting on our behalf, including Supabase for authentication and database hosting, Brevo for transactional email, and AWS S3 and CloudFront for event and profile-image hosting and delivery;",
           "professional advisers, authorities, or other parties where required by law, to protect rights or safety, or in connection with a corporate transaction; and",
           "integrations that you choose to connect, subject to their own terms and privacy notices."

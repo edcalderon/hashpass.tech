@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { MaterialIcons } from '../lib/vector-icons';
@@ -142,8 +142,13 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       {/* Toast Container - Using absolute positioning to avoid blocking interactions */}
       {toasts.length > 0 && (
         <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
-          <View style={[styles.toastContainer, { pointerEvents: "box-none" }]}>
-            <SafeAreaView edges={['top', 'left', 'right']} style={[styles.toastSafeArea, { pointerEvents: "box-none" }]}>
+          <View
+            style={[styles.toastContainer, { pointerEvents: Platform.OS === 'web' ? 'none' : 'box-none' }]}
+          >
+            <SafeAreaView
+              edges={['top', 'left', 'right']}
+              style={[styles.toastSafeArea, { pointerEvents: Platform.OS === 'web' ? 'none' : 'box-none' }]}
+            >
               {toasts.map((toast, index) => (
                 <ToastItem
                   key={toast.id}
@@ -450,14 +455,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 9999,
     elevation: 9999,
-    pointerEvents: 'box-none',
   },
   toastSafeArea: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
     width: '100%',
-    pointerEvents: 'box-none',
   },
   toastItem: {
     marginBottom: 12,

@@ -5,7 +5,7 @@ description: How HASHPASS TECHNOLOGIES OÜ processes personal data for the HASHP
 
 # HASHPASS Privacy Policy
 
-**Last updated:** 25 September 2026<br />
+**Last updated:** 1 November 2026<br />
 **Controller:** HASHPASS TECHNOLOGIES OÜ (Registry Code 17603547)<br />
 **Registered office:** Narva mnt 5, Tallinn, Estonia<br />
 **Privacy contact:** [privacy@hashpass.tech](mailto:privacy@hashpass.tech)
@@ -77,6 +77,10 @@ We process personal data to:
 - validate invitation campaigns, prevent shared-link abuse, and allow a
   designated reviewer to approve or decline a requested Business entitlement;
 - communicate transactional, security, service, and legally required notices;
+- send HASHPASS product and event promotions only when you enable HASHPASS
+  updates; and, only if you separately enable partner offers, share your
+  email address and contact details with participating event partners and
+  allies so they can send promotional offers;
 - detect, investigate, and prevent fraud, abuse, security incidents, and
   misuse of credentials or APIs;
 - comply with legal, regulatory, accounting, tax, and record-keeping
@@ -100,6 +104,8 @@ purposes above, including to:
 - event organizers for events for which you register or hold a credential;
 - designated Business-access reviewers, only for the request information
   necessary to decide a submitted invitation request;
+- participating event partners and allies, only the email address and contact
+  details you authorize us to share for their promotional offers;
 - service providers acting on our behalf, including Supabase for
   authentication and database hosting, Brevo for transactional email, and
   AWS S3 and CloudFront for event and profile-image hosting and delivery;

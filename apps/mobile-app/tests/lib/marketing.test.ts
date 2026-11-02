@@ -1,5 +1,7 @@
 import pack from '../../config/marketing/bsl2026.json';
 import { activityRoute, renderMarketingEmail, safeCampaignUrl, validCampaignCopy, validCampaignDraft, validZonedTime, formatCampaignTime } from '../../lib/marketing';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 
 describe('campaign validation and rendering', () => {
   it('validates all eight bilingual scheduled campaign drafts', () => {
@@ -62,6 +64,12 @@ describe('campaign validation and rendering', () => {
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: 'invalid code' })).toBe(false);
     expect(validCampaignCopy({ ...offer!.content.en, promoCode: undefined, promoCodeLabel: 'CODE' })).toBe(false);
     expect(validCampaignCopy({ ...offer!.content.en, promoCodeLabel: 'bad\nlabel' })).toBe(false);
+  });
+  it('publishes the offer hero in the production attendee static asset tree', () => {
+    const offer = pack.messages.find((message: (typeof pack.messages)[number]) => message.key === 'bsl2026-business-offer');
+    expect(offer).toBeDefined();
+    expect(offer!.content.en.imageUrl).toBe('https://hashpass.tech/campaigns/bsl-2026/business-offer-hero-v2.png');
+    expect(existsSync(path.resolve(__dirname, '../../public/campaigns/bsl-2026/business-offer-hero-v2.png'))).toBe(true);
   });
   it('allowlists normalized navigation and excludes sensitive routes and query strings', () => {
     expect(activityRoute('/contacts?card=private')).toBe('/contacts');

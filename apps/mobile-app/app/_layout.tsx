@@ -1,5 +1,6 @@
 import DesignSystemStyles from '../components/DesignSystemStyles';
 import MarketingActivityObserver from '../components/MarketingActivityObserver';
+import MarketingConsentObserver from '../components/MarketingConsentObserver';
 import { isPublicEventRoute, isPublicPassLinkRoute } from '../lib/public-routes';
 import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and configured first
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -120,6 +121,7 @@ function RootLayout() {
                             <CopilotProvider overlay="view">
                               <ThemedContent />
                               <MarketingActivityObserver />
+                              <MarketingConsentObserver />
                             </CopilotProvider>
                           </ScrollProvider>
                         </ToastProvider>

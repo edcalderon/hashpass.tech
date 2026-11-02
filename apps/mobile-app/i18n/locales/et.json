@@ -43,6 +43,10 @@
     "title": "Logi sisse",
     "welcomeHeading": "Tere tulemast tagasi",
     "subtitle": "Logi sisse, et jätkata HASHPASSiga",
+    "marketingOptInTitle": "HASHPASSi uudised",
+    "marketingOptInDescription": "Valikulised e-kirjad · Loobu igal ajal.",
+    "marketingOptInSelectedTitle": "HASHPASSi uudised",
+    "marketingOptInSelectedDescription": "Tellimus aktiivne · Loobu igal ajal.",
     "signInWithGoogle": "Logi sisse Google'iga",
     "emailPlaceholder": "Sinu e-posti aadress",
     "emailRequired": "E-post on nõutud",
@@ -52,7 +56,10 @@
     "authenticationSuccessful": "Autentimine õnnestus",
     "authenticationFailed": "Autentimine ebaõnnestus",
     "back": "Tagasi",
-    "orContinueWithSocialLogin": "Või jätka sotsiaalkontoga"
+    "orContinueWithSocialLogin": "Või jätka sotsiaalkontoga",
+    "partnerPromotionsTitle": "Partnerite pakkumised",
+    "partnerPromotionsDescription": "Jaga kontakte partnerpakkumiste jaoks.",
+    "partnerPromotionsSelectedDescription": "Jagamine aktiivne · Lülita igal ajal välja."
   },
   "pwaPrompt": {
     "installAction": "Paigalda",
@@ -76,7 +83,23 @@
     "darkMode": "Tume režiim",
     "language": "Keel",
     "helpSupport": "Abi ja tugi",
-    "deleteAccount": "Kustuta konto"
+    "marketingEmails": "HASHPASSi uudised",
+    "marketingEmailsEnabled": "E-kirjade uuendused sees · Loobu igal ajal.",
+    "marketingEmailsDisabled": "Valikulised e-kirjad · Lülita sisse igal ajal.",
+    "marketingEmailsLoading": "E-posti eelistusi laaditakse...",
+    "marketingEmailsSaving": "Eelistust salvestatakse...",
+    "marketingEmailsLoadFailed": "Eelistus pole saadaval. Uuesti proovimiseks puuduta.",
+    "marketingEmailsSavedTitle": "E-posti eelistus salvestatud",
+    "marketingEmailsEnabledMessage": "HASHPASSi e-kirjade uuendused on sisse lülitatud.",
+    "marketingEmailsDisabledMessage": "HASHPASSi e-kirjade uuendused on välja lülitatud.",
+    "marketingEmailsSaveFailedTitle": "E-posti eelistust ei õnnestunud salvestada",
+    "marketingEmailsSaveFailedBody": "Kontrolli ühendust ja proovi uuesti.",
+    "deleteAccount": "Kustuta konto",
+    "partnerPromotions": "Partnerite pakkumised",
+    "partnerPromotionsEnabled": "Jagamine aktiivne · Muuda igal ajal.",
+    "partnerPromotionsDisabled": "Jaga kontakte partnerpakkumiste jaoks.",
+    "partnerPromotionsEnabledMessage": "Partnerite pakkumised on lubatud.",
+    "partnerPromotionsDisabledMessage": "Partnerite pakkumised on keelatud."
   },
   "profile": {
     "languages": {

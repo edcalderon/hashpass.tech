@@ -17,7 +17,160 @@
     "back": "Volver"
   },
   "passes": {
-    "claimExistingTicketLink": "Reclamar entrada"
+    "tiersTitle": "Niveles de pase",
+    "tierMeetingRequests": "solicitudes de reunión",
+    "tierBoostPoints": "puntos de impulso",
+    "yourPass": "Tu pase",
+    "acquireTicket": "Adquirir entrada",
+    "title": "Tus Pases del Evento",
+    "loading": "Cargando la información de tu pase...",
+    "loadingSubtitle": "Esto solo debería tomar un momento.",
+    "loadingSlow": "Aún cargando tus pases…",
+    "loadingSlowSubtitle": "Esto está tardando más de lo habitual. Espera un momento o revisa tu conexión.",
+    "loadingRetrying": "Reintentando…",
+    "loadingRetryingSubtitle": "El primer intento tardó bastante. Intentándolo de nuevo.",
+    "showFullDetails": "Ver detalles completos",
+    "alert": {
+      "createdTitle": "¡Pase creado! 🎉",
+      "ok": "OK",
+      "errorTitle": "Error",
+      "createFail": "No se pudo crear el pase. Inténtalo de nuevo.",
+      "paymentTitle": "Integración de Pago",
+      "paymentMessage": "El sistema de pago se implementará aquí"
+    },
+    "button": {
+      "passRequired": "Se requiere pase",
+      "limitReached": "Límite alcanzado",
+      "requestMeeting": "Solicitar reunión"
+    },
+    "cancel": "Cancelar",
+    "resetMeetingRequestLimit": "Restablecer límite · 50 puntos Boost",
+    "resetMeetingRequestLimitTitle": "¿Restablecer el límite de reuniones?",
+    "resetMeetingRequestLimitDescription": "Gasta 50 puntos Boost para recuperar tus solicitudes de reunión.",
+    "resetMeetingRequestLimitSuccessTitle": "Límite restablecido",
+    "resetMeetingRequestLimitSuccessDescription": "Tus solicitudes de reunión están disponibles de nuevo.",
+    "resetMeetingRequestLimitFailure": "Inténtalo de nuevo.",
+    "copiedTitle": "Información del pase copiada",
+    "copiedMessage": "La información del pase se copió al portapapeles. Puedes pegarla para compartir.",
+    "copyError": "No se puede compartir el pase. Inténtalo de nuevo.",
+    "type": {
+      "business": "Business",
+      "vip": "VIP",
+      "general": "General",
+      "event": "Evento"
+    },
+    "access": {
+      "business": "B2B + Fiesta de clausura",
+      "vip": "Todos los beneficios VIP",
+      "general": "Acceso general",
+      "event": "Acceso al evento"
+    },
+    "meetingRequests": "Solicitudes de Reunión",
+    "boostPoints": "Puntos de impulso",
+    "passSummary": "Resumen del Pase",
+    "quickOverview": "Vista Rápida",
+    "requestsLeft": "Solicitudes Restantes",
+    "boostLeft": "Impulso Restante",
+    "accessIncluded": "Acceso Incluido",
+    "used": "usado",
+    "passNumber": "Pase #{pass_number}",
+    "noPassFound": "No se encontraron pases",
+    "contactSupport": "Contacta con soporte para obtener tus pases del evento",
+    "loadTimeoutTitle": "Los pases tardan demasiado en cargar",
+    "loadTimeoutMessage": "Comprueba tu conexión e inténtalo de nuevo.",
+    "loadErrorTitle": "No se pudieron cargar tus pases",
+    "loadErrorMessage": "No pudimos acceder a la información de tus pases en este momento.",
+    "sessionPendingTitle": "La sesión de tus pases todavía está cargando",
+    "sessionPendingMessage": "Tu cuenta todavía se está conectando. Inténtalo de nuevo en un momento.",
+    "tryAgain": "Intentar de nuevo",
+    "noPassMessage": {
+      "demo": "Necesitas un pase para solicitar reuniones con los ponentes. Sin un pase, no puedes enviar solicitudes de reunión. Elige tu tipo de pase:",
+      "production": "Necesitas un pase válido del evento para solicitar reuniones con los ponentes. Por favor, compra un pase para continuar."
+    },
+    "passTypes": {
+      "all": "Todos los Tipos de Pase y Precios",
+      "open": "Abierto",
+      "closed": "Cerrado"
+    },
+    "passComparison": {
+      "compare": "Compara características y elige el pase adecuado para tus necesidades"
+    },
+    "passPerks": {
+      "general": {
+        "conferences": "Solo conferencias"
+      },
+      "business": {
+        "networking": "+ Networking y sesiones B2B"
+      },
+      "vip": {
+        "networking": "+ Networking VIP con ponentes"
+      },
+      "features": {
+        "allSessions": "Acceso a todas las sesiones de la conferencia",
+        "mainAreas": "Acceso a las áreas principales del evento",
+        "networkingSessions": "Networking y sesiones B2B",
+        "businessLounge": "Acceso al lounge Business",
+        "vipNetworking": "Networking VIP con ponentes",
+        "vipLounge": "Acceso al lounge VIP",
+        "prioritySeating": "Asientos preferenciales",
+        "networkingTools": "Herramientas de networking",
+        "businessSupport": "Soporte Business",
+        "conciergeService": "Servicio de concierge",
+        "premiumSwag": "Regalos premium",
+        "closingParty": "Fiesta oficial de clausura"
+      }
+    },
+    "purchasePass": "Comprar Pase del Evento",
+    "purchasePass.description": "Elige entre nuestros tipos de pase disponibles para acceder a reuniones con ponentes y oportunidades de networking.",
+    "currentPass": "Tu Pase Actual",
+    "unknown": "Desconocido",
+    "requestAllowed": "Puedes enviar una solicitud de reunión.",
+    "requestPending": "Solicitud de reunión pendiente",
+    "requestPendingDescription": "Tu solicitud está esperando la respuesta del ponente.",
+    "requestInProgressDescription": "Ya tienes una solicitud activa con este ponente.",
+    "viewRequest": "Ver solicitud",
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "expired": "Vencido",
+      "revoked": "Revocado",
+      "pending": "Pendiente"
+    },
+    "canRequestMeeting": "Puede Solicitar Reunión",
+    "cannotRequestMeeting": "No Puede Solicitar Reunión",
+    "qrCode": "Código QR",
+    "details": "Detalles",
+    "share": "Compartir",
+    "bslDate": "BSL 2025 • 12-14 Nov, 2025",
+    "date": "12-14 Nov, 2025",
+    "pass": "Pase",
+    "viewFullDetails": "Ver Detalles Completos",
+    "flipBack": "Volver",
+    "qrCodeModalTitle": "Tu Código QR del Pase",
+    "shareIntro": "Mira mi pase para",
+    "wallet": {
+      "searchPlaceholder": "Busca tus pases",
+      "noMatches": "Ningún pase coincide con tus filtros",
+      "showMore": "Ver más",
+      "showing": "Mostrando",
+      "timeline": {
+        "live": "En curso",
+        "upcoming": "Próximo",
+        "past": "Evento pasado"
+      },
+      "filter": {
+        "when": "Cuándo",
+        "passType": "Tipo de pase"
+      },
+      "stat": {
+        "total": "Pases",
+        "active": "Próximos",
+        "past": "Pasados"
+      },
+      "stackHint": "Toca una tarjeta de atrás para traerla al frente",
+      "reload": "Recargar pases",
+      "refreshing": "Actualizando pases…"
+    }
   },
   "newsletter": {
     "title": "Suscríbete a nuestro boletín",
@@ -416,6 +569,10 @@
     "title": "Bienvenido a",
     "welcomeHeading": "Bienvenido",
     "subtitle": "Inicia sesión para desbloquear tu vida digital.",
+    "marketingOptInTitle": "Novedades de HASHPASS",
+    "marketingOptInDescription": "Correos opcionales · Cancela cuando quieras.",
+    "marketingOptInSelectedTitle": "Novedades de HASHPASS",
+    "marketingOptInSelectedDescription": "Activadas · Cancela cuando quieras.",
     "desktopHero": {
       "eyebrow": "HASHPASS PARA {mode}",
       "title": "Tu capa para {mode}, en todas partes.",
@@ -528,7 +685,10 @@
       "connectDoneLabel": "Listo — Volver al Club",
       "connectInvalidTitle": "A este enlace le falta información",
       "connectInvalidSubtitle": "Vuelve a hashpass.club y haz clic en \"Iniciar sesión con la app web\" de nuevo para obtener un enlace nuevo."
-    }
+    },
+    "partnerPromotionsTitle": "Ofertas de aliados",
+    "partnerPromotionsDescription": "Compartir email y contacto para recibir ofertas de aliados.",
+    "partnerPromotionsSelectedDescription": "Compartición activa · Desactívala cuando quieras."
   },
   "pwaPrompt": {
     "installAction": "Instalar HASHPASS",
@@ -708,6 +868,17 @@
     "privacy_section": "Privacidad",
     "dataUsage": "Uso de datos",
     "dataUsageSubtitle": "Permitir que la app recopile datos de uso para mejoras",
+    "marketingEmails": "Novedades de HASHPASS",
+    "marketingEmailsEnabled": "Correos activados · Cancela cuando quieras.",
+    "marketingEmailsDisabled": "Correos opcionales · Actívalos cuando quieras.",
+    "marketingEmailsLoading": "Cargando preferencias de correo...",
+    "marketingEmailsSaving": "Guardando preferencia...",
+    "marketingEmailsLoadFailed": "Preferencia no disponible. Toca para reintentar.",
+    "marketingEmailsSavedTitle": "Preferencia de correo guardada",
+    "marketingEmailsEnabledMessage": "Recibirás correos de HASHPASS.",
+    "marketingEmailsDisabledMessage": "Los correos de HASHPASS están desactivados.",
+    "marketingEmailsSaveFailedTitle": "No se pudo guardar la preferencia de correo",
+    "marketingEmailsSaveFailedBody": "Revisa tu conexión e inténtalo de nuevo.",
     "clearCache": "Limpiar caché",
     "clearCacheSubtitle": "Liberar espacio de almacenamiento",
     "clearingCache": "Limpiando...",
@@ -743,7 +914,12 @@
       "deleting": "Eliminando...",
       "placeholder": "Ingresa el código de 6 dígitos",
       "cancel": "Cancelar"
-    }
+    },
+    "partnerPromotions": "Ofertas de aliados",
+    "partnerPromotionsEnabled": "Compartición activa · Cambia cuando quieras.",
+    "partnerPromotionsDisabled": "Compartir contacto para recibir ofertas de aliados.",
+    "partnerPromotionsEnabledMessage": "Las ofertas de aliados están activadas.",
+    "partnerPromotionsDisabledMessage": "Las ofertas de aliados están desactivadas."
   },
   "index": {
     "tagline": "TU EVENTO - TU COMUNIDAD - TUS BENEFICIOS",
@@ -1295,162 +1471,6 @@
       "closeFilters": "Cerrar filtros",
       "roomPassRequired": "Se requiere pase",
       "roomPassRequiredBody": "Necesitas un pase activo para unirte a la sala de este evento."
-    }
-  },
-  "passes": {
-    "tiersTitle": "Niveles de pase",
-    "tierMeetingRequests": "solicitudes de reunión",
-    "tierBoostPoints": "puntos de impulso",
-    "yourPass": "Tu pase",
-    "acquireTicket": "Adquirir entrada",
-    "title": "Tus Pases del Evento",
-    "loading": "Cargando la información de tu pase...",
-    "loadingSubtitle": "Esto solo debería tomar un momento.",
-    "loadingSlow": "Aún cargando tus pases…",
-    "loadingSlowSubtitle": "Esto está tardando más de lo habitual. Espera un momento o revisa tu conexión.",
-    "loadingRetrying": "Reintentando…",
-    "loadingRetryingSubtitle": "El primer intento tardó bastante. Intentándolo de nuevo.",
-    "showFullDetails": "Ver detalles completos",
-    "alert": {
-      "createdTitle": "¡Pase creado! 🎉",
-      "ok": "OK",
-      "errorTitle": "Error",
-      "createFail": "No se pudo crear el pase. Inténtalo de nuevo.",
-      "paymentTitle": "Integración de Pago",
-      "paymentMessage": "El sistema de pago se implementará aquí"
-    },
-    "button": {
-      "passRequired": "Se requiere pase",
-      "limitReached": "Límite alcanzado",
-      "requestMeeting": "Solicitar reunión"
-    },
-    "cancel": "Cancelar",
-    "resetMeetingRequestLimit": "Restablecer límite · 50 puntos Boost",
-    "resetMeetingRequestLimitTitle": "¿Restablecer el límite de reuniones?",
-    "resetMeetingRequestLimitDescription": "Gasta 50 puntos Boost para recuperar tus solicitudes de reunión.",
-    "resetMeetingRequestLimitSuccessTitle": "Límite restablecido",
-    "resetMeetingRequestLimitSuccessDescription": "Tus solicitudes de reunión están disponibles de nuevo.",
-    "resetMeetingRequestLimitFailure": "Inténtalo de nuevo.",
-    "copiedTitle": "Información del pase copiada",
-    "copiedMessage": "La información del pase se copió al portapapeles. Puedes pegarla para compartir.",
-    "copyError": "No se puede compartir el pase. Inténtalo de nuevo.",
-    "type": {
-      "business": "Business",
-      "vip": "VIP",
-      "general": "General",
-      "event": "Evento"
-    },
-    "access": {
-      "business": "B2B + Fiesta de clausura",
-      "vip": "Todos los beneficios VIP",
-      "general": "Acceso general",
-      "event": "Acceso al evento"
-    },
-    "meetingRequests": "Solicitudes de Reunión",
-    "boostPoints": "Puntos de impulso",
-    "passSummary": "Resumen del Pase",
-    "quickOverview": "Vista Rápida",
-    "requestsLeft": "Solicitudes Restantes",
-    "boostLeft": "Impulso Restante",
-    "accessIncluded": "Acceso Incluido",
-    "used": "usado",
-    "passNumber": "Pase #{pass_number}",
-    "noPassFound": "No se encontraron pases",
-    "contactSupport": "Contacta con soporte para obtener tus pases del evento",
-    "loadTimeoutTitle": "Los pases tardan demasiado en cargar",
-    "loadTimeoutMessage": "Comprueba tu conexión e inténtalo de nuevo.",
-    "loadErrorTitle": "No se pudieron cargar tus pases",
-    "loadErrorMessage": "No pudimos acceder a la información de tus pases en este momento.",
-    "sessionPendingTitle": "La sesión de tus pases todavía está cargando",
-    "sessionPendingMessage": "Tu cuenta todavía se está conectando. Inténtalo de nuevo en un momento.",
-    "tryAgain": "Intentar de nuevo",
-    "noPassMessage": {
-      "demo": "Necesitas un pase para solicitar reuniones con los ponentes. Sin un pase, no puedes enviar solicitudes de reunión. Elige tu tipo de pase:",
-      "production": "Necesitas un pase válido del evento para solicitar reuniones con los ponentes. Por favor, compra un pase para continuar."
-    },
-    "passTypes": {
-      "all": "Todos los Tipos de Pase y Precios",
-      "open": "Abierto",
-      "closed": "Cerrado"
-    },
-    "passComparison": {
-      "compare": "Compara características y elige el pase adecuado para tus necesidades"
-    },
-    "passPerks": {
-      "general": {
-        "conferences": "Solo conferencias"
-      },
-      "business": {
-        "networking": "+ Networking y sesiones B2B"
-      },
-      "vip": {
-        "networking": "+ Networking VIP con ponentes"
-      },
-      "features": {
-        "allSessions": "Acceso a todas las sesiones de la conferencia",
-        "mainAreas": "Acceso a las áreas principales del evento",
-        "networkingSessions": "Networking y sesiones B2B",
-        "businessLounge": "Acceso al lounge Business",
-        "vipNetworking": "Networking VIP con ponentes",
-        "vipLounge": "Acceso al lounge VIP",
-        "prioritySeating": "Asientos preferenciales",
-        "networkingTools": "Herramientas de networking",
-        "businessSupport": "Soporte Business",
-        "conciergeService": "Servicio de concierge",
-        "premiumSwag": "Regalos premium",
-        "closingParty": "Fiesta oficial de clausura"
-      }
-    },
-    "purchasePass": "Comprar Pase del Evento",
-    "purchasePass.description": "Elige entre nuestros tipos de pase disponibles para acceder a reuniones con ponentes y oportunidades de networking.",
-    "currentPass": "Tu Pase Actual",
-    "unknown": "Desconocido",
-    "requestAllowed": "Puedes enviar una solicitud de reunión.",
-    "requestPending": "Solicitud de reunión pendiente",
-    "requestPendingDescription": "Tu solicitud está esperando la respuesta del ponente.",
-    "requestInProgressDescription": "Ya tienes una solicitud activa con este ponente.",
-    "viewRequest": "Ver solicitud",
-    "status": {
-      "active": "Activo",
-      "inactive": "Inactivo",
-      "expired": "Vencido",
-      "revoked": "Revocado",
-      "pending": "Pendiente"
-    },
-    "canRequestMeeting": "Puede Solicitar Reunión",
-    "cannotRequestMeeting": "No Puede Solicitar Reunión",
-    "qrCode": "Código QR",
-    "details": "Detalles",
-    "share": "Compartir",
-    "bslDate": "BSL 2025 • 12-14 Nov, 2025",
-    "date": "12-14 Nov, 2025",
-    "pass": "Pase",
-    "viewFullDetails": "Ver Detalles Completos",
-    "flipBack": "Volver",
-    "qrCodeModalTitle": "Tu Código QR del Pase",
-    "shareIntro": "Mira mi pase para",
-    "wallet": {
-      "searchPlaceholder": "Busca tus pases",
-      "noMatches": "Ningún pase coincide con tus filtros",
-      "showMore": "Ver más",
-      "showing": "Mostrando",
-      "timeline": {
-        "live": "En curso",
-        "upcoming": "Próximo",
-        "past": "Evento pasado"
-      },
-      "filter": {
-        "when": "Cuándo",
-        "passType": "Tipo de pase"
-      },
-      "stat": {
-        "total": "Pases",
-        "active": "Próximos",
-        "past": "Pasados"
-      },
-      "stackHint": "Toca una tarjeta de atrás para traerla al frente",
-      "reload": "Recargar pases",
-      "refreshing": "Actualizando pases…"
     }
   },
   "networking": {

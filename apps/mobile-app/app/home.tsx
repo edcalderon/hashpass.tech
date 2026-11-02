@@ -581,7 +581,7 @@ export default function HomeScreen() {
                 style={[
                   styles.scrollDownContent,
                   isPhoneLayout && styles.scrollDownContentMobile,
-                  { pointerEvents: "box-none" },
+                  Platform.OS === "web" ? undefined : { pointerEvents: "box-none" },
                 ]}
               >
                 <Text
