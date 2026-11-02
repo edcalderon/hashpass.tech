@@ -54,7 +54,7 @@ describe('campaign validation and rendering', () => {
       expect(rendered.text).toContain(`${copy.promoCodeLabel}: ${copy.promoCode}`);
 
       const fallback = renderMarketingEmail({ ...copy, promoCodeLabel: undefined }, null, locale);
-      const fallbackLabel = locale === 'es' ? 'CÓDIGO PROMOCIONAL' : 'PROMO CODE';
+      const fallbackLabel = locale === 'es' ? 'Código promocional' : 'Promo code';
       expect(fallback.html).toContain(fallbackLabel);
       expect(fallback.text).toContain(`${fallbackLabel}: ${copy.promoCode}`);
     }
