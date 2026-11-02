@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611021817, // Updated to current timestamp
+  buildNumber: 202611021935, // Updated to current timestamp
   releaseDate: '2026-11-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'route ticket claim reviews to event admins'
+    'include pending claim and campaign migrations'
   ],
   breakingChanges: [],
-  notes: 'route ticket claim reviews to event admins'
+  notes: 'include pending claim and campaign migrations'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.212': {
+    version: '1.9.212',
+    buildNumber: 202611021935,
+    releaseDate: '2026-11-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'include pending claim and campaign migrations'
+    ],
+    breakingChanges: [],
+    notes: 'include pending claim and campaign migrations'
+  },
   '1.9.211': {
     version: '1.9.211',
     buildNumber: 202611021817,
