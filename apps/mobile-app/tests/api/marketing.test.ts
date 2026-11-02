@@ -100,6 +100,48 @@ describe('global campaign administration', () => {
     await expect(repeated.json()).resolves.toEqual({ data: { campaign_id: actor, already_requested: true, notificationSent: true, emailSent: false } });
     expect(mockSendAdminCampaignEmail).toHaveBeenCalledTimes(1);
   });
+  it('rejects unavailable, unlinked, or non-admin campaign approvers', async () => {
+    mockReady.mockResolvedValue(false);
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(503);
+    mockReady.mockResolvedValue(true);
+    expect((await admin(req({ action: 'request_approval' }))).status).toBe(400);
+
+    mockApprover.mockResolvedValueOnce({ data: null, error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(503);
+    mockApprover.mockResolvedValueOnce({ data: { email: 'edward@hashpass.app', status: 'inactive', provider_ids: { supabase: approver } }, error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(503);
+    mockApprover.mockResolvedValueOnce({ data: { email: 'edward@hashpass.app', status: 'active', deleted_at: '2026-01-01', provider_ids: { supabase: approver } }, error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(503);
+    mockApprover.mockResolvedValueOnce({ data: { email: 'edward@hashpass.app', status: 'active', provider_ids: {} }, error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+    mockApprover.mockResolvedValueOnce({ data: { email: 'edward@hashpass.app', status: 'active', provider_ids: { supabase: approver } }, error: null });
+    mockRoles.mockResolvedValueOnce({ data: [{ role: 'admin', expires_at: null }], error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+    mockRoles.mockResolvedValueOnce({ data: [{ role: 'admin', expires_at: null }], error: null })
+      .mockResolvedValueOnce({ data: null, error: {} });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+    mockRoles.mockResolvedValueOnce({ data: [{ role: 'admin', expires_at: null }], error: null })
+      .mockResolvedValueOnce({ data: [{ role: 'admin', expires_at: '2020-01-01T00:00:00Z' }], error: null });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+  });
+  it('returns approval RPC conflicts and service failures without sending email', async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: 'P0001', message: 'Campaign already cancelled' } });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
+    mockRpc.mockResolvedValueOnce({ data: null, error: { code: 'OTHER' } });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(503);
+    expect(mockSendAdminCampaignEmail).not.toHaveBeenCalled();
+  });
+  it('uses safe email defaults when campaign details are unavailable', async () => {
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: actor }, error: null });
+    mockCampaign.mockResolvedValueOnce({ data: null, error: {} });
+    expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(200);
+    expect(mockSendAdminCampaignEmail).toHaveBeenCalledWith(expect.objectContaining({
+      subject: 'Approval requested: HASHPASS campaign',
+      message: expect.stringContaining('A new marketing campaign is awaiting your approval.'),
+      eventId: undefined,
+    }));
+  });
   it('requires a separate active approver and records decisions through the database guard', async () => {
     mockIdentity.mockResolvedValue({ supabaseUserId: approver });
     expect((await admin(req({ action: 'request_approval', id: actor }))).status).toBe(409);
@@ -109,6 +151,12 @@ describe('global campaign administration', () => {
     const decision = await admin(req({ action: 'approve', id: actor }));
     expect(decision.status).toBe(200);
     expect(mockRpc).toHaveBeenCalledWith('marketing_decide_approval', { p_actor: actor, p_campaign: actor, p_decision: 'approve' });
+  });
+  it('maps approval decision conflicts and service failures to safe responses', async () => {
+    mockRpc.mockResolvedValueOnce({ error: { code: 'P0001', message: 'Approval is no longer pending' } });
+    expect((await admin(req({ action: 'decline', id: actor }))).status).toBe(409);
+    mockRpc.mockResolvedValueOnce({ error: { code: 'OTHER' } });
+    expect((await admin(req({ action: 'approve', id: actor }))).status).toBe(503);
   });
   it.each(['not-a-time', '2999-01-01T00:00:00Z', '2026-10-22T09:00'])('requires an explicit past snapshot cutoff: %s', async cutoff => expect((await admin(req({ action: 'snapshot', cutoff }))).status).toBe(400));
   it('prepares a canonical sorted SHA-256 manifest and returns only RPC metadata', async () => {

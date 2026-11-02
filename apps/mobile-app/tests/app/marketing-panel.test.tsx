@@ -39,8 +39,10 @@ it('edits bilingual copy, survives partial date input and disables scheduling un
   tab(v, 'English'); act(() => field(v, 'Subject').props.onChangeText('Updated subject')); expect(button(v, 'Request approval from Edward').props.disabled).toBe(true);
   await act(async () => { button(v, 'Save draft').props.onPress(); });
   expect(p.onAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'save', draft: expect.objectContaining({ scheduledAt: '2026-10-27T09:00-05:00', content: expect.objectContaining({ en: expect.objectContaining({ subject: 'Updated subject' }) }) }) }));
+  (p.onAction as jest.Mock).mockResolvedValueOnce({ emailSent: true });
   await act(async () => { button(v, 'Request approval from Edward').props.onPress(); });
   expect(p.onAction).toHaveBeenCalledWith({ action: 'request_approval', id: 'id-0' });
+  expect(hasText(v, 'Approval request added to Edward’s notifications and emailed.')).toBe(true);
   await act(async () => { button(v, 'Preview email').props.onPress(); }); expect(p.onPreview).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Updated subject' }), 'en', 'colombia2026');
   act(() => button(v, 'Close editor').props.onPress()); expect(hasText(v, 'Campaign editor')).toBe(false); act(() => v.unmount());
 });
@@ -77,4 +79,29 @@ it('has loading, unavailable, empty and retry states', async () => {
   expect(button(v, 'New campaign').props.disabled).toBe(true); act(() => button(v, 'Try again').props.onPress()); expect(p.onRefresh).toHaveBeenCalled();
   await act(async () => { v.update(<MarketingPanel {...p} overview={{...overview,campaigns:[]}} />); }); expect(hasText(v, 'No campaigns')).toBe(true);
   tab(v, 'Delivery history'); expect(hasText(v, 'No queued or sent messages')).toBe(true); act(() => v.unmount());
+});
+
+it('shows pending and declined approval states and reports an email alert failure', async () => {
+  const p = props();
+  (p.onAction as jest.Mock).mockResolvedValueOnce({ emailSent: false });
+  const v = await render(p);
+  act(() => button(v, 'Review · BSL Colombia 2026 · launch').props.onPress());
+  await act(async () => { await button(v, 'Request approval from Edward').props.onPress(); });
+  expect(hasText(v, 'Approval request is in Edward’s notifications; its email alert could not be delivered.')).toBe(true);
+
+  const withStatus = (approval_status: string, approval_estimated_recipients?: number) => ({
+    ...overview,
+    campaigns: overview.campaigns.map((campaign, index) => index === 0
+      ? { ...campaign, approval_status, approval_estimated_recipients, counts: approval_status === 'pending' ? { queued: 1 } : campaign.counts }
+      : campaign),
+  });
+  await act(async () => { v.update(<MarketingPanel {...p} overview={withStatus('pending', 24)} />); });
+  expect(hasText(v, 'pending')).toBe(true);
+  expect(hasText(v, 'Estimated eligible recipients: 24')).toBe(true);
+  expect(field(v, 'Campaign name').props.editable).toBe(false);
+
+  await act(async () => { v.update(<MarketingPanel {...p} overview={withStatus('declined')} />); });
+  expect(hasText(v, 'declined')).toBe(true);
+  expect(hasText(v, 'Update and save the campaign before requesting review again.')).toBe(true);
+  act(() => v.unmount());
 });
