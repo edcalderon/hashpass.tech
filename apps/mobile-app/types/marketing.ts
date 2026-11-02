@@ -25,6 +25,8 @@ export interface CampaignCopy {
   imageUrl?: string;
   imageAlt?: string;
   imageCaption?: string;
+  promoCode?: string;
+  promoCodeLabel?: string;
   guideUrl?: string;
   guideLabel?: string;
   brand?: CampaignEmailBrand;

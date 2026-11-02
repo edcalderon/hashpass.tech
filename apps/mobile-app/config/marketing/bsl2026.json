@@ -342,6 +342,80 @@
           "imageCaption": "Fictional sample: Joe Doe. Add your name, role and social profiles in the artwork builder."
         }
       }
+    },
+    {
+      "key": "bsl2026-business-offer",
+      "eventId": "colombia2026",
+      "name": "BSL Colombia 2026 · Business Experience offer",
+      "scheduledAt": "2026-11-02T07:35:00-05:00",
+      "timeZone": "America/Bogota",
+      "audience": "registered_opt_in",
+      "status": "draft",
+      "requirements": [
+        "product_verified",
+        "assets_published"
+      ],
+      "content": {
+        "es": {
+          "subject": "Usa HASHPASS en BSL Bogotá 2026",
+          "preheader": "Blockchain Summit LatAm ofrece 100% de descuento con el código HASHPASS.",
+          "heading": "Tenemos algo para ti.",
+          "message": "Hola,\n\nTenemos algo para ti antes de BSL Colombia 2026. Blockchain Summit LatAm ofrece a la comunidad HASHPASS un descuento del 100% en una entrada Business Experience. Ingresa el código destacado en la página oficial de BSL. Cupos limitados; el registro es individual.\n\nTu entrada incluye acceso a la Business VIP Zone durante los tres días. No incluye la cena VIP ni el evento de cierre.\n\nDespués de registrarte en el sitio de BSL, abre HASHPASS y escanea el QR de tu entrada original para iniciar la solicitud de tu pase. Mejora tu pase a Business en HASHPASS para ampliar tus solicitudes de reuniones y conectar con ponentes. Cada reunión depende de disponibilidad y aceptación.\n\nGracias a Blockchain Summit LatAm por hacer disponible esta oferta para la comunidad HASHPASS.",
+          "promoCode": "HASHPASS",
+          "promoCodeLabel": "CÓDIGO · 100% DE DESCUENTO",
+          "actionUrl": "https://blockchainsummit.la/colombia2026/?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-business-offer",
+          "actionLabel": "Conocer la oferta oficial",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/business-offer-hero-v2.png",
+          "imageAlt": "Oferta para la comunidad HASHPASS en Blockchain Summit LatAm Colombia 2026",
+          "guideUrl": "https://blockchainsummit.la/colombia2026/",
+          "guideLabel": "Información oficial del evento",
+          "brand": {
+            "name": "HASHPASS",
+            "accentColor": "#0e7490",
+            "privacyUrl": "https://hashpass.tech/privacy",
+            "eventLabel": "BLOCKCHAIN SUMMIT LATAM · BOGOTÁ · NOV 4–6",
+            "logoUrl": "https://hashpass.tech/attending/email-previews/hashpass-white-cyan.png",
+            "eventLogoUrl": "https://hashpass.tech/attending/email-previews/bsl-ontour-pro.png",
+            "eventLogoAlt": "Blockchain Summit Latam · BSL On Tour"
+          },
+          "eventDetails": {
+            "date": "4–6 de noviembre de 2026",
+            "location": "Bogotá, Colombia",
+            "venue": "Universidad Externado de Colombia"
+          }
+        },
+        "en": {
+          "subject": "Use code HASHPASS for BSL Bogotá 2026",
+          "preheader": "Blockchain Summit LatAm offers 100% off with code HASHPASS.",
+          "heading": "We have something for you.",
+          "message": "Hello,\n\nWe have something for you ahead of BSL Colombia 2026. Blockchain Summit LatAm is offering the HASHPASS community 100% off one Business Experience ticket. Enter the code shown above on BSL's official page. Seats are limited; registration is individual.\n\nYour ticket includes Business VIP Zone access for all three event days. It does not include the VIP dinner or closing event.\n\nAfter registering on BSL's site, open HASHPASS and scan your original ticket QR code to begin claiming your pass. Upgrade your pass to Business in HASHPASS for an expanded meeting allowance and speaker networking. Meeting requests depend on availability and acceptance.\n\nThank you to Blockchain Summit LatAm for making this offer available to the HASHPASS community.",
+          "promoCode": "HASHPASS",
+          "promoCodeLabel": "CODE · 100% OFF BUSINESS EXPERIENCE",
+          "actionUrl": "https://blockchainsummit.la/colombia2026/?utm_source=hashpass&utm_medium=email&utm_campaign=bsl2026-business-offer",
+          "actionLabel": "Visit the official BSL page",
+          "imageUrl": "https://hashpass.tech/campaigns/bsl-2026/business-offer-hero-v2.png",
+          "imageAlt": "Offer for the HASHPASS community at Blockchain Summit LatAm Colombia 2026",
+          "guideUrl": "https://blockchainsummit.la/colombia2026/",
+          "guideLabel": "Official event information",
+          "brand": {
+            "name": "HASHPASS",
+            "accentColor": "#0e7490",
+            "privacyUrl": "https://hashpass.tech/privacy",
+            "eventLabel": "BLOCKCHAIN SUMMIT LATAM · BOGOTÁ · NOV 4–6",
+            "logoUrl": "https://hashpass.tech/attending/email-previews/hashpass-white-cyan.png",
+            "eventLogoUrl": "https://hashpass.tech/attending/email-previews/bsl-ontour-pro.png",
+            "eventLogoAlt": "Blockchain Summit Latam · BSL On Tour"
+          },
+          "eventDetails": {
+            "date": "November 4–6, 2026",
+            "location": "Bogotá, Colombia",
+            "venue": "Universidad Externado de Colombia"
+          }
+        }
+      },
+      "asset": {
+        "poster": "/campaigns/bsl-2026/business-offer-hero-v2.png"
+      }
     }
   ]
 }
