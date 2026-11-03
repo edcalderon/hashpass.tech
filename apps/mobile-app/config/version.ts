@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611030300, // Updated to current timestamp
+  buildNumber: 202611030552, // Updated to current timestamp
   releaseDate: '2026-11-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'include notification visibility migration'
+    'improve BSL welcome campaign video'
   ],
   breakingChanges: [],
-  notes: 'include notification visibility migration'
+  notes: 'improve BSL welcome campaign video'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.217': {
+    version: '1.9.217',
+    buildNumber: 202611030552,
+    releaseDate: '2026-11-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'improve BSL welcome campaign video'
+    ],
+    breakingChanges: [],
+    notes: 'improve BSL welcome campaign video'
+  },
   '1.9.216': {
     version: '1.9.216',
     buildNumber: 202611030300,
