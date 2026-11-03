@@ -811,7 +811,8 @@ export function FormField({
     error ? errorId : null,
   ].filter(Boolean).join(" ") || undefined;
   const webDateTimeInput = Platform.OS === "web" && webInputType === "datetime-local"
-    ? React.createElement("input", {
+    // Bracket access keeps the CSS interop Babel plugin from wrapping this raw DOM input.
+    ? React["createElement"]("input", {
         id: fieldId,
         type: webInputType,
         step: webInputStep,
