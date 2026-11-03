@@ -223,6 +223,38 @@ describe('/api/admin/notifications', () => {
     }));
   });
 
+  it('stores delivery-based expiry settings and rejects unsupported durations', async () => {
+    const scheduledAt = new Date(Date.now() + 60 * 60_000).toISOString();
+    const response = await post({
+      action: 'preview', ...baseDraft, audience: 'all_active', scheduledAt,
+      expiryMode: 'after_delivery', expiresAfterSeconds: 900, expiresAt: null,
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: {
+      scheduledAt,
+      notificationExpiryMode: 'after_delivery',
+      notificationExpiresAfterSeconds: 900,
+      notificationExpiresAt: null,
+    } });
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+      scheduled_at: scheduledAt,
+      notification_expiry_mode: 'after_delivery',
+      notification_expires_after_seconds: 900,
+      notification_expires_at: null,
+    }));
+
+    mockFrom.mockClear();
+    expect((await post({
+      action: 'preview', ...baseDraft, audience: 'all_active',
+      expiryMode: 'after_delivery', expiresAfterSeconds: 59,
+    })).status).toBe(400);
+    expect((await post({
+      action: 'preview', ...baseDraft, audience: 'all_active',
+      expiryMode: 'after_read', expiresAfterSeconds: 60,
+    })).status).toBe(400);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
   it('rejects an expiry that is not later than the scheduled send', async () => {
     const scheduledAt = new Date(Date.now() + 60 * 60_000).toISOString();
     const expiresAt = new Date(Date.parse(scheduledAt) - 60_000).toISOString();

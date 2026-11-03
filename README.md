@@ -20,16 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.214)
+## 📋 Latest Changes (v1.9.215)
 
 ### Features
 
-* **admin:** add app notifications and campaign approval queue ([#587](https://github.com/hashpass-tech/hashpass.tech/issues/587)) ([185953b](https://github.com/hashpass-tech/hashpass.tech/commit/185953b657cd297a4831723f751496e9bad4a54c))
+* add notification expiry and improve icons ([ecf2359](https://github.com/hashpass-tech/hashpass.tech/commit/ecf23593bba9e33d2e8e4e207605a364ef7c4a05))
 ### Release Highlights
-- add app notifications and campaign approval queue (#587)
+- add notification expiry and improve icons
 
 ### Release scope
-- Compared with: `v1.9.213` (the previous global release tag)
+- Compared with: `v1.9.214` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app

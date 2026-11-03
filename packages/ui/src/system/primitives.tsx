@@ -16,12 +16,19 @@ import {
   type LayoutAnimationConfig,
   type PressableProps,
   type TextProps,
-  type TextInputProps,
   type ViewStyle,
   type ViewProps,
 } from "react-native";
 import { mixHex, uiPalette, uiTokens, withAlpha, type ColorMode } from "./tokens";
-import type { BadgeProps, ControlSkin, SegmentedTab } from "./primitives.types";
+import type {
+  BadgeProps,
+  ControlSkin,
+  FormFieldChangeEvent,
+  FormFieldFocusEvent,
+  FormFieldProps,
+  FormFieldTextStyle,
+  SegmentedTab,
+} from "./primitives.types";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
@@ -418,7 +425,7 @@ export function FilterChip({
     />
   );
 }
-export type { ControlSkin, SegmentedTab } from "./primitives.types";
+export type { ControlSkin, FormFieldProps, SegmentedTab } from "./primitives.types";
 
 /**
  * The one tab control: a rounded pill track with a filled selected segment,
@@ -767,37 +774,129 @@ export function ModalBackdrop({
     />
   );
 }
+function toWebInputStyle(style?: FormFieldTextStyle): React.CSSProperties {
+  const flattened = { ...(style || {}) } as Record<string, unknown>;
+  const horizontalPadding = flattened.paddingHorizontal;
+  const verticalPadding = flattened.paddingVertical;
+  delete flattened.paddingHorizontal;
+  delete flattened.paddingVertical;
+  delete flattened.textAlignVertical;
+  delete flattened.includeFontPadding;
+  if (horizontalPadding !== undefined) {
+    flattened.paddingLeft ??= horizontalPadding;
+    flattened.paddingRight ??= horizontalPadding;
+  }
+  if (verticalPadding !== undefined) {
+    flattened.paddingTop ??= verticalPadding;
+    flattened.paddingBottom ??= verticalPadding;
+  }
+  return flattened as React.CSSProperties;
+}
+
 export function FormField({
   mode = "light",
   label,
   error,
   style,
+  webInputType,
+  webInputStep,
   ...props
-}: TextInputProps & Themed & { label: string; error?: string }) {
+}: FormFieldProps) {
   const palette = uiPalette(mode);
+  const fieldId = React.useId();
+  const accessibilityHintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const descriptions = [
+    props.accessibilityHint ? accessibilityHintId : null,
+    error ? errorId : null,
+  ].filter(Boolean).join(" ") || undefined;
+  const webDateTimeInput = Platform.OS === "web" && webInputType === "datetime-local"
+    // Bracket access keeps the CSS interop Babel plugin from wrapping this raw DOM input.
+    ? React["createElement"]("input", {
+        id: fieldId,
+        type: webInputType,
+        step: webInputStep,
+        value: props.value,
+        defaultValue: props.defaultValue,
+        placeholder: props.placeholder,
+        disabled: props.editable === false,
+        readOnly: props.readOnly,
+        autoFocus: props.autoFocus,
+        autoCapitalize: props.autoCapitalize,
+        autoComplete: props.autoComplete,
+        maxLength: props.maxLength,
+        spellCheck: props.autoCorrect ? "true" : "false",
+        "aria-label": props.accessibilityLabel || label,
+        "aria-labelledby": `${fieldId}-label`,
+        "aria-describedby": descriptions,
+        "aria-invalid": error ? true : undefined,
+        title: props.accessibilityHint,
+        "data-testid": props.testID,
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+          props.onChangeText?.(event.currentTarget.value);
+          props.onChange?.(event as unknown as FormFieldChangeEvent);
+        },
+        onFocus: (event: React.FocusEvent<HTMLInputElement>) => {
+          props.onFocus?.(event as unknown as FormFieldFocusEvent);
+        },
+        onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+          props.onBlur?.(event as unknown as FormFieldFocusEvent);
+        },
+        style: {
+          ...toWebInputStyle(StyleSheet.flatten([
+            styles.input,
+            {
+              color: palette.text,
+              backgroundColor: palette.raised,
+              borderColor: error ? palette.danger : palette.border,
+            },
+            style,
+          ])),
+          boxSizing: "border-box",
+          width: "100%",
+          colorScheme: mode,
+          fontFamily: "inherit",
+          outline: "auto",
+          outlineOffset: 2,
+        },
+      })
+    : null;
   return (
     <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: palette.text }]}>{label}</Text>
-      <TextInput
-        {...props}
-        accessibilityLabel={props.accessibilityLabel || label}
-        placeholderTextColor={palette.muted}
-        style={[
-          styles.input,
-          {
-            color: palette.text,
-            backgroundColor: palette.raised,
-            borderColor: error ? palette.danger : palette.border,
-          },
-          style,
-        ]}
-      />
+      <Text
+        nativeID={webDateTimeInput ? `${fieldId}-label` : undefined}
+        style={[styles.fieldLabel, { color: palette.text }]}
+      >
+        {label}
+      </Text>
+      {webDateTimeInput || (
+        <TextInput
+          {...props}
+          accessibilityLabel={props.accessibilityLabel || label}
+          placeholderTextColor={palette.muted}
+          style={[
+            styles.input,
+            {
+              color: palette.text,
+              backgroundColor: palette.raised,
+              borderColor: error ? palette.danger : palette.border,
+            },
+            style,
+          ]}
+        />
+      )}
       {!!error && (
         <Text
+          nativeID={webDateTimeInput ? `${fieldId}-error` : undefined}
           accessibilityRole="alert"
           style={{ color: palette.danger, fontSize: uiTokens.type.caption }}
         >
           {error}
+        </Text>
+      )}
+      {!!props.accessibilityHint && webDateTimeInput && (
+        <Text nativeID={accessibilityHintId} style={{ display: "none" }}>
+          {props.accessibilityHint}
         </Text>
       )}
     </View>

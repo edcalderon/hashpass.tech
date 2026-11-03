@@ -1,3 +1,19 @@
+## [1.9.215](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.214...v1.9.215) (2026-11-03)
+
+
+### Features
+
+* add notification expiry and improve icons ([ecf2359](https://github.com/hashpass-tech/hashpass.tech/commit/ecf23593bba9e33d2e8e4e207605a364ef7c4a05))
+### Release Highlights
+- add notification expiry and improve icons
+
+### Release scope
+- Compared with: `v1.9.214` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.214](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.213...v1.9.214) (2026-11-03)
 
 

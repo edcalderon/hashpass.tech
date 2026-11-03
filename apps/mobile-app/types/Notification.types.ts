@@ -19,3 +19,10 @@ export type NotificationType =
   | 'marketing_campaign_declined'
   | 'marketing_campaign_cancelled'
   | 'admin_announcement';
+
+export type NotificationData = {
+  dismissOnRead?: boolean;
+  deepLink?: string;
+  adminNotificationCampaignId?: string;
+  [key: string]: unknown;
+};

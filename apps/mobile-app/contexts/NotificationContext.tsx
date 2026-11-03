@@ -5,7 +5,7 @@ import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
-import type { NotificationType } from '../types/Notification.types';
+import type { NotificationData, NotificationType } from '../types/Notification.types';
 import {
   getLocalNotifications,
   isLocalNotification,
@@ -36,7 +36,7 @@ export interface Notification {
   speaker_id?: string;
   meeting_id?: string;
   campaign_id?: string;
-  data?: { deepLink?: string; adminNotificationCampaignId?: string; [key: string]: unknown };
+  data?: NotificationData;
 }
 
 export interface NotificationContextType {
@@ -213,12 +213,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         return;
       }
 
+      const readAt = new Date().toISOString();
       setNotifications(prev =>
-        prev.map((notification: Notification) =>
-          notification.id === notificationId
-            ? { ...notification, is_read: true, read_at: new Date().toISOString() }
-            : notification
-        )
+        prev.map((notification: Notification) => {
+          if (notification.id !== notificationId) return notification;
+          return {
+            ...notification,
+            is_read: true,
+            read_at: readAt,
+            ...(notification.data?.dismissOnRead ? { is_archived: true, archived_at: readAt } : {}),
+          };
+        })
       );
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -308,11 +313,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         return;
       }
 
+      const readAt = new Date().toISOString();
       setNotifications(prev =>
         prev.map((notification: Notification) => ({
           ...notification,
           is_read: true,
-          read_at: new Date().toISOString()
+          read_at: readAt,
+          ...(notification.data?.dismissOnRead ? { is_archived: true, archived_at: readAt } : {}),
         }))
       );
     } catch (error) {

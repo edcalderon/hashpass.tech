@@ -147,6 +147,8 @@ describe('AdminNotificationsManager', () => {
       audience: 'all_active',
       scheduledAt: scheduled.iso,
       expiresAt: expires.iso,
+      expiryMode: 'at_time',
+      expiresAfterSeconds: null,
     }), expect.any(Object));
     let text = renderer.root.findAllByType('Text' as never).map((node) => node.props.children).flat().join(' ');
     expect(text).toContain('Scheduled for');
@@ -162,6 +164,54 @@ describe('AdminNotificationsManager', () => {
     expect(mockPost).toHaveBeenNthCalledWith(2, 'admin/notifications', { action: 'send', previewId }, expect.any(Object));
     text = renderer.root.findAllByType('Text' as never).map((node) => node.props.children).flat().join(' ');
     expect(text).toContain('Notification scheduled for');
+    act(() => renderer.unmount());
+  });
+
+  it('previews preset and custom delivery expiry durations and one-time read expiry', async () => {
+    const preview = {
+      previewId: 'preview-expiry',
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      scheduledAt: null,
+      notificationExpiresAt: null,
+      notificationExpiryMode: 'after_delivery',
+      notificationExpiresAfterSeconds: 900,
+      recipientCount: 42,
+      pushRequested: false,
+      pushTokenCount: 0,
+      sample: [],
+    };
+    mockPost.mockResolvedValue({ success: true, data: { data: preview } });
+
+    const renderer = renderManager();
+    fillContent(renderer);
+    act(() => button(renderer, 'After delivery').props.onPress());
+    await act(async () => { await button(renderer, 'Preview audience').props.onPress(); });
+    expect(mockPost).toHaveBeenNthCalledWith(1, 'admin/notifications', expect.objectContaining({
+      expiryMode: 'after_delivery',
+      expiresAfterSeconds: 900,
+      expiresAt: null,
+    }), expect.any(Object));
+
+    act(() => button(renderer, 'Custom').props.onPress());
+    act(() => field(renderer, 'Custom duration (minutes)').props.onChangeText('45'));
+    await act(async () => { await button(renderer, 'Preview audience').props.onPress(); });
+    expect(mockPost).toHaveBeenNthCalledWith(2, 'admin/notifications', expect.objectContaining({
+      expiryMode: 'after_delivery',
+      expiresAfterSeconds: 2700,
+    }), expect.any(Object));
+
+    act(() => field(renderer, 'Custom duration (minutes)').props.onChangeText('40321'));
+    expect(button(renderer, 'Preview audience').props.disabled).toBe(true);
+    expect(renderer.root.findAllByType('Text' as never).map((node) => node.props.children).flat())
+      .toContain('Enter a custom duration between 1 minute and 28 days.');
+
+    act(() => button(renderer, 'After first read').props.onPress());
+    await act(async () => { await button(renderer, 'Preview audience').props.onPress(); });
+    expect(mockPost).toHaveBeenNthCalledWith(3, 'admin/notifications', expect.objectContaining({
+      expiryMode: 'after_read',
+      expiresAfterSeconds: null,
+      expiresAt: null,
+    }), expect.any(Object));
     act(() => renderer.unmount());
   });
 

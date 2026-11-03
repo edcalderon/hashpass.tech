@@ -163,6 +163,7 @@ export type NativeSafeIconName =
   | "arrow-right"
   | "refresh"
   | "event"
+  | "map-pin"
   | "mic"
   | "people"
   | "build"
@@ -194,6 +195,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "arrow-right": ArrowRight,
   refresh: RefreshCw,
   event: CalendarDays,
+  "map-pin": MapPin,
   mic: Mic,
   people: Users,
   build: Cog,
@@ -351,6 +353,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   "info-outline": Info,
   list: List,
   mail: Mail,
+  "record-voice-over": Mic,
   mic: Mic,
   call: Phone,
   "keyboard-arrow-down": ChevronDown,
