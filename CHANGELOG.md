@@ -1,3 +1,18 @@
+## [1.9.216](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.215...v1.9.216) (2026-11-03)
+
+
+### Bug Fixes
+
+* **db:** include notification visibility migration ([ee54446](https://github.com/hashpass-tech/hashpass.tech/commit/ee54446815a2fdebcc432373552762f7f9f911f6))
+### Release Highlights
+- include notification visibility migration
+
+### Release scope
+- Compared with: `v1.9.215` (the previous global release tag)
+
+### Affected products & packages
+- Release tooling
+
 ## [1.9.215](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.214...v1.9.215) (2026-11-03)
 
 
