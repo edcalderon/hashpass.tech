@@ -3,6 +3,8 @@ import {
   AbsoluteFill,
   Audio,
   Img,
+  Loop,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -10,12 +12,46 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type {BslCampaignWelcomeProps, WelcomeScene} from "../types/BslCampaign.types";
+import type {BslCampaignAerialCrossfadeProps, BslCampaignWelcomeProps, WelcomeScene} from "../types/BslCampaign.types";
+import {getWelcomeCaptionLayout} from "../lib/welcome-caption-layout";
 
 const FPS = 30;
+const BOGOTA_AERIAL_SOURCE_FRAMES = 528;
+const BOGOTA_AERIAL_CROSSFADE_FRAMES = 42;
+const BOGOTA_AERIAL_LOOP_FRAMES = BOGOTA_AERIAL_SOURCE_FRAMES - BOGOTA_AERIAL_CROSSFADE_FRAMES;
 const MIDNIGHT = "#06111F";
 const GOLD = "#FFCF3C";
 const CYAN = "#48D4FF";
+
+const BogotaAerialCrossfade: React.FC<BslCampaignAerialCrossfadeProps> = ({drift}) => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(
+    frame,
+    [0, BOGOTA_AERIAL_CROSSFADE_FRAMES - 1],
+    [0, 1],
+    {extrapolateLeft: "clamp", extrapolateRight: "clamp"},
+  );
+
+  return (
+    <OffthreadVideo
+      muted
+      src={staticFile("discovery/bogota-aerial-pexels.mp4")}
+      trimBefore={0}
+      trimAfter={BOGOTA_AERIAL_CROSSFADE_FRAMES}
+      style={{
+        filter: "saturate(.82) contrast(1.08) brightness(.72)",
+        height: "100%",
+        left: 0,
+        objectFit: "cover",
+        opacity,
+        position: "absolute",
+        top: 0,
+        transform: `scale(1.08) translateX(${drift}px)`,
+        width: "100%",
+      }}
+    />
+  );
+};
 
 const panelSpeakers = [
   "Luis Botello",
@@ -149,24 +185,52 @@ const PassFlow: React.FC<{progress: number}> = ({progress}) => (
 
 export const BslCampaignWelcome: React.FC<BslCampaignWelcomeProps> = ({content}) => {
   const frame = useCurrentFrame();
+  const {width, height} = useVideoConfig();
+  const captionLayout = getWelcomeCaptionLayout(width, height);
   const drift = Math.sin(frame / 75) * 18;
   const progress = interpolate(frame, [0, 50 * FPS], [0, 100], {extrapolateRight: "clamp"});
 
   return (
     <AbsoluteFill style={{backgroundColor: MIDNIGHT, color: "#FFFFFF", fontFamily: "Arial, sans-serif", overflow: "hidden"}}>
-      <Img
-        src={staticFile("discovery/bogota-cityscape.jpg")}
-        style={{height: "100%", left: 0, objectFit: "cover", opacity: 0.54, position: "absolute", top: 0, transform: `scale(1.08) translateX(${drift}px)`, width: "100%"}}
-      />
+      <Loop durationInFrames={BOGOTA_AERIAL_LOOP_FRAMES}>
+        <>
+          <OffthreadVideo
+            muted
+            src={staticFile("discovery/bogota-aerial-pexels.mp4")}
+            trimBefore={BOGOTA_AERIAL_CROSSFADE_FRAMES}
+            trimAfter={BOGOTA_AERIAL_SOURCE_FRAMES}
+            style={{
+              filter: "saturate(.82) contrast(1.08) brightness(.72)",
+              height: "100%",
+              left: 0,
+              objectFit: "cover",
+              position: "absolute",
+              top: 0,
+              transform: `scale(1.08) translateX(${drift}px)`,
+              width: "100%",
+            }}
+          />
+          <Sequence
+            from={BOGOTA_AERIAL_LOOP_FRAMES - BOGOTA_AERIAL_CROSSFADE_FRAMES}
+            durationInFrames={BOGOTA_AERIAL_CROSSFADE_FRAMES}
+          >
+            <BogotaAerialCrossfade drift={drift} />
+          </Sequence>
+        </>
+      </Loop>
       <AbsoluteFill style={{background: "linear-gradient(96deg, rgba(3,10,21,.98) 0%, rgba(6,17,31,.86) 46%, rgba(6,17,31,.28) 100%)"}} />
       <AbsoluteFill style={{background: `radial-gradient(circle at ${70 + drift * 0.08}% 34%, rgba(72,212,255,.28), transparent 34%), radial-gradient(circle at 72% 73%, rgba(255,207,60,.23), transparent 33%)`}} />
-      <div style={{background: "rgba(3, 10, 21, .74)", borderBottom: "1px solid rgba(255,255,255,.16)", display: "flex", justifyContent: "space-between", left: 0, padding: "38px 64px", position: "absolute", right: 0, top: 0}}>
-        <Img src={staticFile("brand/logo-full-hashpass-black.svg")} style={{height: 48, objectFit: "contain", width: 272}} />
-        <div style={{alignItems: "center", display: "flex", gap: 28}}>
-          <div style={{background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 16, padding: "12px 18px"}}>
-            <Img src={staticFile("event-heroes/colombia2026/event-logo.webp")} style={{height: 82, objectFit: "contain", width: 310}} />
-          </div>
-          <div style={{color: GOLD, fontSize: 20, fontWeight: 800, letterSpacing: 3}}>POWERED BY HASHPASS</div>
+      <div style={{alignItems: "center", background: "rgba(3, 10, 21, .74)", borderBottom: "1px solid rgba(255,255,255,.16)", display: "flex", justifyContent: "space-between", left: 0, padding: "24px 64px", position: "absolute", right: 0, top: 0}}>
+        <Img
+          src={staticFile("event-heroes/colombia2026/event-logo.webp")}
+          style={{height: 128, objectFit: "contain", width: 266}}
+        />
+        <div style={{alignItems: "center", display: "flex", gap: 24}}>
+          <div style={{color: GOLD, fontSize: 20, fontWeight: 800, letterSpacing: 3}}>POWERED BY</div>
+          <Img
+            src={staticFile("brand/logo-full-hashpass-black.svg")}
+            style={{height: 48, objectFit: "contain", width: 258}}
+          />
         </div>
       </div>
       {content.scenes.map((scene, index) => (
@@ -175,15 +239,44 @@ export const BslCampaignWelcome: React.FC<BslCampaignWelcomeProps> = ({content})
           {index > 0 ? <Audio src={staticFile("audio/sfx/transition.mp3")} volume={0.22} /> : null}
         </Sequence>
       ))}
-      <div style={{bottom: 60, left: 128, maxWidth: 1220, position: "absolute", right: 128}}>
-        {content.scenes.map((scene) => (
-          <Sequence key={`caption-${scene.startSecond}`} from={scene.startSecond * FPS} durationInFrames={(scene.endSecond - scene.startSecond) * FPS}>
-            <div style={{background: "rgba(3,10,21,.88)", borderLeft: `5px solid ${CYAN}`, borderRadius: 12, boxShadow: "0 12px 30px rgba(0,0,0,.3)", color: "#FFFFFF", fontSize: 26, fontWeight: 600, lineHeight: 1.3, padding: "16px 22px", width: "fit-content"}}>
+      {content.scenes.map((scene) => (
+        <Sequence key={`caption-${scene.startSecond}`} from={scene.startSecond * FPS} durationInFrames={(scene.endSecond - scene.startSecond) * FPS}>
+          <div
+            style={{
+              alignItems: "center",
+              bottom: captionLayout.bottom,
+              display: "flex",
+              justifyContent: "center",
+              left: 0,
+              paddingLeft: captionLayout.horizontalInset,
+              paddingRight: captionLayout.horizontalInset,
+              position: "absolute",
+              right: 0,
+            }}
+          >
+            <div
+              style={{
+                background: "rgba(3,10,21,.9)",
+                borderLeft: `5px solid ${CYAN}`,
+                borderRadius: 12,
+                boxShadow: "0 12px 30px rgba(0,0,0,.3)",
+                boxSizing: "border-box",
+                color: "#FFFFFF",
+                fontSize: captionLayout.fontSize,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                maxWidth: captionLayout.maxWidth,
+                overflowWrap: "anywhere",
+                padding: "16px 24px",
+                textAlign: "center",
+                width: "fit-content",
+              }}
+            >
               {scene.caption}
             </div>
-          </Sequence>
-        ))}
-      </div>
+          </div>
+        </Sequence>
+      ))}
       <div style={{background: GOLD, bottom: 0, height: 8, left: 0, position: "absolute", width: `${progress}%`}} />
       <Audio src={staticFile(content.audioFile)} volume={0.92} />
       <Audio src={staticFile("audio/music/elegant-bed.mp3")} volume={0.1} />

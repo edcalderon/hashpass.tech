@@ -14,11 +14,14 @@ renders the 90-second recap, and replaces the manifest at 18:00.
 
 The editorial source is the official [BSL Colombia 2026 page](https://blockchainsummit.la/colombia2026/), checked on 2026-10-28: November 4–6 in Bogotá at Universidad Externado, with sessions on regulation, payments, capital markets, stablecoins, tokenization, and digital infrastructure. The welcome cut highlights the supplied featured panel, **El sistema financiero en transformación: infraestructura, innovación y nuevos modelos institucionales**, on Wednesday 4 from 12:50 to 13:40, with Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina.
 
-The Spanish welcome uses the Colombian feminine `es-CO-SalomeNeural` voice;
-the English welcome uses the male `en-US-GuyNeural` voice. The initial-publish
-workflow installs pinned `edge-tts==7.3.1`, generates both narration tracks and
-timed WebVTT captions, verifies all four files are non-empty, then renders and
-publishes the campaign films. Local generation is also available with:
+The Spanish welcome uses Colombian feminine `es-CO-SalomeNeural` narration
+throughout, with “Jashh Pass” in the speech and transcript source to guide
+pronunciation. The visible brand mark remains “HASHPASS”.
+The English welcome uses the male `en-US-GuyNeural` voice throughout. The
+initial-publish workflow installs pinned `edge-tts==7.3.1`, generates both
+narration tracks and timed WebVTT captions, verifies all four files are
+non-empty, then renders and publishes the campaign films. Local generation is
+also available with:
 
 ```bash
 pnpm --filter hashpass-video-studio bsl:welcome:narration
