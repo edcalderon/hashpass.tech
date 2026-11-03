@@ -27,7 +27,8 @@ export async function GET(request: Request) {
     let query = (supabase as any)
       .from('notifications')
       .select('*')
-      .eq('user_id', identity.supabaseUserId);
+      .eq('user_id', identity.supabaseUserId)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
     if (category === 'messages') {
       query = query.eq('type', 'chat_message');

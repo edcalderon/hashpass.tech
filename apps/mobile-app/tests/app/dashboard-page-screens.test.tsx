@@ -10,6 +10,9 @@ const mockDeleteNotification = jest.fn().mockResolvedValue(undefined);
 const mockRefreshNotifications = jest.fn().mockResolvedValue(undefined);
 const mockRouterPush = jest.fn();
 const mockMarketingPost = jest.fn().mockResolvedValue({ success: true });
+const mockGetNotificationPushSettings = jest.fn().mockResolvedValue({ success: true, data: { enabledDeviceCount: 0 } });
+const mockRegisterCurrentDeviceForPush = jest.fn().mockResolvedValue({ success: true });
+const mockDisablePushForCurrentAccount = jest.fn().mockResolvedValue({ success: true });
 const mockFilterLogic: { current?: (data: any[], filters: Record<string, any>, query: string) => any[] } = {};
 type TestNotification = {
   id: string;
@@ -61,7 +64,14 @@ jest.mock('../../i18n/i18n', () => ({
 }));
 jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons', MaterialIcons: 'MaterialIcons' }));
 jest.mock('../../lib/supabase', () => ({ supabase: {} }));
-jest.mock('../../lib/api-client', () => ({ apiClient: { post: (...args: unknown[]) => mockMarketingPost(...args) } }));
+jest.mock('../../lib/api-client', () => ({ apiClient: {
+  get: (...args: unknown[]) => mockGetNotificationPushSettings(...args),
+  post: (...args: unknown[]) => mockMarketingPost(...args),
+} }));
+jest.mock('../../lib/push-notification-registration', () => ({
+  registerCurrentDeviceForPush: (...args: unknown[]) => mockRegisterCurrentDeviceForPush(...args),
+  disablePushForCurrentAccount: (...args: unknown[]) => mockDisablePushForCurrentAccount(...args),
+}));
 jest.mock('../../hooks/useAuth', () => {
   const auth = { user: { id: 'u1' }, dbUserId: 'db1', isLoading: false };
   return { useAuth: () => auth };
@@ -113,6 +123,9 @@ describe('dashboard pages share the page layout', () => {
     mockArchiveNotification.mockReset();
     mockDeleteNotification.mockReset();
     mockMarketingPost.mockReset().mockResolvedValue({ success: true });
+    mockGetNotificationPushSettings.mockReset().mockResolvedValue({ success: true, data: { enabledDeviceCount: 0 } });
+    mockRegisterCurrentDeviceForPush.mockReset().mockResolvedValue({ success: true });
+    mockDisablePushForCurrentAccount.mockReset().mockResolvedValue({ success: true });
     mockRefreshNotifications.mockReset().mockResolvedValue(undefined);
     mockFilterLogic.current = undefined;
     (Alert.alert as jest.Mock).mockClear();
@@ -138,6 +151,22 @@ describe('dashboard pages share the page layout', () => {
     expect(markAll).toBeTruthy();
     act(() => { markAll!.props.onPress(); });
     expect(mockMarkAllAsRead).toHaveBeenCalled();
+    act(() => view.unmount());
+  });
+
+  it('lets users register another device while account push is already enabled', async () => {
+    mockGetNotificationPushSettings.mockResolvedValue({ success: true, data: { enabledDeviceCount: 2 } });
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Notifications />); });
+
+    const enableThisDevice = view.root.find(node => node.props.accessibilityLabel === 'Enable on this device');
+    const disableAllDevices = view.root.find(node => node.props.accessibilityLabel === 'Turn off on all devices');
+    expect(enableThisDevice).toBeTruthy();
+    expect(disableAllDevices).toBeTruthy();
+
+    await act(async () => { await enableThisDevice.props.onPress(); });
+    expect(mockRegisterCurrentDeviceForPush).toHaveBeenCalledTimes(1);
+    expect(mockDisablePushForCurrentAccount).not.toHaveBeenCalled();
     act(() => view.unmount());
   });
 

@@ -52,9 +52,9 @@ describe('notifications api', () => {
       mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       const filterByUser = jest.fn().mockReturnValue({
-        order: () => ({
+        or: () => ({ order: () => ({
           limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-        }),
+        }) }),
       });
       mockFrom.mockReturnValue({
         select: () => ({
@@ -80,7 +80,7 @@ describe('notifications api', () => {
       ];
       const limit = jest.fn().mockResolvedValue({ data: notificationRows, error: null });
       const order = jest.fn().mockReturnValue({ limit });
-      const filterByUser = jest.fn().mockReturnValue({ order });
+      const filterByUser = jest.fn().mockReturnValue({ or: () => ({ order }) });
       const requestIds = jest.fn().mockResolvedValue({
         data: [
           { id: 'request-a', event_id: 'event-a' },
@@ -115,7 +115,7 @@ describe('notifications api', () => {
       const notificationRows = [{ id: 'notification-a', meeting_request_id: 'request-a' }];
       const limit = jest.fn().mockResolvedValue({ data: notificationRows, error: null });
       const order = jest.fn().mockReturnValue({ limit });
-      const filterByUser = jest.fn().mockReturnValue({ order });
+      const filterByUser = jest.fn().mockReturnValue({ or: () => ({ order }) });
       const requestIds = jest.fn().mockResolvedValue({ data: null, error: { message: 'db error' } });
       mockFrom.mockImplementation((table: string) => table === 'notifications'
         ? { select: () => ({ eq: filterByUser }) }
@@ -140,7 +140,7 @@ describe('notifications api', () => {
       ];
       const limit = jest.fn().mockResolvedValue({ data: notificationRows, error: null });
       const order = jest.fn().mockReturnValue({ limit });
-      const filterByUser = jest.fn().mockReturnValue({ order });
+      const filterByUser = jest.fn().mockReturnValue({ or: () => ({ order }) });
       const requestIds = jest.fn().mockResolvedValue({
         data: [{ id: 'request-b', event_id: 42 }],
         error: null,
@@ -167,7 +167,7 @@ describe('notifications api', () => {
         limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       });
       const typeFilter = jest.fn().mockReturnValue({ order });
-      const filterByUser = jest.fn().mockReturnValue({ eq: typeFilter, neq: typeFilter });
+      const filterByUser = jest.fn().mockReturnValue({ or: () => ({ eq: typeFilter, neq: typeFilter }) });
       mockFrom.mockReturnValue({
         select: () => ({ eq: filterByUser }),
       });
@@ -188,9 +188,9 @@ describe('notifications api', () => {
       mockFrom.mockReturnValue({
         select: () => ({
           eq: () => ({
-            order: () => ({
+            or: () => ({ order: () => ({
               limit: jest.fn().mockResolvedValue({ data: null, error: { message: 'db error' } }),
-            }),
+            }) }),
           }),
         }),
       });

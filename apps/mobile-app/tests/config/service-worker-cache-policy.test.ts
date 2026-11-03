@@ -33,4 +33,12 @@ describe('PWA service worker cache policy', () => {
     );
     expect(webManifest).toEqual(manifestJson);
   });
+
+  it('shows PWA push notifications and only opens validated same-app links', () => {
+    expect(serviceWorkerSource).toContain("self.addEventListener('push'");
+    expect(serviceWorkerSource).toContain("self.registration.showNotification(title, options)");
+    expect(serviceWorkerSource).toContain("self.addEventListener('notificationclick'");
+    expect(serviceWorkerSource).toContain("target.origin !== self.location.origin");
+    expect(serviceWorkerSource).toContain('isSafeNotificationPath');
+  });
 });

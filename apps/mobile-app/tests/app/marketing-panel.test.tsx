@@ -8,7 +8,7 @@ jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string,
 jest.mock('../../components/EmailPreviewFrame', () => 'EmailPreviewFrame');
 const overview: MarketingOverview = {
   campaigns: pack.messages.map((m: MarketingCampaignDraft, i: number) => ({ id: `id-${i}`, key: m.key, name: m.name, event_id: m.eventId, status: 'draft', scheduled_at: m.scheduledAt, time_zone: m.timeZone, content: m.content, requirements: m.requirements, readiness: Object.fromEntries(m.requirements.map(key => [key, true])), approval_status: 'not_requested', counts: {} })),
-  deliveries: [], audit: [], snapshots: [], activity: { verified: 3, observed: 2, points: 3 },
+  pendingApprovals: [], deliveries: [], audit: [], snapshots: [], activity: { verified: 3, observed: 2, points: 3 },
 };
 const props = (): MarketingPanelProps => ({ overview, mode: 'light', onAction: jest.fn(async () => true), onRefresh: jest.fn(), onPreview: jest.fn(async () => '<p>preview</p>') });
 const render = async (p: MarketingPanelProps) => { let v!: ReactTestRenderer; await act(async () => { v = create(<MarketingPanel {...p} />); }); return v; };
@@ -89,7 +89,7 @@ it('shows pending and declined approval states and reports an email alert failur
   await act(async () => { await button(v, 'Request approval from Edward').props.onPress(); });
   expect(hasText(v, 'Approval request is in Edward’s notifications; its email alert could not be delivered.')).toBe(true);
 
-  const withStatus = (approval_status: string, approval_estimated_recipients?: number) => ({
+  const withStatus = (approval_status: NonNullable<MarketingOverview['campaigns'][number]['approval_status']>, approval_estimated_recipients?: number) => ({
     ...overview,
     campaigns: overview.campaigns.map((campaign, index) => index === 0
       ? { ...campaign, approval_status, approval_estimated_recipients, counts: approval_status === 'pending' ? { queued: 1 } : campaign.counts }
@@ -103,5 +103,53 @@ it('shows pending and declined approval states and reports an email alert failur
   await act(async () => { v.update(<MarketingPanel {...p} overview={withStatus('declined')} />); });
   expect(hasText(v, 'declined')).toBe(true);
   expect(hasText(v, 'Update and save the campaign before requesting review again.')).toBe(true);
+  act(() => v.unmount());
+});
+
+it('reviews the exact bilingual approval snapshot and confirms scheduling or decline', async () => {
+  const p = props();
+  const approval: MarketingOverview['pendingApprovals'][number] = {
+    id: 'approval-1',
+    key: 'bsl2026-business-offer',
+    approval_requested_at: '2026-10-22T14:30:00Z',
+    approval_estimated_recipients: 24,
+    approval_snapshot: {
+      name: 'BSL Business offer',
+      event_id: 'colombia2026',
+      content: pack.messages[0].content,
+      scheduled_at: '2026-11-03T14:00:00Z',
+      time_zone: 'America/Bogota',
+      audience: 'registered_opt_in',
+      requirements: ['product_verified', 'assets_published'],
+      readiness: { product_verified: true, assets_published: true },
+      estimated_recipients: 24,
+    },
+  };
+  const v = await render({ ...p, overview: { ...overview, pendingApprovals: [approval] } });
+  tab(v, 'Campaign approvals');
+  expect(hasText(v, 'BSL Business offer')).toBe(true);
+  expect(hasText(v, 'Estimated eligible recipients: 24')).toBe(true);
+  expect(hasText(v, 'Active registered users with a current email updates opt-in')).toBe(true);
+  expect(hasText(v, 'Requested send time')).toBe(true);
+  expect(hasText(v, pack.messages[0].content.en.subject)).toBe(true);
+  expect(hasText(v, pack.messages[0].content.es.subject)).toBe(true);
+  expect(hasText(v, 'Approval schedules the campaign; it does not send immediately.')).toBe(true);
+
+  await act(async () => { button(v, 'Preview · English').props.onPress(); });
+  expect(p.onPreview).toHaveBeenCalledWith(pack.messages[0].content.en, 'en', 'colombia2026');
+  act(() => button(v, 'Approve & schedule').props.onPress());
+  expect(hasText(v, 'Confirm approval: this campaign will be scheduled, not sent now.')).toBe(true);
+  act(() => button(v, 'Cancel').props.onPress());
+  expect(p.onAction).not.toHaveBeenCalledWith({ action: 'approve', id: 'approval-1' });
+  act(() => button(v, 'Decline').props.onPress());
+  expect(hasText(v, 'Confirm decline: the campaign will remain unscheduled.')).toBe(true);
+  (p.onAction as jest.Mock).mockResolvedValueOnce(true);
+  await act(async () => { button(v, 'Confirm decline').props.onPress(); });
+  expect(p.onAction).toHaveBeenCalledWith({ action: 'decline', id: 'approval-1' });
+
+  act(() => button(v, 'Approve & schedule').props.onPress());
+  (p.onAction as jest.Mock).mockResolvedValueOnce(true);
+  await act(async () => { button(v, 'Confirm approval').props.onPress(); });
+  expect(p.onAction).toHaveBeenCalledWith({ action: 'approve', id: 'approval-1' });
   act(() => v.unmount());
 });

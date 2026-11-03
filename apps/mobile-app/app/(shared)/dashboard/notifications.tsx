@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNotifications, type Notification } from '@contexts/NotificationContext';
@@ -7,10 +7,11 @@ import DashboardRefreshButton from '../../../components/dashboard/DashboardRefre
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import { ActionButton, Badge, SegmentedTabs } from '@hashpass/ui/primitives';
+import { ActionButton, Badge, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
 import { apiClient } from '../../../lib/api-client';
+import { disablePushForCurrentAccount, registerCurrentDeviceForPush } from '../../../lib/push-notification-registration';
 import { translateNotification } from '../../../lib/notification-translations';
 import { buildNotificationEventPath } from '../../../lib/notification-navigation';
 import { confirmMarketingCampaignAction, showMarketingCampaignResult } from '../../../lib/marketing-approval-dialog';
@@ -41,6 +42,21 @@ export default function NotificationsScreen() {
   const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({});
   const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
   const [decidingCampaigns, setDecidingCampaigns] = useState<Set<string>>(new Set());
+  const [pushDeviceCount, setPushDeviceCount] = useState(0);
+  const [pushSettingsLoading, setPushSettingsLoading] = useState(false);
+  const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+
+  const refreshPushSettings = useCallback(async () => {
+    const response = await apiClient.get('notifications/push-token', { skipEventSegment: true, retries: 0 });
+    if (response.success) {
+      const payload = response.data as { enabledDeviceCount?: number } | undefined;
+      setPushDeviceCount(payload?.enabledDeviceCount || 0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPushSettings();
+  }, [refreshPushSettings]);
 
   // Separate the inbox by intent. Messages stay available in All, but their
   // dedicated tab avoids letting a busy conversation bury action-required
@@ -111,6 +127,15 @@ export default function NotificationsScreen() {
     if (unreadIds.length > 0) {
       await Promise.all(unreadIds.map((id: string) => markAsRead(id)));
     }
+
+    if (notification.type === 'admin_announcement') {
+      const deepLink = notification.data?.deepLink;
+      if (
+        typeof deepLink === 'string' && deepLink.startsWith('/') && !deepLink.startsWith('//') &&
+        !deepLink.includes('\\') && /^\/(dashboard|events|home|explore|wallet|profile)(\/|[?#]|$)/.test(deepLink)
+      ) router.push(deepLink as any);
+      return;
+    }
     
     // Navigate based on notification type
     if (notification.type === 'ticket_claim_review_required') {
@@ -172,6 +197,23 @@ export default function NotificationsScreen() {
     } else if (notification.speaker_id) {
       // Navigate to speaker details
       router.push(buildNotificationEventPath(notification, null, `speakers/${notification.speaker_id}`) as any);
+    }
+  };
+
+  const updatePushSettings = async (action: 'enable-device' | 'disable-all') => {
+    setPushSettingsLoading(true);
+    setPushFeedback(null);
+    try {
+      const result = action === 'disable-all'
+        ? await disablePushForCurrentAccount()
+        : await registerCurrentDeviceForPush();
+      if (!result.success) throw new Error(result.error);
+      await refreshPushSettings();
+      setPushFeedback(action === 'disable-all' ? 'Push notifications disabled for all devices on this account.' : 'Push notifications enabled on this device.');
+    } catch (error) {
+      setPushFeedback(error instanceof Error ? error.message : 'Unable to update push notification settings.');
+    } finally {
+      setPushSettingsLoading(false);
     }
   };
 
@@ -585,6 +627,40 @@ export default function NotificationsScreen() {
           {t('center.subtitle', 'Messages, meeting updates and event news in one place.')}
         </Text>
       </View>
+
+      <Surface mode={mode} style={{ padding: uiTokens.space.md, gap: uiTokens.space.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: uiTokens.space.md }}>
+          <View style={{ flex: 1, minWidth: 220, gap: uiTokens.space.xs }}>
+            <Text style={{ color: palette.text, fontSize: uiTokens.type.body, fontWeight: '700' }}>Push notifications</Text>
+            <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 20 }}>
+              {pushDeviceCount > 0
+                ? `Enabled on ${pushDeviceCount} device(s). You can enable this device too, or turn off push on all devices.`
+                : Platform.OS === 'web'
+                  ? 'Enable browser alerts on this device. In-app notifications remain available if push is turned off.'
+                  : 'Enable device alerts for important in-app updates.'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
+            <ActionButton
+              mode={mode}
+              label="Enable on this device"
+              variant="primary"
+              loading={pushSettingsLoading}
+              disabled={pushSettingsLoading}
+              onPress={() => void updatePushSettings('enable-device')}
+            />
+            {pushDeviceCount > 0 ? <ActionButton
+              mode={mode}
+              label="Turn off on all devices"
+              variant="secondary"
+              loading={pushSettingsLoading}
+              disabled={pushSettingsLoading}
+              onPress={() => void updatePushSettings('disable-all')}
+            /> : null}
+          </View>
+        </View>
+        {pushFeedback ? <Text accessibilityRole="alert" style={{ color: pushFeedback.includes('enabled') || pushFeedback.includes('disabled') ? palette.success : palette.danger, fontSize: uiTokens.type.caption }}>{pushFeedback}</Text> : null}
+      </Surface>
 
       {/* Filter Section */}
       <UnifiedSearchAndFilter

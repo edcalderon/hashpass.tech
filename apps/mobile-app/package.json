@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.9.213",
+  "version": "1.9.214",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -137,6 +137,7 @@
     "expo-linking": "~7.1.4",
     "expo-localization": "^16.1.6",
     "expo-network": "~7.1.5",
+    "expo-notifications": "~0.31.5",
     "expo-router": "~5.1.11",
     "expo-screen-capture": "~7.2.0",
     "expo-secure-store": "^14.2.3",
@@ -185,6 +186,7 @@
     "tailwindcss": "^3.4.17",
     "three": "^0.183.1",
     "twrnc": "^4.9.1",
+    "web-push": "^3.6.7",
     "workbox-cli": "^7.1.0",
     "xstate": "^5.32.5"
   },
@@ -211,6 +213,7 @@
     "@types/react-native": "^0.72.8",
     "@types/react-navigation": "^3.0.8",
     "@types/react-test-renderer": "^19.0.0",
+    "@types/web-push": "^3.6.4",
     "argon2": "^0.44.0",
     "chromedriver": "^142.0.1",
     "css-loader": "^7.1.2",

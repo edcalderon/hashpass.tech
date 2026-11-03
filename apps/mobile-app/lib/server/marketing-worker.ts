@@ -1,13 +1,10 @@
-import { timingSafeEqual } from 'node:crypto';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { marketingSenderReady, sendMarketingMessage } from '../email';
 import { renderMarketingEmail } from '../marketing';
 import type { ClaimedMarketingDelivery } from '../../types/marketing';
+import { marketingRunnerAuthorized } from './marketing-runner-auth';
 
-export function marketingRunnerAuthorized(request: Request, expected = process.env.MARKETING_RUNNER_TOKEN || '') {
-  const supplied = request.headers.get('Authorization')?.replace(/^Bearer /, '') || '';
-  return expected.length >= 32 && Buffer.byteLength(supplied) === Buffer.byteLength(expected) && timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
-}
+export { marketingRunnerAuthorized };
 
 export async function runMarketingBatch(request: Request) {
   if (!marketingRunnerAuthorized(request)) return Response.json({ error: 'Unauthorized scheduler' }, { status: 401 });
@@ -26,7 +23,7 @@ export async function runMarketingBatch(request: Request) {
     const copy = delivery.content[delivery.locale] || delivery.content.es;
     const rendered = renderMarketingEmail(copy, unsubscribeUrl, delivery.locale, delivery.event_id === 'colombia2026' ? 'HASHPASS · BSL COLOMBIA 2026' : 'HASHPASS UPDATES');
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let outcome;
+    let outcome: Awaited<ReturnType<typeof sendMarketingMessage>> | { status: 'unknown'; errorCode: string };
     try {
       outcome = await Promise.race([
         sendMarketingMessage({ ...rendered, to: delivery.email, unsubscribeUrl, deliveryId: delivery.id }),
@@ -36,7 +33,9 @@ export async function runMarketingBatch(request: Request) {
     finally { if (timer) clearTimeout(timer); }
     const acknowledged = await client.rpc('marketing_ack', { p_id: delivery.id, p_claim: delivery.claim_token, p_status: outcome.status, p_message_id: 'messageId' in outcome ? outcome.messageId : null, p_error: 'errorCode' in outcome ? outcome.errorCode : null });
     if (acknowledged.error || !acknowledged.data) counts.unknown += 1;
-    else counts[outcome.status] += 1;
+    else if (outcome.status === 'accepted') counts.accepted += 1;
+    else if (outcome.status === 'failed') counts.failed += 1;
+    else counts.unknown += 1;
   }));
   return Response.json({ data: counts }, { headers: { 'Cache-Control': 'no-store' } });
 }
