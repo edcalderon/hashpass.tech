@@ -181,7 +181,10 @@ function normalizeTiming(body: Record<string, unknown>) {
 
 async function sendPushNotifications(batch: any) {
   const jobs = Array.isArray(batch?.jobs) ? batch.jobs.slice(0, 20) : [];
-  const results = new Map<string, any>(jobs.map((job: any) => [job.id, {
+  const expoJobs = jobs.filter((job: any) => job.platform !== 'web' && EXPO_TOKEN_PATTERN.test(String(job.token || '')));
+  const webJobs = jobs.filter((job: any) => job.platform === 'web');
+  const supportedJobIds = new Set([...expoJobs, ...webJobs].map((job: any) => job.id));
+  const results = new Map<string, any>(jobs.filter((job: any) => supportedJobIds.has(job.id)).map((job: any) => [job.id, {
     id: job.id,
     status: 'retry',
     error: 'Push provider response could not be confirmed; delivery will retry.',
@@ -189,7 +192,6 @@ async function sendPushNotifications(batch: any) {
   const ttlSeconds = batch?.expires_at
     ? Math.max(0, Math.ceil((Date.parse(batch.expires_at) - Date.now()) / 1000))
     : 86400;
-  const expoJobs = jobs.filter((job: any) => job.platform !== 'web' && EXPO_TOKEN_PATTERN.test(String(job.token || '')));
   if (expoJobs.length) {
     try {
       // The Expo push gateway is an external provider; apiClient is reserved for HASHPASS API calls.
@@ -235,7 +237,6 @@ async function sendPushNotifications(batch: any) {
     }
   }
 
-  const webJobs = jobs.filter((job: any) => job.platform === 'web');
   if (webJobs.length) {
     const publicKey = process.env.WEB_PUSH_VAPID_PUBLIC_KEY;
     const privateKey = process.env.WEB_PUSH_VAPID_PRIVATE_KEY;
