@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611030003, // Updated to current timestamp
+  buildNumber: 202611030153, // Updated to current timestamp
   releaseDate: '2026-11-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add app notifications and campaign approval queue (#587)'
+    'add notification expiry and improve icons'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'add app notifications and campaign approval queue (#587)'
+  notes: 'add notification expiry and improve icons'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.215': {
+    version: '1.9.215',
+    buildNumber: 202611030153,
+    releaseDate: '2026-11-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add notification expiry and improve icons'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add notification expiry and improve icons'
+  },
   '1.9.214': {
     version: '1.9.214',
     buildNumber: 202611030003,
