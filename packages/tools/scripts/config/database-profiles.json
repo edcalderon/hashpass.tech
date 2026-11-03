@@ -355,7 +355,8 @@
     "admin-notifications": [
       "db/migrations/V171__admin_in_app_push_notifications.sql",
       "db/migrations/V172__marketing_campaign_approval_queue.sql",
-      "db/migrations/V173__scheduled_expiring_admin_notifications.sql"
+      "db/migrations/V173__scheduled_expiring_admin_notifications.sql",
+      "db/migrations/V174__notification_visibility_windows.sql"
     ],
     "non-custodial-wallet": [
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",

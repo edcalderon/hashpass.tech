@@ -201,6 +201,7 @@ describe('admin notification migration plan', () => {
       'db/migrations/V171__admin_in_app_push_notifications.sql',
       'db/migrations/V172__marketing_campaign_approval_queue.sql',
       'db/migrations/V173__scheduled_expiring_admin_notifications.sql',
+      'db/migrations/V174__notification_visibility_windows.sql',
     ];
 
     expect(config.groups['admin-notifications']).toEqual(expected);
