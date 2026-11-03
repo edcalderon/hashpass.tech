@@ -15,7 +15,7 @@
       "audioFile": "audio/narration/campaign/es/bsl-bogota-welcome.mp3",
       "captionFile": "audio/subtitles/campaign/es/bsl-bogota-welcome.vtt",
       "title": "Bienvenidos a BSL Bogotá",
-      "voiceover": "Bogotá, bienvenidos a Blockchain Summit Latam. Del cuatro al seis de noviembre, la Universidad Externado reúne a quienes están definiendo la infraestructura financiera de América Latina. Regulación, pagos, tokenización, mercados de capitales y activos digitales: tres días para convertir ideas en conexiones. Comienza con una conversación esencial: El sistema financiero en transformación: infraestructura, innovación y nuevos modelos institucionales. Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo y Nicolás Molina reúnen academia, banca, cumplimiento y tecnología. Antes de entrar, activa tu pase HASHPASS: prepara tu agenda, descubre a las personas correctas y solicita reuniones. Llegaste a la conversación. Ahora haz que continúe.",
+      "voiceover": "Bogotá, bienvenidos a Blockchain Summit Latam. Del cuatro al seis de noviembre, Universidad Externado conecta a quienes construyen la infraestructura financiera de América Latina. Regulación, pagos, tokenización, mercados y activos digitales: tres días para convertir ideas en conexiones. El panel El sistema financiero en transformación explora infraestructura, innovación y nuevos modelos institucionales. Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo y Nicolás Molina conectan academia, banca, cumplimiento y tecnología. Antes de entrar, activa tu pase Jashh Pass. Prepara tu agenda, encuentra personas clave y solicita reuniones. Bogotá, la conversación continúa.",
       "scenes": [
         {
           "startSecond": 0,
@@ -23,6 +23,7 @@
           "eyebrow": "BSL ON TOUR · BOGOTÁ",
           "headline": "Bienvenidos a la conversación financiera regional",
           "detail": "4–6 NOV · Universidad Externado de Colombia",
+          "transcript": "Bogotá, bienvenidos a Blockchain Summit Latam.",
           "caption": "Bogotá, bienvenidos a Blockchain Summit Latam."
         },
         {
@@ -31,6 +32,7 @@
           "eyebrow": "TRES DÍAS · UN MISMO ECOSISTEMA",
           "headline": "Infraestructura que mueve a América Latina",
           "detail": "Regulación · Pagos · Tokenización · Mercados · Activos digitales",
+          "transcript": "Del cuatro al seis de noviembre, Universidad Externado conecta a quienes construyen la infraestructura financiera de América Latina.",
           "caption": "La Universidad Externado reúne a quienes están definiendo la infraestructura financiera de América Latina."
         },
         {
@@ -39,6 +41,7 @@
           "eyebrow": "PANEL DESTACADO · MIÉRCOLES 4 · 12:50–13:40",
           "headline": "El sistema financiero en transformación",
           "detail": "Infraestructura, innovación y nuevos modelos institucionales",
+          "transcript": "Regulación, pagos, tokenización, mercados y activos digitales: tres días para convertir ideas en conexiones. El panel El sistema financiero en transformación explora infraestructura, innovación y nuevos modelos institucionales.",
           "caption": "Comienza con una conversación esencial sobre infraestructura, innovación y nuevos modelos institucionales."
         },
         {
@@ -47,6 +50,7 @@
           "eyebrow": "VOCES DEL PANEL",
           "headline": "Academia, banca, cumplimiento y tecnología",
           "detail": "Luis Botello · Jaime Rincón · Sandra Meza Cuervo · Juan Sebastián Peredo · Nicolás Molina",
+          "transcript": "Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo y Nicolás Molina conectan academia, banca, cumplimiento y tecnología.",
           "caption": "Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo y Nicolás Molina ponen esas perspectivas en diálogo."
         },
         {
@@ -55,7 +59,8 @@
           "eyebrow": "TU EXPERIENCIA, CON HASHPASS",
           "headline": "Agenda. Personas. Reuniones.",
           "detail": "Activa tu pase y convierte cada encuentro en una conexión que continúa.",
-          "caption": "Activa tu pase HASHPASS: prepara tu agenda, descubre a las personas correctas y solicita reuniones."
+          "transcript": "Antes de entrar, activa tu pase Jashh Pass. Prepara tu agenda, encuentra personas clave y solicita reuniones.",
+          "caption": "Activa tu pase HASH PASS: prepara tu agenda, descubre a las personas correctas y solicita reuniones."
         },
         {
           "startSecond": 47,
@@ -63,6 +68,7 @@
           "eyebrow": "BSL BOGOTÁ 2026",
           "headline": "La conversación continúa",
           "detail": "bsl.hashpass.tech",
+          "transcript": "Bogotá, la conversación continúa.",
           "caption": "Llegaste a la conversación. Ahora haz que continúe."
         }
       ]
@@ -74,7 +80,7 @@
       "audioFile": "audio/narration/campaign/en/bsl-bogota-welcome.mp3",
       "captionFile": "audio/subtitles/campaign/en/bsl-bogota-welcome.vtt",
       "title": "Welcome to BSL Bogotá",
-      "voiceover": "Welcome to Bogotá and Blockchain Summit Latam. From November fourth through sixth, Universidad Externado brings together the people shaping Latin America’s financial infrastructure. Regulation, payments, tokenization, capital markets, and digital assets: three days to turn ideas into real connections. Start with a defining conversation, Financial System in Transformation: Infrastructure, Innovation, and New Institutional Models. Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina bring together academia, banking, compliance, and technology. Before you enter, activate your HASHPASS: shape your agenda, discover the right people, and request a meeting. You are here for the conversation. Make it continue.",
+      "voiceover": "Welcome to Bogotá and Blockchain Summit Latam. From November fourth through sixth, Universidad Externado brings together the people shaping Latin America’s financial infrastructure. Regulation, payments, tokenization, capital markets, and digital assets: three days to turn ideas into real connections. Start with a defining conversation, Financial System in Transformation: Infrastructure, Innovation, and New Institutional Models. Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina bring together academia, banking, compliance, and technology. Before you enter, activate your Hash Pass: shape your agenda, discover the right people, and request a meeting. You are here for the conversation. Make it continue.",
       "scenes": [
         {
           "startSecond": 0,
@@ -82,6 +88,7 @@
           "eyebrow": "BSL ON TOUR · BOGOTÁ",
           "headline": "Welcome to the regional financial conversation",
           "detail": "NOV 4–6 · Universidad Externado de Colombia",
+          "transcript": "Welcome to Bogotá and Blockchain Summit Latam.",
           "caption": "Welcome to Bogotá and Blockchain Summit Latam."
         },
         {
@@ -90,6 +97,7 @@
           "eyebrow": "THREE DAYS · ONE ECOSYSTEM",
           "headline": "Infrastructure moving Latin America forward",
           "detail": "Regulation · Payments · Tokenization · Markets · Digital assets",
+          "transcript": "From November fourth through sixth, Universidad Externado brings together the people shaping Latin America’s financial infrastructure.",
           "caption": "Universidad Externado brings together the people shaping Latin America’s financial infrastructure."
         },
         {
@@ -98,6 +106,7 @@
           "eyebrow": "FEATURED PANEL · WEDNESDAY 4 · 12:50–13:40",
           "headline": "Financial System in Transformation",
           "detail": "Infrastructure, innovation, and new institutional models",
+          "transcript": "Regulation, payments, tokenization, capital markets, and digital assets: three days to turn ideas into real connections. Start with a defining conversation, Financial System in Transformation: Infrastructure, Innovation, and New Institutional Models.",
           "caption": "Start with a defining conversation on infrastructure, innovation, and new institutional models."
         },
         {
@@ -106,6 +115,7 @@
           "eyebrow": "PANEL VOICES",
           "headline": "Academia, banking, compliance, and technology",
           "detail": "Luis Botello · Jaime Rincón · Sandra Meza Cuervo · Juan Sebastián Peredo · Nicolás Molina",
+          "transcript": "Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina bring together academia, banking, compliance, and technology.",
           "caption": "Luis Botello, Jaime Rincón, Sandra Meza Cuervo, Juan Sebastián Peredo, and Nicolás Molina bring those perspectives together."
         },
         {
@@ -114,7 +124,8 @@
           "eyebrow": "YOUR EXPERIENCE, WITH HASHPASS",
           "headline": "Agenda. People. Meetings.",
           "detail": "Activate your pass and turn every encounter into a connection that continues.",
-          "caption": "Activate your HASHPASS: shape your agenda, discover the right people, and request a meeting."
+          "transcript": "Before you enter, activate your Hash Pass: shape your agenda, discover the right people, and request a meeting.",
+          "caption": "Activate your HASH PASS: shape your agenda, discover the right people, and request a meeting."
         },
         {
           "startSecond": 47,
@@ -122,6 +133,7 @@
           "eyebrow": "BSL BOGOTÁ 2026",
           "headline": "Keep the conversation moving",
           "detail": "bsl.hashpass.tech",
+          "transcript": "You are here for the conversation. Make it continue.",
           "caption": "You are here for the conversation. Make it continue."
         }
       ]
@@ -133,7 +145,7 @@
       "durationSeconds": 50,
       "title": "Bienvenidos a BSL Bogotá",
       "caption": "Welcome to BSL Bogotá",
-      "voiceover": "Bienvenidos a Bogotá. Blockchain Summit Latam reúne regulación, banca, mercados, tecnología y academia del cuatro al seis de noviembre en la Universidad Externado. Con HASHPASS puedes preparar tu agenda, encontrar personas y convertir cada encuentro en una conexión que continúa."
+      "voiceover": "Bienvenidos a Bogotá. Blockchain Summit Latam reúne regulación, banca, mercados, tecnología y academia del cuatro al seis de noviembre en la Universidad Externado. Con Jashh Pass puedes preparar tu agenda, encontrar personas y convertir cada encuentro en una conexión que continúa."
     },
     {
       "id": "walkthrough",

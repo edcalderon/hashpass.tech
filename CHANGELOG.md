@@ -1,3 +1,18 @@
+## [1.9.217](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.216...v1.9.217) (2026-11-03)
+
+
+### Bug Fixes
+
+* improve BSL welcome campaign video ([4cbdd42](https://github.com/hashpass-tech/hashpass.tech/commit/4cbdd429d8f7ea2b564d5a6261fd3cb1afc0beda))
+### Release Highlights
+- improve BSL welcome campaign video
+
+### Release scope
+- Compared with: `v1.9.216` (the previous global release tag)
+
+### Affected products & packages
+- Shared repository changes only
+
 ## [1.9.216](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.215...v1.9.216) (2026-11-03)
 
 

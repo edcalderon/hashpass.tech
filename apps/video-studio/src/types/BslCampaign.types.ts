@@ -18,3 +18,7 @@ export type BslCampaignWelcomeProps = {
   locale: BslCampaignLocale;
   content: BslCampaignWelcomeLocale;
 };
+
+export type BslCampaignAerialCrossfadeProps = {
+  drift: number;
+};
