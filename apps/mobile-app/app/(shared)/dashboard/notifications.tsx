@@ -14,6 +14,7 @@ import { apiClient } from '../../../lib/api-client';
 import { disablePushForCurrentAccount, registerCurrentDeviceForPush } from '../../../lib/push-notification-registration';
 import { translateNotification } from '../../../lib/notification-translations';
 import { buildNotificationEventPath } from '../../../lib/notification-navigation';
+import NotificationMessage from '../../../components/notifications/NotificationMessage';
 import { confirmMarketingCampaignAction, showMarketingCampaignResult } from '../../../lib/marketing-approval-dialog';
 import {
   getNotificationsForInboxTab,
@@ -494,11 +495,17 @@ export default function NotificationsScreen() {
                 </Badge>
               )}
             </View>
-            <Text
+            <NotificationMessage
+              message={translatedNotification.message}
               style={[styles.notificationMessage, isUnread ? styles.unreadMessage : styles.readMessage]}
-            >
-              {translatedNotification.message}
-            </Text>
+              accentColor={palette.accent}
+              onLinkOpen={() => {
+                notification.notificationIds.forEach((id: string) => {
+                  const sourceNotification = notifications.find((item) => item.id === id);
+                  if (sourceNotification && !sourceNotification.is_read) void markAsRead(id);
+                });
+              }}
+            />
             {notification.type === 'chat_message' && notification.notificationCount > 1 && (
               <View style={styles.conversationSummary}>
                 <MaterialIcons name="chat-bubble-outline" size={14} color={palette.accent} />

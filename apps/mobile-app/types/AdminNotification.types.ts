@@ -6,6 +6,8 @@ export type AdminNotificationAudience =
 
 export type AdminNotificationLevel = 'info' | 'important';
 
+export type AdminNotificationExpiryMode = 'never' | 'at_time' | 'after_delivery' | 'after_read';
+
 export type AdminNotificationPassTier =
   | 'all'
   | 'free'
@@ -26,6 +28,8 @@ export type AdminNotificationPreview = {
   expiresAt: string;
   scheduledAt: string | null;
   notificationExpiresAt: string | null;
+  notificationExpiryMode: AdminNotificationExpiryMode;
+  notificationExpiresAfterSeconds: number | null;
   recipientCount: number;
   pushRequested: boolean;
   pushTokenCount: number;
@@ -44,6 +48,8 @@ export type AdminNotificationCampaign = {
   status: 'scheduled' | 'sending' | 'sent' | 'partial' | 'failed' | 'expired' | 'cancelled';
   scheduled_at: string | null;
   expires_at: string | null;
+  expiry_mode: AdminNotificationExpiryMode;
+  expires_after_seconds: number | null;
   recipient_count: number;
   in_app_sent_count: number;
   push_sent_count: number;

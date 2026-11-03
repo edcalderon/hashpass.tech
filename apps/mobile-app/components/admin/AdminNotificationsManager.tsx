@@ -12,11 +12,13 @@ import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { EVENTS } from '../../config/events';
 import { createAdminEventOptions } from '../../lib/admin-event-selector';
 import { apiClient } from '../../lib/api-client';
+import NotificationDateTimeField from './NotificationDateTimeField';
 import type { AdminEventOption } from '../../types/AdminEventSelector.types';
 import type {
   AdminNotificationAudience,
   AdminNotificationCampaign,
   AdminNotificationAction,
+  AdminNotificationExpiryMode,
   AdminNotificationLevel,
   AdminNotificationPassTier,
   AdminNotificationPreview,
@@ -64,6 +66,56 @@ const COMPOSE_TABS = [
   { id: 'compose', label: 'Compose' },
   { id: 'history', label: 'Delivery history' },
 ] as const;
+const EXPIRY_MODE_OPTIONS: { value: AdminNotificationExpiryMode; label: string }[] = [
+  { value: 'never', label: 'No expiry' },
+  { value: 'at_time', label: 'At a date and time' },
+  { value: 'after_delivery', label: 'After delivery' },
+  { value: 'after_read', label: 'After first read' },
+];
+const EXPIRY_DURATION_OPTIONS = [
+  { value: 300, label: '5 minutes' },
+  { value: 900, label: '15 minutes' },
+  { value: 1800, label: '30 minutes' },
+  { value: 3600, label: '1 hour' },
+];
+const CUSTOM_DURATION_MIN_MINUTES = 1;
+const CUSTOM_DURATION_MAX_MINUTES = 28 * 24 * 60;
+
+function formatDuration(seconds: number) {
+  const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  if (totalMinutes < 60) return `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'}`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes
+    ? `${hours} hour${hours === 1 ? '' : 's'} ${minutes} minute${minutes === 1 ? '' : 's'}`
+    : `${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
+function formatExpirySummary(
+  mode: AdminNotificationExpiryMode,
+  expiresAt: string | null,
+  expiresAfterSeconds: number | null,
+) {
+  if (mode === 'after_read') return 'Moves to the archive after the recipient reads it.';
+  if (mode === 'after_delivery') {
+    const duration = expiresAfterSeconds
+      ? EXPIRY_DURATION_OPTIONS.find((option) => option.value === expiresAfterSeconds)?.label || formatDuration(expiresAfterSeconds)
+      : 'after the selected time';
+    return `Disappears ${duration} after delivery.`;
+  }
+  if (mode === 'at_time' && expiresAt) return `Expires ${new Date(expiresAt).toLocaleString()} · ${LOCAL_TIMEZONE}`;
+  return 'Does not expire';
+}
+
+function formatPreviewExpirySummary(
+  mode: AdminNotificationExpiryMode,
+  expiresAt: string | null,
+  expiresAfterSeconds: number | null,
+) {
+  return mode === 'never'
+    ? 'This notification will not expire.'
+    : formatExpirySummary(mode, expiresAt, expiresAfterSeconds);
+}
 
 export default function AdminNotificationsManager({ mode, initialEventId }: AdminNotificationsManagerProps) {
   const palette = uiPalette(mode);
@@ -77,6 +129,10 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
   const [deepLink, setDeepLink] = useState('');
   const [scheduledAtInput, setScheduledAtInput] = useState('');
   const [expiresAtInput, setExpiresAtInput] = useState('');
+  const [expiryMode, setExpiryMode] = useState<AdminNotificationExpiryMode>('never');
+  const [expiresAfterSeconds, setExpiresAfterSeconds] = useState(900);
+  const [isCustomExpiryDuration, setIsCustomExpiryDuration] = useState(false);
+  const [customExpiryMinutesInput, setCustomExpiryMinutesInput] = useState('15');
   const [pushRequested, setPushRequested] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AdminNotificationRecipient[]>([]);
@@ -95,18 +151,33 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
   );
   const scheduledAt = localDateTimeToIso(scheduledAtInput);
   const expiresAt = localDateTimeToIso(expiresAtInput);
+  const activeExpiresAt = expiryMode === 'at_time' ? expiresAt : null;
+  const customExpiryMinutes = Number(customExpiryMinutesInput);
+  const customDurationValid = /^\d+$/.test(customExpiryMinutesInput)
+    && Number.isInteger(customExpiryMinutes)
+    && customExpiryMinutes >= CUSTOM_DURATION_MIN_MINUTES
+    && customExpiryMinutes <= CUSTOM_DURATION_MAX_MINUTES;
+  const deliveryExpirySeconds = expiryMode !== 'after_delivery'
+    ? null
+    : isCustomExpiryDuration ? customDurationValid ? customExpiryMinutes * 60 : null : expiresAfterSeconds;
+  const durationError = expiryMode === 'after_delivery' && deliveryExpirySeconds === null
+    ? 'Enter a custom duration between 1 minute and 28 days.'
+    : null;
+  const expiryError = expiryMode === 'at_time' && expiresAt === undefined
+    ? 'Enter a valid expiry time as YYYY-MM-DDTHH:mm.'
+    : expiryMode === 'at_time' && !expiresAt
+      ? 'Choose an expiry date and time.'
+      : expiryMode === 'at_time' && expiresAt && Date.parse(expiresAt) <= (scheduledAt ? Date.parse(scheduledAt) : Date.now())
+        ? 'Expiry must be later than the send time.'
+        : null;
   const timeError = scheduledAt === undefined
     ? 'Enter a valid send time as YYYY-MM-DDTHH:mm.'
-    : expiresAt === undefined
-      ? 'Enter a valid expiry time as YYYY-MM-DDTHH:mm.'
-      : scheduledAt && Date.parse(scheduledAt) <= Date.now()
-        ? 'Scheduled send time must be in the future.'
-        : expiresAt && Date.parse(expiresAt) <= (scheduledAt ? Date.parse(scheduledAt) : Date.now())
-          ? 'Expiry must be later than the send time.'
-          : null;
+    : scheduledAt && Date.parse(scheduledAt) <= Date.now()
+      ? 'Scheduled send time must be in the future.'
+      : expiryError || durationError;
   const canPreview = !!title.trim() && !!message.trim() && !timeError && (audience !== 'selected' || selectedUsers.length > 0);
   const canTest = !!title.trim() && !!message.trim() && selectedUsers.length > 0 && selectedUsers.length <= 5
-    && expiresAt !== undefined && (!expiresAt || Date.parse(expiresAt) > Date.now());
+    && !expiryError && !durationError;
 
   const invalidatePreview = () => {
     setPreview(null);
@@ -166,6 +237,12 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
     invalidatePreview();
   };
 
+  const chooseExpiryMode = (nextMode: AdminNotificationExpiryMode) => {
+    setExpiryMode(nextMode);
+    setExpiresAtInput('');
+    invalidatePreview();
+  };
+
   const notificationPayload = (includeSchedule = true) => ({
     title: title.trim(),
     message: message.trim(),
@@ -173,7 +250,9 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
     deepLink: deepLink.trim(),
     pushRequested,
     scheduledAt: includeSchedule && typeof scheduledAt === 'string' ? scheduledAt : null,
-    expiresAt: typeof expiresAt === 'string' ? expiresAt : null,
+    expiresAt: typeof activeExpiresAt === 'string' ? activeExpiresAt : null,
+    expiryMode,
+    expiresAfterSeconds: deliveryExpirySeconds,
   });
 
   const requestPreview = async () => {
@@ -284,7 +363,9 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
           <Text style={{ color: palette.text, fontSize: uiTokens.type.body, fontWeight: '700' }}>{campaign.title}</Text>
           <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{campaign.message}</Text>
           {campaign.scheduled_at ? <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>Scheduled for {new Date(campaign.scheduled_at).toLocaleString()} · {LOCAL_TIMEZONE}</Text> : null}
-          <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>{campaign.expires_at ? `Expires ${new Date(campaign.expires_at).toLocaleString()} · ${LOCAL_TIMEZONE}` : 'Does not expire'}</Text>
+          <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+            {formatExpirySummary(campaign.expiry_mode || (campaign.expires_at ? 'at_time' : 'never'), campaign.expires_at, campaign.expires_after_seconds)}
+          </Text>
           <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
             {campaign.status === 'sending'
               ? `${campaign.in_app_sent_count} in-app · push delivery queued or in progress`
@@ -395,32 +476,89 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
               </View>
             </View>
             <FormField mode={mode} label="In-app link (optional)" value={deepLink} maxLength={512} onChangeText={(value) => { setDeepLink(value); invalidatePreview(); }} placeholder="/dashboard/notifications" autoCapitalize="none" autoCorrect={false} />
-            <FormField
+            <NotificationDateTimeField
               mode={mode}
               label="Schedule send (optional)"
               value={scheduledAtInput}
               onChangeText={(value) => { setScheduledAtInput(value); invalidatePreview(); }}
-              placeholder="YYYY-MM-DDTHH:mm"
-              autoCapitalize="none"
-              autoCorrect={false}
               accessibilityHint={`Leave blank to send immediately. Timezone: ${LOCAL_TIMEZONE}.`}
             />
             <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
-              Leave blank to send immediately. Scheduled times use {LOCAL_TIMEZONE}.
+              Set both dates to define a window: the notice becomes available at its scheduled send time and expires at the end date and time. Leave the send time blank to send immediately. Times use {LOCAL_TIMEZONE}.
             </Text>
-            <FormField
-              mode={mode}
-              label="Expires at (optional)"
-              value={expiresAtInput}
-              onChangeText={(value) => { setExpiresAtInput(value); invalidatePreview(); }}
-              placeholder="YYYY-MM-DDTHH:mm"
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityHint={`Leave blank for a notification that never expires. Timezone: ${LOCAL_TIMEZONE}.`}
-            />
-            <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
-              Leave blank for no expiry. Expired notices disappear from the in-app inbox; push delivery uses this expiry time too.
-            </Text>
+            <View style={{ gap: uiTokens.space.sm }}>
+              <Text style={{ color: palette.text, fontSize: uiTokens.type.label, fontWeight: '700' }}>Notification visibility</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
+                {EXPIRY_MODE_OPTIONS.map((option) => (
+                  <FilterChip
+                    key={option.value}
+                    mode={mode}
+                    label={option.label}
+                    selected={expiryMode === option.value}
+                    onPress={() => chooseExpiryMode(option.value)}
+                  />
+                ))}
+              </View>
+            </View>
+            {expiryMode === 'at_time' || expiryMode === 'never' ? (
+              <NotificationDateTimeField
+                mode={mode}
+                label="Expires at (optional)"
+                value={expiresAtInput}
+                onChangeText={(value) => {
+                  setExpiresAtInput(value);
+                  if (value) setExpiryMode('at_time');
+                  else if (expiryMode === 'at_time') setExpiryMode('never');
+                  invalidatePreview();
+                }}
+                accessibilityHint={`Choose the end of the notification window, or leave blank for no expiry. Timezone: ${LOCAL_TIMEZONE}.`}
+              />
+            ) : null}
+            {expiryMode === 'after_delivery' ? (
+              <View style={{ gap: uiTokens.space.sm }}>
+                <Text style={{ color: palette.text, fontSize: uiTokens.type.label, fontWeight: '700' }}>Disappear after delivery</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
+                  {EXPIRY_DURATION_OPTIONS.map((option) => (
+                    <FilterChip
+                      key={option.value}
+                      mode={mode}
+                      label={option.label}
+                      selected={!isCustomExpiryDuration && expiresAfterSeconds === option.value}
+                      onPress={() => { setIsCustomExpiryDuration(false); setExpiresAfterSeconds(option.value); invalidatePreview(); }}
+                    />
+                  ))}
+                  <FilterChip
+                    mode={mode}
+                    label="Custom"
+                    selected={isCustomExpiryDuration}
+                    onPress={() => { setIsCustomExpiryDuration(true); invalidatePreview(); }}
+                  />
+                </View>
+                {isCustomExpiryDuration ? (
+                  <FormField
+                    mode={mode}
+                    label="Custom duration (minutes)"
+                    value={customExpiryMinutesInput}
+                    onChangeText={(value) => { setCustomExpiryMinutesInput(value); invalidatePreview(); }}
+                    keyboardType="number-pad"
+                    placeholder="Enter 1–40,320 minutes"
+                  />
+                ) : null}
+                <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+                  The in-app notice leaves the inbox after this time. Choose 1–40,320 minutes for a custom duration. Push uses the selected duration as its delivery TTL.
+                </Text>
+              </View>
+            ) : null}
+            {expiryMode === 'after_read' ? (
+              <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+                It moves to the user’s archive when they mark it as read or open it.
+              </Text>
+            ) : null}
+            {expiryMode === 'never' ? (
+              <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+                Leave this selected for a notice that stays in the inbox until the user archives it.
+              </Text>
+            ) : null}
             <FilterChip
               mode={mode}
               label={pushRequested ? 'Also send push to opted-in devices' : 'In-app only'}
@@ -442,7 +580,7 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
               <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>{preview.recipientCount.toLocaleString()} active account(s) will receive an in-app notification.</Text>
               {preview.pushRequested ? <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{preview.pushTokenCount.toLocaleString()} registered device(s) are currently eligible for push.</Text> : null}
               {preview.scheduledAt ? <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>Scheduled for {new Date(preview.scheduledAt).toLocaleString()} ({LOCAL_TIMEZONE}).</Text> : <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>Will send immediately.</Text>}
-              <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{preview.notificationExpiresAt ? `Expires ${new Date(preview.notificationExpiresAt).toLocaleString()} (${LOCAL_TIMEZONE}).` : 'This notification will not expire.'}</Text>
+              <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{formatPreviewExpirySummary(preview.notificationExpiryMode || (preview.notificationExpiresAt ? 'at_time' : 'never'), preview.notificationExpiresAt, preview.notificationExpiresAfterSeconds)}</Text>
               {preview.sample.map((recipient) => <Text key={recipient.email} style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>{recipient.name ? `${recipient.name} · ` : ''}{recipient.email}</Text>)}
               <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>Preview expires {new Date(preview.expiresAt).toLocaleTimeString()} and can be used once.</Text>
             </View>
@@ -452,7 +590,7 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
             <View accessibilityRole="alert" style={{ padding: uiTokens.space.md, borderWidth: 1, borderColor: palette.border, borderRadius: uiTokens.radius.card, gap: uiTokens.space.sm }}>
               <Text style={{ color: palette.text, fontSize: uiTokens.type.title, fontWeight: '700' }}>Confirm notification send</Text>
               <Text style={{ color: palette.muted, fontSize: uiTokens.type.body, lineHeight: 22 }}>
-                This will {preview.scheduledAt ? `schedule an in-app notification for ${new Date(preview.scheduledAt).toLocaleString()} (${LOCAL_TIMEZONE})` : 'create an in-app notification now'} for {preview.recipientCount.toLocaleString()} active account(s){preview.pushRequested ? ` and send push to ${preview.pushTokenCount.toLocaleString()} registered device(s)` : ''}. {preview.notificationExpiresAt ? `It expires ${new Date(preview.notificationExpiresAt).toLocaleString()} (${LOCAL_TIMEZONE}).` : 'It will not expire.'} The audience snapshot is exact and can be used once.
+                This will {preview.scheduledAt ? `schedule an in-app notification for ${new Date(preview.scheduledAt).toLocaleString()} (${LOCAL_TIMEZONE})` : 'create an in-app notification now'} for {preview.recipientCount.toLocaleString()} active account(s){preview.pushRequested ? ` and send push to ${preview.pushTokenCount.toLocaleString()} registered device(s)` : ''}. {formatPreviewExpirySummary(preview.notificationExpiryMode || (preview.notificationExpiresAt ? 'at_time' : 'never'), preview.notificationExpiresAt, preview.notificationExpiresAfterSeconds)} The audience snapshot is exact and can be used once.
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
                 <ActionButton mode={mode} label="Cancel" variant="secondary" onPress={() => setConfirmingSend(false)} />

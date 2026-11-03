@@ -20,6 +20,7 @@ import {
   sortExplorerEvents,
   type ExplorerEvent,
 } from "../../components/explorer/explorer";
+import { getEventQuickAccessItems } from "../../lib/event-detector";
 
 const events: ExplorerEvent[] = [
   {
@@ -273,6 +274,20 @@ describe("explorer rework behavior", () => {
 
   it("uses the refresh glyph for the compact event reload control", () => {
     expect(resolveExplorerIconName("refresh")).toBe("refresh");
+  });
+
+  it("uses distinct native-safe icons for networking and event logistics quick access", () => {
+    const items = getEventQuickAccessItems("colombia2026") as {
+      id: string;
+      icon: string;
+    }[];
+    const networking = items.find((item) => item.id === "networking");
+    const eventInfo = items.find((item) => item.id === "event-info");
+
+    expect(networking?.icon).toBe("people-alt");
+    expect(resolveExplorerIconName(networking?.icon || "")).toBe("people");
+    expect(eventInfo?.icon).toBe("location-on");
+    expect(resolveExplorerIconName(eventInfo?.icon || "")).toBe("map-pin");
   });
 
   it("keeps reload feedback visible long enough to show event skeletons", () => {

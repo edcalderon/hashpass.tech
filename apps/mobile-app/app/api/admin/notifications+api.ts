@@ -6,6 +6,7 @@ import { EVENTS } from '@/config/events';
 import webPush from 'web-push';
 import type {
   AdminNotificationAudience,
+  AdminNotificationExpiryMode,
   AdminNotificationLevel,
   AdminNotificationPassTier,
   AdminNotificationRecipient,
@@ -25,6 +26,9 @@ const AUDIENCES = new Set<AdminNotificationAudience>([
   'all_active', 'event_attendees', 'speakers', 'selected',
 ]);
 const LEVELS = new Set<AdminNotificationLevel>(['info', 'important']);
+const EXPIRY_MODES = new Set<AdminNotificationExpiryMode>(['never', 'at_time', 'after_delivery', 'after_read']);
+const MIN_EXPIRY_DURATION_SECONDS = 60;
+const MAX_EXPIRY_DURATION_SECONDS = 28 * 24 * 60 * 60;
 const MAX_RECIPIENTS = 10000;
 const REGISTRY_PAGE_SIZE = 1000;
 const clean = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
@@ -166,17 +170,46 @@ function optionalTimestamp(value: unknown): string | null | undefined {
 
 function normalizeTiming(body: Record<string, unknown>) {
   const scheduledAt = optionalTimestamp(body.scheduledAt);
-  const expiresAt = optionalTimestamp(body.expiresAt);
+  const rawExpiryMode = clean(body.expiryMode, 24);
+  const legacyExpiresAt = optionalTimestamp(body.expiresAt);
+  const hasLegacyExpiryValue = !!clean(body.expiresAt, 64);
+  const expiryMode = (rawExpiryMode || (hasLegacyExpiryValue ? 'at_time' : 'never')) as AdminNotificationExpiryMode;
+  const expiresAt = expiryMode === 'at_time' ? legacyExpiresAt : null;
+  const rawExpiresAfterSeconds = body.expiresAfterSeconds;
+  const expiresAfterSeconds = expiryMode === 'after_delivery' && Number.isInteger(rawExpiresAfterSeconds)
+    ? Number(rawExpiresAfterSeconds)
+    : null;
   if (scheduledAt === undefined) return { error: 'Enter a valid scheduled date and time with its timezone.' } as const;
-  if (expiresAt === undefined) return { error: 'Enter a valid expiry date and time with its timezone.' } as const;
+  if (!rawExpiryMode && hasLegacyExpiryValue && legacyExpiresAt === undefined) {
+    return { error: 'Enter a valid expiry date and time with its timezone.' } as const;
+  }
+  if (!EXPIRY_MODES.has(expiryMode)) return { error: 'Choose a valid notification expiry option.' } as const;
+  if (expiryMode === 'at_time' && expiresAt === undefined) return { error: 'Enter a valid expiry date and time with its timezone.' } as const;
+  if (expiryMode === 'at_time' && !expiresAt) return { error: 'Choose an expiry date and time.' } as const;
+  if (expiryMode === 'after_delivery' && (!expiresAfterSeconds
+    || expiresAfterSeconds < MIN_EXPIRY_DURATION_SECONDS
+    || expiresAfterSeconds > MAX_EXPIRY_DURATION_SECONDS)) {
+    return { error: 'Choose an expiry duration between 1 minute and 28 days.' } as const;
+  }
+  if (expiryMode !== 'after_delivery' && rawExpiresAfterSeconds !== undefined && rawExpiresAfterSeconds !== null) {
+    return { error: 'Expiry duration is only valid for delivery-based expiry.' } as const;
+  }
+  if (expiryMode !== 'at_time' && legacyExpiresAt && !rawExpiryMode) {
+    return { error: 'Choose a valid expiry option.' } as const;
+  }
   const referenceTime = scheduledAt ? Date.parse(scheduledAt) : Date.now();
   if (scheduledAt && referenceTime <= Date.now()) {
     return { error: 'Scheduled send time must be in the future.' } as const;
   }
-  if (expiresAt && Date.parse(expiresAt) <= referenceTime) {
+  if (expiryMode === 'at_time' && expiresAt && Date.parse(expiresAt) <= referenceTime) {
     return { error: 'Expiry must be later than the scheduled send time.' } as const;
   }
-  return { scheduledAt, expiresAt } as const;
+  return {
+    scheduledAt,
+    expiresAt: expiryMode === 'at_time' && typeof expiresAt === 'string' ? expiresAt : null,
+    expiryMode,
+    expiresAfterSeconds,
+  } as const;
 }
 
 async function sendPushNotifications(batch: any) {
@@ -296,6 +329,8 @@ async function persistCampaign(
   pushRequested: boolean,
   isTest: boolean,
   expiresAt: string | null,
+  expiryMode: AdminNotificationExpiryMode,
+  expiresAfterSeconds: number | null,
 ) {
   const { data, error } = await supabase.rpc('admin_create_notification_campaign', {
     p_actor_id: actorId,
@@ -309,6 +344,8 @@ async function persistCampaign(
     p_recipient_ids: recipients.map((recipient) => recipient.id),
     p_scheduled_at: null,
     p_expires_at: expiresAt,
+    p_expiry_mode: expiryMode,
+    p_expires_after_seconds: expiresAfterSeconds,
   });
   if (error || !data?.campaign_id) {
     console.error('[admin-notifications] campaign creation failed:', error?.message || 'invalid response');
@@ -333,7 +370,7 @@ export async function GET(request: Request) {
   if ('response' in authorization) return authorization.response;
   const { data, error } = await authorization.supabase
     .from('admin_notification_campaigns')
-    .select('id,title,message,level,deep_link,push_requested,is_test,audience,status,scheduled_at,expires_at,recipient_count,in_app_sent_count,push_sent_count,push_failed_count,push_skipped_count,push_error,created_at,completed_at')
+    .select('id,title,message,level,deep_link,push_requested,is_test,audience,status,scheduled_at,expires_at,expiry_mode,expires_after_seconds,recipient_count,in_app_sent_count,push_sent_count,push_failed_count,push_skipped_count,push_error,created_at,completed_at')
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) {
@@ -497,6 +534,8 @@ export async function POST(request: Request) {
         push_requested: pushRequested,
         scheduled_at: timing.scheduledAt,
         notification_expires_at: timing.expiresAt,
+        notification_expiry_mode: timing.expiryMode,
+        notification_expires_after_seconds: timing.expiresAfterSeconds,
         audience: audienceSnapshot,
         recipient_ids: recipients.map((recipient) => recipient.id),
         recipient_count: recipients.length,
@@ -522,6 +561,8 @@ export async function POST(request: Request) {
         expiresAt: preview.expires_at,
         scheduledAt: timing.scheduledAt,
         notificationExpiresAt: timing.expiresAt,
+        notificationExpiryMode: timing.expiryMode,
+        notificationExpiresAfterSeconds: timing.expiresAfterSeconds,
         recipientCount: recipients.length,
         pushRequested,
         pushTokenCount,
@@ -532,10 +573,14 @@ export async function POST(request: Request) {
 
   if (action === 'test') {
     const content = normalizeContent(body);
-    const expiresAt = optionalTimestamp(body.expiresAt);
     const selectedIds = normalizeIds(body.selectedUserIds, 5);
-    if (!content || !selectedIds || expiresAt === undefined || (expiresAt && Date.parse(expiresAt) <= Date.now())) {
+    const timing = normalizeTiming({ ...body, scheduledAt: null });
+    if (!content || !selectedIds || 'error' in timing) {
+      if ('error' in timing) return Response.json({ error: timing.error }, { status: 400 });
       return Response.json({ error: 'Valid content and one to five selected test recipients are required' }, { status: 400 });
+    }
+    if (timing.expiryMode === 'at_time' && timing.expiresAt && Date.parse(timing.expiresAt) <= Date.now()) {
+      return Response.json({ error: 'Expiry must be later than the test send time.' }, { status: 400 });
     }
     try {
       const active = await listActiveRecipients(supabase);
@@ -552,7 +597,9 @@ export async function POST(request: Request) {
         recipients,
         body.pushRequested === true,
         true,
-        expiresAt,
+        timing.expiresAt,
+        timing.expiryMode,
+        timing.expiresAfterSeconds,
       );
       return Response.json({ data: result });
     } catch (error) {
