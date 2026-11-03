@@ -26,6 +26,19 @@ describe('NotificationMessage', () => {
     ]);
   });
 
+  it('preserves balanced parentheses in URL paths and trims unmatched closing punctuation', () => {
+    expect(splitNotificationLinks('Read https://en.wikipedia.org/wiki/Proof_(mathematics).')).toEqual([
+      { text: 'Read ' },
+      { text: 'https://en.wikipedia.org/wiki/Proof_(mathematics)', url: 'https://en.wikipedia.org/wiki/Proof_(mathematics)' },
+      { text: '.' },
+    ]);
+    expect(splitNotificationLinks('Visit https://example.com/path).')).toEqual([
+      { text: 'Visit ' },
+      { text: 'https://example.com/path', url: 'https://example.com/path' },
+      { text: ').' },
+    ]);
+  });
+
   it('opens a web link in a separate tab with opener access disabled', () => {
     const open = jest.fn();
     const originalWindow = globalThis.window;

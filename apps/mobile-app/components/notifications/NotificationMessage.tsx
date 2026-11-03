@@ -10,8 +10,17 @@ export function splitNotificationLinks(value: string) {
 
   for (const match of value.matchAll(urlPattern)) {
     const rawUrl = match[0];
-    const trailingPunctuation = rawUrl.match(/[.,!?;:)\]}]+$/)?.[0] || '';
-    const candidate = rawUrl.slice(0, rawUrl.length - trailingPunctuation.length);
+    let candidate = rawUrl.replace(/[.,!?;:]+$/, '');
+    for (const delimiter of ['()', '[]', '{}']) {
+      const open = delimiter[0];
+      const close = delimiter[1];
+      while (candidate.endsWith(close)) {
+        const openCount = [...candidate].filter((character) => character === open).length;
+        const closeCount = [...candidate].filter((character) => character === close).length;
+        if (closeCount <= openCount) break;
+        candidate = candidate.slice(0, -1);
+      }
+    }
     if (!candidate || match.index === undefined) continue;
 
     let parsedUrl: URL;

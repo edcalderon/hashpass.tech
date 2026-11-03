@@ -396,6 +396,14 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
       />
       <FormField
         mode={mode}
+        label="Schedule send"
+        value="2026-11-02T14:30"
+        webInputType="datetime-local"
+        webInputStep={60}
+        accessibilityHint="Choose a local date and time."
+      />
+      <FormField
+        mode={mode}
         label="Email address"
         value="invalid"
         error="Enter a valid email address."

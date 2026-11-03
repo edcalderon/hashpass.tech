@@ -1,5 +1,25 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import type { PressableProps } from 'react-native';
+import type {
+  NativeSyntheticEvent,
+  PressableProps,
+  TextInputChangeEventData,
+  TextInputFocusEventData,
+  TextInputProps,
+  TextStyle,
+} from 'react-native';
+
+export type FormFieldTextStyle = TextStyle;
+export type FormFieldChangeEvent = NativeSyntheticEvent<TextInputChangeEventData>;
+export type FormFieldFocusEvent = NativeSyntheticEvent<TextInputFocusEventData>;
+
+export type FormFieldProps = TextInputProps & {
+  mode?: 'light' | 'dark';
+  label: string;
+  error?: string;
+  /** Requests a native browser input type for the shared web field surface. */
+  webInputType?: 'datetime-local';
+  webInputStep?: number;
+};
 
 export type SegmentedTab<T extends string = string> = {
   id: T;
