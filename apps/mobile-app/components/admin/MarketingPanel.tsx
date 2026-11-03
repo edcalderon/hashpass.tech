@@ -4,9 +4,8 @@ import { ActionButton, Badge, FilterChip, FormField, SegmentedTabs, Surface } fr
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import { formatCampaignTime, MARKETING_REQUIREMENTS, validCampaignDraft } from '../../lib/marketing';
-import type { CampaignRequirement } from '../../types/marketing';
+import type { CampaignRequirement, CampaignCopy, CampaignLocale, MarketingApprovalRequest, MarketingCampaign, MarketingCampaignDraft, MarketingPanelProps, MarketingView } from '../../types/marketing';
 import EmailPreviewFrame from '../EmailPreviewFrame';
-import type { CampaignCopy, CampaignLocale, MarketingCampaign, MarketingCampaignDraft, MarketingPanelProps, MarketingView } from '../../types/marketing';
 
 const blankCopy: CampaignCopy = { subject: '', preheader: '', heading: '', message: '', actionLabel: '', actionUrl: 'https://hashpass.tech/' };
 const localTime = (value: string) => Number.isFinite(Date.parse(value)) ? new Date(new Date(value).getTime() - 5 * 3600000).toISOString().slice(0, 16) : value.replace(/-05:00$/, '');
@@ -25,7 +24,10 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
   const [html, setHtml] = useState<string | null>(null);
   const [cutoff, setCutoff] = useState('');
   const [approvalNotice, setApprovalNotice] = useState<string | null>(null);
+  const [approvalDecision, setApprovalDecision] = useState<{ id: string; action: 'approve' | 'decline' } | null>(null);
+  const [approvalPreview, setApprovalPreview] = useState<{ id: string; locale: CampaignLocale; html: string } | null>(null);
   const campaigns: MarketingCampaign[] = overview?.campaigns || [];
+  const pendingApprovals: MarketingApprovalRequest[] = overview?.pendingApprovals || [];
   const cells = useMemo(() => {
     const start = new Date(`${month}-01T12:00:00Z`);
     const total = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
@@ -59,7 +61,82 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
     {!!error && <Surface mode={mode}><Text accessibilityRole="alert" style={{ ...text, color: palette.danger }}>{t('error', 'Campaign service unavailable. Check your access and configuration, then refresh.')}</Text><ActionButton mode={mode} variant="secondary" label={t('retry', 'Try again')} onPress={onRefresh} /></Surface>}
     {loading && !overview && <ActivityIndicator accessibilityLabel={t('loading', 'Loading campaigns')} color={palette.accent} />}
     {overview && <>
-      <SegmentedTabs mode={mode} value={view} onChange={setView} tabs={[{ id: 'calendar', label: t('calendar', 'Calendar') }, { id: 'history', label: t('history', 'Delivery history') }, { id: 'activity', label: t('activity', 'Activity & snapshots') }]} />
+      <SegmentedTabs mode={mode} value={view} onChange={setView} tabs={[{ id: 'calendar', label: t('calendar', 'Calendar') }, { id: 'approvals', label: t('approval.queue', 'Campaign approvals'), count: pendingApprovals.length }, { id: 'history', label: t('history', 'Delivery history') }, { id: 'activity', label: t('activity', 'Activity & snapshots') }]} />
+      {view === 'approvals' && <>
+        <Surface mode={mode}>
+          <Badge mode={mode}>{t('approval.eyebrow', 'ASSIGNED APPROVAL QUEUE')}</Badge>
+          <Text style={[title, styles.top]}>{t('approval.title', 'Campaigns awaiting your review')}</Text>
+          <Text style={muted}>{t('approval.description', 'Review the saved English and Spanish email, audience, assets, and requested Bogotá send time. Approval schedules the campaign; it does not send immediately.')}</Text>
+        </Surface>
+        {pendingApprovals.length === 0 && <Surface mode={mode}><Text style={muted}>{t('approval.empty', 'No campaign approval requests are assigned to your account.')}</Text></Surface>}
+        {pendingApprovals.map(request => {
+          const snapshot = request.approval_snapshot;
+          const isFuture = Number.isFinite(Date.parse(snapshot.scheduled_at)) && Date.parse(snapshot.scheduled_at) > Date.now();
+          const confirm = approvalDecision?.id === request.id ? approvalDecision.action : null;
+          const onDecision = async (action: 'approve' | 'decline') => {
+            if (await onAction({ action, id: request.id })) {
+              setApprovalDecision(null);
+              setApprovalPreview(null);
+            }
+          };
+          return <Surface key={request.id} mode={mode}>
+            <View style={styles.row}>
+              <View style={styles.grow}>
+                <Text style={title}>{snapshot.name}</Text>
+                <Text style={muted}>{t('approval.event', 'Event')}: {snapshot.event_id}</Text>
+              </View>
+              <Badge mode={mode} tone="neutral" tint={palette.accent}>{t('approval.pending', 'Awaiting approval')}</Badge>
+            </View>
+            <View style={[styles.details, styles.top]}>
+              <Text style={text}>{t('approval.requested', 'Requested')}: {formatCampaignTime(request.approval_requested_at)}</Text>
+              <Text style={text}>{t('approval.sendTime', 'Requested send time')}: {formatCampaignTime(snapshot.scheduled_at)} · {snapshot.time_zone}</Text>
+              <Text style={text}>{t('approval.audience', 'Audience')}: {snapshot.audience === 'registered_opt_in' ? t('approval.optInAudience', 'Active registered users with a current email updates opt-in') : snapshot.audience}</Text>
+              <Text style={text}>{t('approval.audienceEstimate', 'Estimated eligible recipients')}: {request.approval_estimated_recipients}</Text>
+              <Text style={muted}>{t('approval.rechecked', 'Consent, account status, and suppression are checked again when delivery starts.')}</Text>
+            </View>
+            <Text style={[title, styles.top]}>{t('approval.prerequisites', 'Prerequisites')}</Text>
+            {snapshot.requirements.map(requirement => <Text key={requirement} style={text}>
+              {snapshot.readiness[requirement] ? '✓' : '○'} {requirements[requirement] || requirement}
+            </Text>)}
+            {(['en', 'es'] as const).map(copyLocale => {
+              const copy = snapshot.content[copyLocale];
+              return <View key={copyLocale} style={[styles.locale, styles.top]}>
+                <Text style={title}>{copyLocale === 'en' ? t('approval.english', 'English email') : t('approval.spanish', 'Spanish email')}</Text>
+                <Text style={[text, styles.top]}>{t('approval.subject', 'Subject')}: {copy.subject}</Text>
+                <Text style={muted}>{t('approval.preheader', 'Preview text')}: {copy.preheader}</Text>
+                <Text style={[text, styles.top]}>{copy.heading}</Text>
+                <Text style={[text, styles.top]}>{copy.message}</Text>
+                {copy.promoCode && <Text style={text}>{t('approval.discountCode', 'Discount code')}: {copy.promoCode}</Text>}
+                {copy.eventDetails && <Text style={muted}>{t('approval.eventDetails', 'Event details')}: {copy.eventDetails.date} · {copy.eventDetails.venue} · {copy.eventDetails.location}</Text>}
+                <Text selectable style={[muted, styles.top]}>{t('approval.destination', 'Button destination')}: {copy.actionLabel} · {copy.actionUrl}</Text>
+                {copy.imageUrl && <Text selectable style={muted}>{t('approval.artwork', 'Artwork')}: {copy.imageAlt || copy.imageUrl} · {copy.imageUrl}</Text>}
+                {copy.guideUrl && <Text selectable style={muted}>{t('approval.guide', 'Guide')}: {copy.guideUrl}</Text>}
+                <ActionButton mode={mode} variant="secondary" label={`${t('approval.preview', 'Preview')} · ${copyLocale === 'en' ? 'English' : 'Español'}`} disabled={busy} onPress={async () => {
+                  const html = await onPreview(copy, copyLocale, snapshot.event_id);
+                  setApprovalPreview(html ? { id: request.id, locale: copyLocale, html } : null);
+                }} />
+              </View>;
+            })}
+            {approvalPreview?.id === request.id && <View style={styles.top}><EmailPreviewFrame html={approvalPreview.html} height={600} /></View>}
+            <Text style={[muted, styles.top]}>{t('approval.scheduleNote', 'Approving will schedule this email for the future time shown above. It will not send immediately.')}</Text>
+            {confirm && <Text accessibilityLiveRegion="polite" style={[text, styles.top]}>
+              {confirm === 'approve'
+                ? t('approval.confirmApprove', 'Confirm approval: this campaign will be scheduled, not sent now.')
+                : t('approval.confirmDecline', 'Confirm decline: the campaign will remain unscheduled.')}
+            </Text>}
+            <View style={[styles.row, styles.top]}>
+              {!confirm ? <>
+                <ActionButton mode={mode} label={t('approval.approve', 'Approve & schedule')} loading={busy} disabled={busy || !isFuture} onPress={() => setApprovalDecision({ id: request.id, action: 'approve' })} />
+                <ActionButton mode={mode} variant="secondary" label={t('approval.decline', 'Decline')} disabled={busy} onPress={() => setApprovalDecision({ id: request.id, action: 'decline' })} />
+              </> : <>
+                <ActionButton mode={mode} label={confirm === 'approve' ? t('approval.confirmApprovalAction', 'Confirm approval') : t('approval.confirmDeclineAction', 'Confirm decline')} loading={busy} disabled={busy} onPress={() => { void onDecision(confirm); }} />
+                <ActionButton mode={mode} variant="secondary" label={t('approval.cancelDecision', 'Cancel')} disabled={busy} onPress={() => setApprovalDecision(null)} />
+              </>}
+            </View>
+            {!isFuture && <Text accessibilityRole="alert" style={{ ...muted, color: palette.danger, marginTop: 12 }}>{t('approval.expired', 'The requested send time has passed. Decline the request so the campaign can be rescheduled and submitted again.')}</Text>}
+          </Surface>;
+        })}
+      </>}
       {view === 'calendar' && <>
         <Surface mode={mode}>
           <View style={[styles.row, { justifyContent: 'space-between' }]}><ActionButton mode={mode} variant="ghost" label="‹" accessibilityLabel={t('previous', 'Previous month')} onPress={() => shiftMonth(-1)} /><Text style={title}>{month}</Text><ActionButton mode={mode} variant="ghost" label="›" accessibilityLabel={t('next', 'Next month')} onPress={() => shiftMonth(1)} /></View>
@@ -104,4 +181,4 @@ export default function MarketingPanel({ overview, mode, loading, busy, error, o
     </>}
   </View>;
 }
-const styles = StyleSheet.create({ root: { gap: 24, marginBottom: 32 }, row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }, grow: { flexGrow: 1, flexShrink: 1, minWidth: 180 }, top: { marginTop: 16 }, grid: { flexDirection: 'row', flexWrap: 'wrap' }, cell: { width: '14.2857%', minHeight: 48, justifyContent: 'center' }, ledger: { gap: 8, paddingVertical: 16, borderBottomWidth: 1 } });
+const styles = StyleSheet.create({ root: { gap: 24, marginBottom: 32 }, row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }, grow: { flexGrow: 1, flexShrink: 1, minWidth: 180 }, top: { marginTop: 16 }, details: { gap: 8 }, locale: { gap: 8 }, grid: { flexDirection: 'row', flexWrap: 'wrap' }, cell: { width: '14.2857%', minHeight: 48, justifyContent: 'center' }, ledger: { gap: 8, paddingVertical: 16, borderBottomWidth: 1 } });

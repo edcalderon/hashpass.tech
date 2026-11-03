@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
+import { router } from 'expo-router';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
+import type { NotificationType } from '../types/Notification.types';
 import {
   getLocalNotifications,
   isLocalNotification,
@@ -15,7 +18,7 @@ import {
 
 export interface Notification {
   id: string;
-  type: 'meeting_request' | 'meeting_accepted' | 'meeting_declined' | 'meeting_reminder' | 'meeting_expired' | 'meeting_cancelled' | 'meeting_slot_conflict' | 'boost_received' | 'system_alert' | 'chat_message' | 'business_invite_pending' | 'business_invite_review_required' | 'business_invite_approved' | 'business_invite_rejected' | 'ticket_claim_review_required' | 'marketing_campaign_approval_requested' | 'marketing_campaign_approved' | 'marketing_campaign_declined';
+  type: NotificationType;
   title: string;
   message: string;
   is_read: boolean;
@@ -32,6 +35,7 @@ export interface Notification {
   speaker_id?: string;
   meeting_id?: string;
   campaign_id?: string;
+  data?: { deepLink?: string; adminNotificationCampaignId?: string; [key: string]: unknown };
 }
 
 export interface NotificationContextType {
@@ -52,6 +56,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 // client-side database connection.
 const NOTIFICATION_POLL_BASE_MS = 30_000;
 const NOTIFICATION_POLL_MAX_MS = 5 * 60_000;
+let nativePushResponseListenerInstalled = false;
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -86,6 +91,32 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const recordFetchFailure = useCallback(() => {
     consecutiveFailuresRef.current += 1;
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || nativePushResponseListenerInstalled) return;
+    nativePushResponseListenerInstalled = true;
+    void import('expo-notifications').then((ExpoNotifications) => {
+      ExpoNotifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+      ExpoNotifications.addNotificationResponseReceivedListener((response) => {
+        const deepLink = response.notification.request.content.data?.deepLink;
+        if (
+          typeof deepLink === 'string' && deepLink.startsWith('/') && !deepLink.startsWith('//') &&
+          !deepLink.includes('\\') && /^\/(dashboard|events|home|explore|wallet|profile)(\/|[?#]|$)/.test(deepLink)
+        ) router.push(deepLink as any);
+        else router.push('/dashboard/notifications' as any);
+      });
+    }).catch((error) => {
+      nativePushResponseListenerInstalled = false;
+      console.warn('[notifications] native push handlers unavailable:', error instanceof Error ? error.message : 'unknown');
+    });
   }, []);
 
   const fetchNotifications = useCallback(async (force = false) => {

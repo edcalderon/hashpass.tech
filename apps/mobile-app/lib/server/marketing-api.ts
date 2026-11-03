@@ -27,9 +27,13 @@ export async function marketingAdminRequest(request: Request, write = false) {
     if (auth.response) return auth.response;
     if (!auth.client || !auth.actor) return marketingReply({ error: 'Forbidden' }, 403);
     if (!write) {
-      const [campaigns, activity] = await Promise.all([auth.client.rpc('marketing_overview'), auth.client.rpc('marketing_activity_overview')]);
-      if (campaigns.error || activity.error) return marketingReply({ error: 'Campaign storage is unavailable. Check the marketing migrations.' }, 503);
-      return marketingReply({ data: { ...campaigns.data, ...activity.data } });
+      const [campaigns, approvals, activity] = await Promise.all([
+        auth.client.rpc('marketing_overview'),
+        auth.client.rpc('marketing_pending_approvals', { p_actor: auth.actor }),
+        auth.client.rpc('marketing_activity_overview'),
+      ]);
+      if (campaigns.error || approvals.error || activity.error) return marketingReply({ error: 'Campaign storage is unavailable. Check the marketing migrations.' }, 503);
+      return marketingReply({ data: { ...campaigns.data, pendingApprovals: approvals.data, ...activity.data } });
     }
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') return marketingReply({ error: 'Invalid campaign request' }, 400);

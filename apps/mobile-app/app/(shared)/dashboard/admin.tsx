@@ -16,8 +16,11 @@ import {
 import { MaterialIcons } from "../../../lib/vector-icons";
 import { useTheme } from "../../../hooks/useTheme";
 import MarketingManager from '../../../components/admin/MarketingManager';
+import AdminNotificationsManager from '../../../components/admin/AdminNotificationsManager';
 import { useAuth } from "../../../hooks/useAuth";
 import type { AdminRole } from "../../../lib/admin-utils";
+import type { AdminPanelTabType } from "../../../types/AdminNotification.types";
+import type { AdminEventOption } from "../../../types/AdminEventSelector.types";
 import type {
   ExternalTicketClaimRequest,
   ExternalTicketClaimResult,
@@ -62,18 +65,6 @@ import {
 
 const ADMIN_EVENT_OPTIONS = createAdminEventOptions(EVENTS);
 const getEventAdminLabel = (eventId: string) => getAdminEventLabel(eventId, EVENTS);
-
-type TabType =
-  | "passes"
-  | "pass-settings"
-  | "auth-allies"
-  | "pass-codes"
-  | "qr-scanner"
-  | "meetings"
-  | "emails"
-  | "roles"
-  | "speaker-roles"
-  | "ticket-claims";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -211,7 +202,7 @@ export default function AdminPanel() {
   const routeParams = useLocalSearchParams<{ tab?: string | string[]; eventId?: string | string[] }>();
   const requestedTab = Array.isArray(routeParams.tab) ? routeParams.tab[0] : routeParams.tab;
   const requestedEventId = Array.isArray(routeParams.eventId) ? routeParams.eventId[0] : routeParams.eventId;
-  const [activeTab, setActiveTab] = useState<TabType>("passes");
+  const [activeTab, setActiveTab] = useState<AdminPanelTabType>("passes");
   const tabScrollRef = useRef<ScrollView>(null);
   const tabScrollOffsetRef = useRef(0);
   const tabContentWidthRef = useRef(0);
@@ -393,6 +384,12 @@ export default function AdminPanel() {
     }
   }, [canReviewTicketClaims, requestedTab]);
 
+  useEffect(() => {
+    if (isGlobalAdmin && requestedTab === "notifications") {
+      setActiveTab("notifications");
+    }
+  }, [isGlobalAdmin, requestedTab]);
+
   // Moderators don't get pass management (see V013 / task decisions) — the
   // Passes tab is hidden for them, so bounce off it if it was the default.
   useEffect(() => {
@@ -446,7 +443,7 @@ export default function AdminPanel() {
       const requestedEventRole = requestedEventId
         ? effectiveEventRoleForEvent(eventRoles, requestedEventId)
         : null;
-      const grantOptions = ADMIN_EVENT_OPTIONS.filter((event) =>
+      const grantOptions = ADMIN_EVENT_OPTIONS.filter((event: AdminEventOption) =>
         effectiveEventRoleForEvent(eventRoles, event.eventId),
       );
       const currentGrantEventId = effectiveEventRoleForEvent(eventRoles, ambientEventId)
@@ -1548,7 +1545,7 @@ export default function AdminPanel() {
   const canManagePasses = isGlobalAdmin || currentEventRole === "event_admin";
   const selectableAdminEvents = isGlobalAdmin
     ? ADMIN_EVENT_OPTIONS
-    : ADMIN_EVENT_OPTIONS.filter((event) =>
+    : ADMIN_EVENT_OPTIONS.filter((event: AdminEventOption) =>
         effectiveEventRoleForEvent(accessibleEvents, event.eventId),
       );
 
@@ -1719,6 +1716,12 @@ export default function AdminPanel() {
             <MaterialIcons name="email" size={20} color={activeTab === "emails" ? "#fff" : colors.text.secondary} />
             <Text numberOfLines={1} style={[styles.tabText, activeTab === "emails" && styles.tabTextActive]}>Emails</Text>
           </TouchableOpacity>
+          {isGlobalAdmin && (
+            <TouchableOpacity style={[styles.tab, activeTab === "notifications" && styles.tabActive]} onPress={() => setActiveTab("notifications")}>
+              <MaterialIcons name="notifications" size={20} color={activeTab === "notifications" ? "#fff" : colors.text.secondary} />
+              <Text numberOfLines={1} style={[styles.tabText, activeTab === "notifications" && styles.tabTextActive]}>App notifications</Text>
+            </TouchableOpacity>
+          )}
           {canManagePasses && (
             <TouchableOpacity
               style={[styles.tab, activeTab === "roles" && styles.tabActive]}
@@ -1911,6 +1914,10 @@ export default function AdminPanel() {
           {isGlobalAdmin && <MarketingManager mode={isDark ? 'dark' : 'light'} />}
           <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />
         </>}
+
+        {activeTab === "notifications" && isGlobalAdmin && (
+          <AdminNotificationsManager mode={isDark ? "dark" : "light"} initialEventId={selectedEventId} />
+        )}
 
         {activeTab === "roles" && (
           <RolesTab
@@ -2874,7 +2881,7 @@ function EventAuthAllySettings({
             <Text style={styles.passNumber}>Desktop auth allies</Text>
             <Text style={styles.passInfo}>
               Choose the event brands visible beside the sign-in form for {eventName}.
-              This is an event-only setting and never inherits another tenant's allies.
+              This is an event-only setting and never inherits another tenant&apos;s allies.
             </Text>
           </View>
           <TouchableOpacity

@@ -53,9 +53,10 @@ describe('global campaign administration', () => {
     mockRoles.mockResolvedValue({ data: null, error: {} }); expect((await overview(req({}))).status).toBe(503);
   });
   it('merges private overview and activity without cache', async () => {
-    mockRpc.mockImplementation(async (name: string) => ({ error: null, data: name === 'marketing_overview' ? { campaigns: [] } : { activity: { points: 5 } } }));
+    mockRpc.mockImplementation(async (name: string) => ({ error: null, data: name === 'marketing_overview' ? { campaigns: [] } : name === 'marketing_pending_approvals' ? [] : { activity: { points: 5 } } }));
     const response = await overview(req({})); expect(response.headers.get('Cache-Control')).toContain('no-store');
-    expect(await response.json()).toEqual({ data: { campaigns: [], activity: { points: 5 } } });
+    expect(await response.json()).toEqual({ data: { campaigns: [], pendingApprovals: [], activity: { points: 5 } } });
+    expect(mockRpc).toHaveBeenCalledWith('marketing_pending_approvals', { p_actor: actor });
   });
   it('reports unavailable storage', async () => {
     mockRpc.mockResolvedValue({ error: {} }); expect((await overview(req({}))).status).toBe(503);

@@ -51,6 +51,24 @@ export interface MarketingCampaign {
   approval_estimated_recipients?: number | null;
   counts: Partial<Record<DeliveryStatus, number>>;
 }
+export interface MarketingApprovalSnapshot {
+  name: string;
+  event_id: string;
+  content: Record<CampaignLocale, CampaignCopy>;
+  scheduled_at: string;
+  time_zone: string;
+  audience: string;
+  requirements: CampaignRequirement[];
+  readiness: Partial<Record<CampaignRequirement, boolean>>;
+  estimated_recipients: number;
+}
+export interface MarketingApprovalRequest {
+  id: string;
+  key: string;
+  approval_requested_at: string;
+  approval_estimated_recipients: number;
+  approval_snapshot: MarketingApprovalSnapshot;
+}
 export interface MarketingDelivery {
   id: string;
   campaign_id: string;
@@ -77,6 +95,7 @@ export interface ActivitySnapshot {
 }
 export interface MarketingOverview {
   campaigns: MarketingCampaign[];
+  pendingApprovals: MarketingApprovalRequest[];
   deliveries: MarketingDelivery[];
   audit: MarketingAudit[];
   snapshots: ActivitySnapshot[];
@@ -112,7 +131,7 @@ export interface MarketingPanelProps {
   onAction: (body: Record<string, unknown>) => Promise<boolean | { notificationSent?: boolean; emailSent?: boolean; already_requested?: boolean }>;
   onPreview: (copy: CampaignCopy, locale: CampaignLocale, eventId: string) => Promise<string | null>;
 }
-export type MarketingView = 'calendar' | 'history' | 'activity';
+export type MarketingView = 'calendar' | 'approvals' | 'history' | 'activity';
 export type MarketingOverviewResult = { success: true; data: { data: MarketingOverview } } | { success: false; error: string };
 export interface MarketingMail {
   to: string;

@@ -23,6 +23,14 @@ const PRECACHE_URLS = [
   '/assets/pwa-maskable-512.png'
 ];
 
+const isSafeNotificationPath = (value) =>
+  typeof value === 'string' &&
+  value.startsWith('/') &&
+  !value.startsWith('//') &&
+  !value.includes('\\') &&
+  !/[\u0000-\u001f\u007f]/.test(value) &&
+  /^\/(dashboard|events|home|explore|wallet|profile)(\/|[?#]|$)/.test(value);
+
 const isCacheableResponse = (response) => {
   if (!response || !response.ok || response.type === 'opaque') {
     return false;
@@ -80,6 +88,48 @@ self.addEventListener('activate', (event) => {
         : Promise.resolve()
     ]).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = typeof payload.title === 'string' ? payload.title : 'HASHPASS update';
+  const data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+  const options = {
+    body: typeof payload.body === 'string' ? payload.body : '',
+    icon: '/assets/pwa-icon-192.png',
+    badge: '/assets/pwa-icon-192.png',
+    data: { deepLink: isSafeNotificationPath(data.deepLink) ? data.deepLink : '/dashboard/notifications' },
+    tag: typeof data.adminNotificationCampaignId === 'string'
+      ? `admin-notification-${data.adminNotificationCampaignId}`
+      : undefined,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const path = isSafeNotificationPath(event.notification.data?.deepLink)
+    ? event.notification.data.deepLink
+    : '/dashboard/notifications';
+  const target = new URL(path, self.location.origin);
+  if (target.origin !== self.location.origin) return;
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
+    if (existing) {
+      await existing.focus();
+      if ('navigate' in existing) await existing.navigate(target.href);
+      return;
+    }
+    await self.clients.openWindow(target.href);
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
