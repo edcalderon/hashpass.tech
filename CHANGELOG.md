@@ -1,3 +1,19 @@
+## [1.9.214](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.213...v1.9.214) (2026-11-03)
+
+
+### Features
+
+* **admin:** add app notifications and campaign approval queue ([#587](https://github.com/hashpass-tech/hashpass.tech/issues/587)) ([185953b](https://github.com/hashpass-tech/hashpass.tech/commit/185953b657cd297a4831723f751496e9bad4a54c))
+### Release Highlights
+- add app notifications and campaign approval queue (#587)
+
+### Release scope
+- Compared with: `v1.9.213` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+
 ## [1.9.213](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.212...v1.9.213) (2026-11-02)
 
 
