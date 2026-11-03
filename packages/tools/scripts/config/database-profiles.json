@@ -95,7 +95,8 @@
       "non-custodial-wallet",
       "chat-key-backup",
       "meeting-chat-api-security",
-      "event-public-flags"
+      "event-public-flags",
+      "admin-notifications"
     ],
     "core-production": [
       "hashpass-auth-qr",
@@ -110,7 +111,8 @@
       "core-speaker-shape",
       "event-scoped-speakers",
       "bsl-speaker-identity-claims",
-      "pending-speaker-eligibility"
+      "pending-speaker-eligibility",
+      "admin-notifications"
     ],
     "better-auth-development": [
       "better-auth-mcp-oauth",
@@ -349,6 +351,11 @@
       "db/migrations/V165__separate_partner_marketing_preferences.sql",
       "db/migrations/V166__marketing_campaign_approval.sql",
       "db/migrations/V167__close_cancelled_campaign_approvals.sql"
+    ],
+    "admin-notifications": [
+      "db/migrations/V171__admin_in_app_push_notifications.sql",
+      "db/migrations/V172__marketing_campaign_approval_queue.sql",
+      "db/migrations/V173__scheduled_expiring_admin_notifications.sql"
     ],
     "non-custodial-wallet": [
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",

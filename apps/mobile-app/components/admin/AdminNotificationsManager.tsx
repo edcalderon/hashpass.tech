@@ -27,11 +27,30 @@ import type {
 
 const EVENT_OPTIONS = createAdminEventOptions(EVENTS);
 const AUDIENCE_OPTIONS: { value: AdminNotificationAudience; label: string; detail: string }[] = [
-  { value: 'all_active', label: 'All active users', detail: 'Accounts with a linked app identity' },
+  { value: 'all_active', label: 'All registered users', detail: 'Active app accounts with a linked identity; email subscriptions are not checked' },
   { value: 'event_attendees', label: 'Event attendees', detail: 'Active pass holders for one event' },
   { value: 'speakers', label: 'Speakers', detail: 'Users linked to active speaker profiles' },
   { value: 'selected', label: 'Selected users', detail: 'Only the accounts you choose below' },
 ];
+const LOCAL_TIMEZONE = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'your device timezone'; }
+  catch { return 'your device timezone'; }
+})();
+
+function localDateTimeToIso(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!match) return value.trim() ? undefined : null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day
+    || date.getHours() !== hour || date.getMinutes() !== minute) return undefined;
+  return date.toISOString();
+}
+
 const PASS_TIER_OPTIONS: { value: AdminNotificationPassTier; label: string }[] = [
   { value: 'all', label: 'All tiers' },
   { value: 'general', label: 'General' },
@@ -56,6 +75,8 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
   const [message, setMessage] = useState('');
   const [level, setLevel] = useState<AdminNotificationLevel>('info');
   const [deepLink, setDeepLink] = useState('');
+  const [scheduledAtInput, setScheduledAtInput] = useState('');
+  const [expiresAtInput, setExpiresAtInput] = useState('');
   const [pushRequested, setPushRequested] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AdminNotificationRecipient[]>([]);
@@ -72,8 +93,20 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
     () => AUDIENCE_OPTIONS.find((option) => option.value === audience)?.detail || '',
     [audience],
   );
-  const canPreview = !!title.trim() && !!message.trim() && (audience !== 'selected' || selectedUsers.length > 0);
-  const canTest = !!title.trim() && !!message.trim() && selectedUsers.length > 0 && selectedUsers.length <= 5;
+  const scheduledAt = localDateTimeToIso(scheduledAtInput);
+  const expiresAt = localDateTimeToIso(expiresAtInput);
+  const timeError = scheduledAt === undefined
+    ? 'Enter a valid send time as YYYY-MM-DDTHH:mm.'
+    : expiresAt === undefined
+      ? 'Enter a valid expiry time as YYYY-MM-DDTHH:mm.'
+      : scheduledAt && Date.parse(scheduledAt) <= Date.now()
+        ? 'Scheduled send time must be in the future.'
+        : expiresAt && Date.parse(expiresAt) <= (scheduledAt ? Date.parse(scheduledAt) : Date.now())
+          ? 'Expiry must be later than the send time.'
+          : null;
+  const canPreview = !!title.trim() && !!message.trim() && !timeError && (audience !== 'selected' || selectedUsers.length > 0);
+  const canTest = !!title.trim() && !!message.trim() && selectedUsers.length > 0 && selectedUsers.length <= 5
+    && expiresAt !== undefined && (!expiresAt || Date.parse(expiresAt) > Date.now());
 
   const invalidatePreview = () => {
     setPreview(null);
@@ -133,7 +166,15 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
     invalidatePreview();
   };
 
-  const notificationPayload = () => ({ title: title.trim(), message: message.trim(), level, deepLink: deepLink.trim(), pushRequested });
+  const notificationPayload = (includeSchedule = true) => ({
+    title: title.trim(),
+    message: message.trim(),
+    level,
+    deepLink: deepLink.trim(),
+    pushRequested,
+    scheduledAt: includeSchedule && typeof scheduledAt === 'string' ? scheduledAt : null,
+    expiresAt: typeof expiresAt === 'string' ? expiresAt : null,
+  });
 
   const requestPreview = async () => {
     if (!canPreview) return;
@@ -168,15 +209,13 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
     try {
       const response = await apiClient.post('admin/notifications', {
         action: 'test',
-        ...notificationPayload(),
+        ...notificationPayload(false),
         selectedUserIds: selectedUsers.map((recipient) => recipient.id),
       }, { skipEventSegment: true, retries: 0 });
       if (!response.success) throw new Error(response.error || 'Unable to send the test notification');
-      const payload = response.data as { data?: { recipients?: number; pushSent?: number; pushSkipped?: number; pushError?: string | null } } | undefined;
+      const payload = response.data as { data?: { recipients?: number; pushQueued?: number; pushSkipped?: number; pushRequested?: boolean } } | undefined;
       const result = payload?.data;
-      setFeedback(result?.pushError
-        ? `Test sent in-app to ${result.recipients ?? selectedUsers.length} selected account(s). ${result.pushError}`
-        : `Test sent to ${result?.recipients ?? selectedUsers.length} selected account(s). Push accepted for ${result?.pushSent ?? 0} account(s); no registered device for ${result?.pushSkipped ?? 0} account(s).`);
+      setFeedback(`Test delivered in-app to ${result?.recipients ?? selectedUsers.length} selected account(s). ${result?.pushRequested ? `${result.pushQueued ?? 0} push device(s) queued; ${result.pushSkipped ?? 0} account(s) had no registered device.` : 'Push was not requested.'}`);
       await loadHistory();
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Unable to send the test notification');
@@ -206,11 +245,14 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
         previewId: preview.previewId,
       }, { skipEventSegment: true, retries: 0 });
       if (!response.success) throw new Error(response.error || 'Unable to send this notification');
-      const payload = response.data as { data?: { recipients?: number; pushSent?: number; pushFailed?: number; pushSkipped?: number; pushError?: string | null } } | undefined;
+      const payload = response.data as { data?: { recipients?: number; pushQueued?: number; pushSkipped?: number; pushRequested?: boolean; scheduled?: boolean; scheduledAt?: string | null } } | undefined;
       const result = payload?.data;
-      setFeedback(result?.pushError
-        ? `Notification delivered in-app to ${result.recipients ?? preview.recipientCount.toLocaleString()} account(s). ${result.pushError}`
-        : `Notification delivered in-app to ${result?.recipients ?? preview.recipientCount.toLocaleString()} account(s). Push accepted for ${result?.pushSent ?? 0} account(s); failed for ${result?.pushFailed ?? 0}; no registered device for ${result?.pushSkipped ?? 0}.`);
+      if (result?.scheduled) {
+        const when = result.scheduledAt || preview.scheduledAt;
+        setFeedback(`Notification scheduled for ${when ? new Date(when).toLocaleString() : 'the selected time'} for ${result.recipients ?? preview.recipientCount.toLocaleString()} account(s).`);
+      } else {
+        setFeedback(`Notification delivered in-app to ${result?.recipients ?? preview.recipientCount.toLocaleString()} account(s). ${result?.pushRequested ? `Push queued for ${result.pushQueued ?? 0} device(s); ${result.pushSkipped ?? 0} account(s) had no registered device.` : 'Push was not requested.'}`);
+      }
       await loadHistory();
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Unable to send this notification');
@@ -241,8 +283,12 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
           </View>
           <Text style={{ color: palette.text, fontSize: uiTokens.type.body, fontWeight: '700' }}>{campaign.title}</Text>
           <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{campaign.message}</Text>
+          {campaign.scheduled_at ? <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>Scheduled for {new Date(campaign.scheduled_at).toLocaleString()} · {LOCAL_TIMEZONE}</Text> : null}
+          <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>{campaign.expires_at ? `Expires ${new Date(campaign.expires_at).toLocaleString()} · ${LOCAL_TIMEZONE}` : 'Does not expire'}</Text>
           <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
-            {campaign.recipient_count} in-app · push accepted for {campaign.push_sent_count} account(s) · {campaign.push_failed_count} push failed · {campaign.push_skipped_count} without a registered device
+            {campaign.status === 'sending'
+              ? `${campaign.in_app_sent_count} in-app · push delivery queued or in progress`
+              : `${campaign.recipient_count} in-app · push accepted for ${campaign.push_sent_count} account(s) · ${campaign.push_failed_count} push failed · ${campaign.push_skipped_count} without a registered device`}
           </Text>
           {campaign.push_error ? <Text style={{ color: palette.danger, fontSize: uiTokens.type.caption }}>{campaign.push_error}</Text> : null}
         </View>
@@ -349,6 +395,32 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
               </View>
             </View>
             <FormField mode={mode} label="In-app link (optional)" value={deepLink} maxLength={512} onChangeText={(value) => { setDeepLink(value); invalidatePreview(); }} placeholder="/dashboard/notifications" autoCapitalize="none" autoCorrect={false} />
+            <FormField
+              mode={mode}
+              label="Schedule send (optional)"
+              value={scheduledAtInput}
+              onChangeText={(value) => { setScheduledAtInput(value); invalidatePreview(); }}
+              placeholder="YYYY-MM-DDTHH:mm"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityHint={`Leave blank to send immediately. Timezone: ${LOCAL_TIMEZONE}.`}
+            />
+            <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+              Leave blank to send immediately. Scheduled times use {LOCAL_TIMEZONE}.
+            </Text>
+            <FormField
+              mode={mode}
+              label="Expires at (optional)"
+              value={expiresAtInput}
+              onChangeText={(value) => { setExpiresAtInput(value); invalidatePreview(); }}
+              placeholder="YYYY-MM-DDTHH:mm"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityHint={`Leave blank for a notification that never expires. Timezone: ${LOCAL_TIMEZONE}.`}
+            />
+            <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
+              Leave blank for no expiry. Expired notices disappear from the in-app inbox; push delivery uses this expiry time too.
+            </Text>
             <FilterChip
               mode={mode}
               label={pushRequested ? 'Also send push to opted-in devices' : 'In-app only'}
@@ -356,17 +428,21 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
               onPress={() => { setPushRequested((current) => !current); invalidatePreview(); }}
             />
             <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 20 }}>
-              In-app delivery is always recorded. Push reaches only devices whose users enabled notifications in the app or browser.
+            In-app delivery is always recorded. Push reaches opted-in devices in small background batches; a large audience can take several minutes.
             </Text>
           </View>
 
-          {feedback ? <Text accessibilityRole="alert" style={{ color: (feedback.startsWith('Audience snapshot') || feedback.startsWith('Test sent') || feedback.startsWith('Notification delivered')) && !feedback.includes('could not be confirmed') ? palette.success : palette.danger, fontSize: uiTokens.type.caption, lineHeight: 20 }}>{feedback}</Text> : null}
+          {timeError ? <Text accessibilityRole="alert" style={{ color: palette.danger, fontSize: uiTokens.type.caption }}>{timeError}</Text> : null}
+
+          {feedback ? <Text accessibilityRole="alert" style={{ color: (feedback.startsWith('Audience snapshot') || feedback.startsWith('Test sent') || feedback.startsWith('Test delivered') || feedback.startsWith('Notification delivered') || feedback.startsWith('Notification scheduled')) && !feedback.includes('could not be confirmed') ? palette.success : palette.danger, fontSize: uiTokens.type.caption, lineHeight: 20 }}>{feedback}</Text> : null}
 
           {preview ? (
             <View style={{ paddingTop: uiTokens.space.md, borderTopWidth: 1, borderTopColor: palette.border, gap: uiTokens.space.sm }}>
               <Text style={{ color: palette.text, fontSize: uiTokens.type.title, fontWeight: '700' }}>Audience preview</Text>
               <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>{preview.recipientCount.toLocaleString()} active account(s) will receive an in-app notification.</Text>
               {preview.pushRequested ? <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{preview.pushTokenCount.toLocaleString()} registered device(s) are currently eligible for push.</Text> : null}
+              {preview.scheduledAt ? <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>Scheduled for {new Date(preview.scheduledAt).toLocaleString()} ({LOCAL_TIMEZONE}).</Text> : <Text style={{ color: palette.text, fontSize: uiTokens.type.body }}>Will send immediately.</Text>}
+              <Text style={{ color: palette.muted, fontSize: uiTokens.type.body }}>{preview.notificationExpiresAt ? `Expires ${new Date(preview.notificationExpiresAt).toLocaleString()} (${LOCAL_TIMEZONE}).` : 'This notification will not expire.'}</Text>
               {preview.sample.map((recipient) => <Text key={recipient.email} style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>{recipient.name ? `${recipient.name} · ` : ''}{recipient.email}</Text>)}
               <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>Preview expires {new Date(preview.expiresAt).toLocaleTimeString()} and can be used once.</Text>
             </View>
@@ -376,11 +452,11 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
             <View accessibilityRole="alert" style={{ padding: uiTokens.space.md, borderWidth: 1, borderColor: palette.border, borderRadius: uiTokens.radius.card, gap: uiTokens.space.sm }}>
               <Text style={{ color: palette.text, fontSize: uiTokens.type.title, fontWeight: '700' }}>Confirm notification send</Text>
               <Text style={{ color: palette.muted, fontSize: uiTokens.type.body, lineHeight: 22 }}>
-                This will create an in-app notification for {preview.recipientCount.toLocaleString()} active account(s){preview.pushRequested ? ` and send push to ${preview.pushTokenCount.toLocaleString()} registered device(s)` : ''}. The audience snapshot is exact and can be used once.
+                This will {preview.scheduledAt ? `schedule an in-app notification for ${new Date(preview.scheduledAt).toLocaleString()} (${LOCAL_TIMEZONE})` : 'create an in-app notification now'} for {preview.recipientCount.toLocaleString()} active account(s){preview.pushRequested ? ` and send push to ${preview.pushTokenCount.toLocaleString()} registered device(s)` : ''}. {preview.notificationExpiresAt ? `It expires ${new Date(preview.notificationExpiresAt).toLocaleString()} (${LOCAL_TIMEZONE}).` : 'It will not expire.'} The audience snapshot is exact and can be used once.
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
                 <ActionButton mode={mode} label="Cancel" variant="secondary" onPress={() => setConfirmingSend(false)} />
-                <ActionButton mode={mode} label="Send now" loading={busyAction === 'send'} disabled={!!busyAction} onPress={() => void confirmSend()} />
+                <ActionButton mode={mode} label={preview.scheduledAt ? 'Schedule notification' : 'Send now'} loading={busyAction === 'send'} disabled={!!busyAction} onPress={() => void confirmSend()} />
               </View>
             </View>
           ) : null}
@@ -388,7 +464,7 @@ export default function AdminNotificationsManager({ mode, initialEventId }: Admi
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
             <ActionButton mode={mode} label="Preview audience" variant="secondary" loading={busyAction === 'preview'} disabled={!canPreview || !!busyAction} onPress={() => void requestPreview()} />
             <ActionButton mode={mode} label={`Send test to selected (${selectedUsers.length}/5)`} variant="secondary" loading={busyAction === 'test'} disabled={!canTest || !!busyAction} onPress={() => void sendTest()} />
-            <ActionButton mode={mode} label="Send to audience" disabled={!preview || !!busyAction || confirmingSend} onPress={sendCampaign} />
+            <ActionButton mode={mode} label={preview?.scheduledAt ? 'Schedule notification' : 'Send to audience'} disabled={!preview || !!busyAction || confirmingSend} onPress={sendCampaign} />
           </View>
           {audience === 'all_active' && preview ? <Text style={{ color: palette.danger, fontSize: uiTokens.type.caption }}>This targets every eligible active linked account. Use the test button first, then confirm the exact count above.</Text> : null}
         </View>

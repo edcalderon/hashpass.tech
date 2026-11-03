@@ -9,11 +9,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   dispatch:
-    if: ${{ vars.MARKETING_DISPATCH_ENABLED == 'true' }}
+    if: ${{ github.repository == 'hashpass-tech/hashpass.tech' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     steps:
       - name: Dispatch bounded batches of due campaigns
+        if: ${{ vars.MARKETING_DISPATCH_ENABLED == 'true' }}
         env:
           RUNNER_TOKEN: ${{ secrets.MARKETING_RUNNER_TOKEN }}
         shell: bash
@@ -32,4 +33,26 @@ jobs:
             count=$(jq -er '.data.claimed' <<< "$response")
             echo "Batch ${batch}: ${count} claimed"
             if [ "$count" -eq 0 ]; then break; fi
+          done
+
+      - name: Dispatch one due app notification campaign
+        env:
+          RUNNER_TOKEN: ${{ secrets.MARKETING_RUNNER_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${#RUNNER_TOKEN}" -lt 32 ]; then
+            echo 'MARKETING_RUNNER_TOKEN must be configured on the API and in GitHub secrets.'
+            exit 1
+          fi
+          for batch in 1 2 3 4 5 6; do
+            response=$(curl --silent --show-error --fail --max-time 20 --request POST \
+              --header "Authorization: Bearer ${RUNNER_TOKEN}" \
+              --header 'Content-Type: application/json' \
+              --data '{"action":"dispatch"}' \
+              https://api.hashpass.tech/api/admin/notifications)
+            worked=$(jq -er '.data.claimed' <<< "$response")
+            devices=$(jq -er '.data.pushDevicesClaimed' <<< "$response")
+            echo "Notification batch ${batch}: worked=${worked}, push devices=${devices}"
+            if [ "$worked" != 'true' ]; then break; fi
           done

@@ -1,13 +1,10 @@
-import { timingSafeEqual } from 'node:crypto';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { marketingSenderReady, sendMarketingMessage } from '../email';
 import { renderMarketingEmail } from '../marketing';
 import type { ClaimedMarketingDelivery } from '../../types/marketing';
+import { marketingRunnerAuthorized } from './marketing-runner-auth';
 
-export function marketingRunnerAuthorized(request: Request, expected = process.env.MARKETING_RUNNER_TOKEN || '') {
-  const supplied = request.headers.get('Authorization')?.replace(/^Bearer /, '') || '';
-  return expected.length >= 32 && Buffer.byteLength(supplied) === Buffer.byteLength(expected) && timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
-}
+export { marketingRunnerAuthorized };
 
 export async function runMarketingBatch(request: Request) {
   if (!marketingRunnerAuthorized(request)) return Response.json({ error: 'Unauthorized scheduler' }, { status: 401 });

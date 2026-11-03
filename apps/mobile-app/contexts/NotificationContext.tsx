@@ -25,6 +25,7 @@ export interface Notification {
   is_urgent: boolean;
   is_archived?: boolean;
   created_at: string;
+  expires_at?: string | null;
   read_at?: string;
   archived_at?: string;
   meeting_request_id?: string;

@@ -4,16 +4,30 @@ const mockAuthorizeGlobalAdmin = jest.fn<Promise<any>, any[]>();
 const mockRateLimitOk = jest.fn<boolean, any[]>();
 const mockRpc = jest.fn<Promise<any>, any[]>();
 const mockFrom = jest.fn<any, [string]>();
+const mockGetSupabaseServerForRequest = jest.fn();
 const mockInsert = jest.fn();
 const mockUpdate = jest.fn();
 const mockEq = jest.fn();
 const mockWebPushSendNotification = jest.fn<Promise<void>, any[]>();
+
+function readTestEnv(key: string) {
+  const value = Reflect.get(process.env, key);
+  return typeof value === 'string' ? value : undefined;
+}
+
+function writeTestEnv(key: string, value: string | undefined) {
+  if (value === undefined) Reflect.deleteProperty(process.env, key);
+  else Reflect.set(process.env, key, value);
+}
 
 jest.mock('@/lib/server/global-admin', () => ({
   authorizeGlobalAdmin: (...args: unknown[]) => mockAuthorizeGlobalAdmin(...args),
 }));
 jest.mock('@/lib/bsl/rateLimit', () => ({
   rateLimitOk: (...args: unknown[]) => mockRateLimitOk(...args),
+}));
+jest.mock('@/lib/supabase-server', () => ({
+  getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 jest.mock('web-push', () => ({
   __esModule: true,
@@ -65,6 +79,7 @@ describe('/api/admin/notifications', () => {
     mockInsert.mockReset();
     mockUpdate.mockReset();
     mockEq.mockReset();
+    mockGetSupabaseServerForRequest.mockReset().mockReturnValue(supabase);
     mockWebPushSendNotification.mockReset().mockResolvedValue(undefined);
     fromByTable.clear();
     fromByTable.set('user', makeChain({ data: activeUsers, error: null }));
@@ -73,12 +88,12 @@ describe('/api/admin/notifications', () => {
     mockFrom.mockImplementation((table: string) => fromByTable.get(table) || makeChain());
   });
 
-  const post = async (body: Record<string, unknown>) => {
+  const post = async (body: Record<string, unknown>, authorization?: string) => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { POST } = require('../../app/api/admin/notifications+api');
     return POST(new Request('https://api.hashpass.tech/api/admin/notifications', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...(authorization ? { Authorization: authorization } : {}) },
       body: JSON.stringify(body),
     }));
   };
@@ -128,6 +143,39 @@ describe('/api/admin/notifications', () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
+  it('stores the selected schedule and optional expiry with the audience preview', async () => {
+    const scheduledAt = new Date(Date.now() + 60 * 60_000).toISOString();
+    const expiresAt = new Date(Date.parse(scheduledAt) + 3 * 60 * 60_000).toISOString();
+    const response = await post({ action: 'preview', ...baseDraft, audience: 'all_active', scheduledAt, expiresAt });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { scheduledAt, notificationExpiresAt: expiresAt } });
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+      scheduled_at: scheduledAt,
+      notification_expires_at: expiresAt,
+    }));
+  });
+
+  it('rejects an expiry that is not later than the scheduled send', async () => {
+    const scheduledAt = new Date(Date.now() + 60 * 60_000).toISOString();
+    const expiresAt = new Date(Date.parse(scheduledAt) - 60_000).toISOString();
+    const response = await post({ action: 'preview', ...baseDraft, audience: 'all_active', scheduledAt, expiresAt });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: 'Expiry must be later than the scheduled send time.' });
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('explains when the notification preview table is missing from the local database', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    fromByTable.set('admin_notification_previews', makeChain({ data: null, error: { code: 'PGRST205', message: 'table missing from schema cache' } }));
+    try {
+      const response = await post({ action: 'preview', ...baseDraft, audience: 'all_active' });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({ error: expect.stringContaining('database migrations are missing') });
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('maps the BSL hub audience filter to its current pass-storage event', async () => {
     const response = await post({
       action: 'preview', ...baseDraft,
@@ -152,95 +200,81 @@ describe('/api/admin/notifications', () => {
     }));
   });
 
-  it('keeps in-app delivery successful when a push provider rejects the test device', async () => {
-    const originalFetch = global.fetch;
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [{ status: 'error', details: { error: 'DeviceNotRegistered' } }] }),
-    }) as jest.Mock;
-    fromByTable.set('notification_push_tokens', makeChain({ data: [{ user_id: userB, token: 'ExponentPushToken[test-device]' }], error: null }));
-    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 1, deliveries: [{ user_id: userB, notification_id: notificationId }] }, error: null });
-
-    try {
-      const response = await post({ action: 'test', ...baseDraft, pushRequested: true, selectedUserIds: [userB] });
-      expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ data: { inAppSent: 1, pushSent: 0, pushFailed: 1 } });
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
-    } finally {
-      global.fetch = originalFetch;
-    }
+  it('queues test push work without calling a provider inside the admin request', async () => {
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 1, push_device_count: 3 }, error: null });
+    const response = await post({ action: 'test', ...baseDraft, pushRequested: true, selectedUserIds: [userB] });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { inAppSent: 1, pushRequested: true, pushQueued: 3 } });
+    expect(mockWebPushSendNotification).not.toHaveBeenCalled();
   });
 
-  it('sends opted-in PWA subscriptions with configured VAPID keys', async () => {
-    const envNames = {
-      publicKey: ['WEB', 'PUSH', 'VAPID', 'PUBLIC', 'KEY'].join('_'),
-      privateKey: ['WEB', 'PUSH', 'VAPID', 'PRIVATE', 'KEY'].join('_'),
-      subject: ['WEB', 'PUSH', 'VAPID', 'SUBJECT'].join('_'),
-    };
-    const previous = {
-      publicKey: process.env[envNames.publicKey],
-      privateKey: process.env[envNames.privateKey],
-      subject: process.env[envNames.subject],
-    };
-    process.env[envNames.publicKey] = 'test-public-key';
-    process.env[envNames.privateKey] = 'test-only-key';
-    process.env[envNames.subject] = 'mailto:support@hashpass.app';
+  it('rejects scheduled dispatch without the runner token', async () => {
+    mockRpc.mockReset();
+    const response = await post({ action: 'dispatch' });
+    expect(response.status).toBe(401);
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockAuthorizeGlobalAdmin).not.toHaveBeenCalled();
+  });
+
+  it('processes a bounded push batch and records provider results through the worker RPC', async () => {
+    const oldToken = readTestEnv('MARKETING_RUNNER_TOKEN');
+    const oldPublic = readTestEnv('WEB_PUSH_VAPID_PUBLIC_KEY');
+    const oldPrivate = readTestEnv('WEB_PUSH_VAPID_PRIVATE_KEY');
+    const oldSubject = readTestEnv('WEB_PUSH_VAPID_SUBJECT');
+    const token = 'notification-runner-token-at-least-32-chars';
     const endpoint = 'https://fcm.googleapis.com/fcm/send/browser-endpoint';
-    fromByTable.set('notification_push_tokens', makeChain({ data: [{
-      user_id: userB,
-      token: endpoint,
-      platform: 'web',
-      subscription: { endpoint, keys: { p256dh: 'p256dh', auth: 'auth' } },
-    }], error: null }));
-    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 1, deliveries: [{ user_id: userB, notification_id: notificationId }] }, error: null });
+    writeTestEnv('MARKETING_RUNNER_TOKEN', token);
+    writeTestEnv('WEB_PUSH_VAPID_PUBLIC_KEY', 'test-public-key');
+    writeTestEnv('WEB_PUSH_VAPID_PRIVATE_KEY', 'test-private-key');
+    writeTestEnv('WEB_PUSH_VAPID_SUBJECT', 'mailto:support@hashpass.app');
+    mockRpc
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: {
+        claim_token: '66666666-6666-4666-8666-666666666666',
+        campaign_id: campaignId,
+        title: 'Update', message: 'Details', level: 'info', deep_link: null, expires_at: null,
+        jobs: [{ id: notificationId, user_id: userB, token_id: userA, token: endpoint, platform: 'web', subscription: { endpoint, keys: { p256dh: 'key', auth: 'secret' } } }],
+      }, error: null })
+      .mockResolvedValueOnce({ data: { acknowledged: 1 }, error: null });
+    mockWebPushSendNotification.mockResolvedValueOnce(undefined);
 
     try {
-      const response = await post({ action: 'test', ...baseDraft, pushRequested: true, selectedUserIds: [userB] });
+      const response = await post({ action: 'dispatch' }, `Bearer ${token}`);
       expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ data: { inAppSent: 1, pushSent: 1, pushFailed: 0 } });
-      expect(mockWebPushSendNotification).toHaveBeenCalledWith(
-        { endpoint, keys: { p256dh: 'p256dh', auth: 'auth' } },
-        expect.stringContaining('Event update'),
-        expect.objectContaining({ TTL: 86400, vapidDetails: {
-          publicKey: process.env[envNames.publicKey],
-          privateKey: process.env[envNames.privateKey],
-          subject: process.env[envNames.subject],
-        } }),
-      );
-    } finally {
-      if (previous.publicKey === undefined) delete process.env[envNames.publicKey];
-      else process.env[envNames.publicKey] = previous.publicKey;
-      if (previous.privateKey === undefined) delete process.env[envNames.privateKey];
-      else process.env[envNames.privateKey] = previous.privateKey;
-      if (previous.subject === undefined) delete process.env[envNames.subject];
-      else process.env[envNames.subject] = previous.subject;
-    }
-  });
-
-  it('records a partial campaign when push status cannot be read after in-app delivery', async () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    fromByTable.set('notification_push_tokens', makeChain({ data: null, error: { message: 'database unavailable' } }));
-    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 1, deliveries: [{ user_id: userB, notification_id: notificationId }] }, error: null });
-
-    try {
-      const response = await post({ action: 'test', ...baseDraft, pushRequested: true, selectedUserIds: [userB] });
-      expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ data: { inAppSent: 1, pushError: expect.stringContaining('Check delivery history') } });
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'partial',
-        push_error: expect.stringContaining('Check provider status'),
+      expect(await response.json()).toMatchObject({ data: { claimed: true, pushDevicesClaimed: 1, pushSent: 1 } });
+      expect(mockRpc).toHaveBeenNthCalledWith(2, 'admin_claim_notification_push_batch', { p_limit: 20 });
+      expect(mockRpc).toHaveBeenNthCalledWith(3, 'admin_ack_notification_push_batch', expect.objectContaining({
+        p_claim_token: '66666666-6666-4666-8666-666666666666',
+        p_results: [{ id: notificationId, status: 'sent' }],
       }));
+      expect(mockWebPushSendNotification).toHaveBeenCalledTimes(1);
     } finally {
-      consoleError.mockRestore();
+      writeTestEnv('MARKETING_RUNNER_TOKEN', oldToken);
+      writeTestEnv('WEB_PUSH_VAPID_PUBLIC_KEY', oldPublic);
+      writeTestEnv('WEB_PUSH_VAPID_PRIVATE_KEY', oldPrivate);
+      writeTestEnv('WEB_PUSH_VAPID_SUBJECT', oldSubject);
     }
   });
 
   it('consumes an approved preview once for an audience send', async () => {
-    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 2, deliveries: [{ user_id: userA, notification_id: notificationId }, { user_id: userB, notification_id: notificationId }] }, error: null });
+    mockRpc.mockResolvedValueOnce({ data: { campaign_id: campaignId, recipient_count: 2, push_requested: false, push_device_count: 0 }, error: null });
     const response = await post({ action: 'send', previewId: campaignId });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ data: { campaignId, recipients: 2, inAppSent: 2 } });
     expect(mockRpc).toHaveBeenCalledWith('admin_send_notification_preview', { p_actor_id: actorId, p_preview_id: campaignId });
+  });
+
+  it('stores a future send as scheduled without delivering early', async () => {
+    const scheduledAt = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
+    const expiresAt = new Date(Date.parse(scheduledAt) + 4 * 60 * 60_000).toISOString();
+    mockRpc.mockResolvedValueOnce({ data: {
+      campaign_id: campaignId, recipient_count: 2, scheduled: true,
+      scheduled_at: scheduledAt, expires_at: expiresAt, push_requested: true, push_device_count: 0,
+    }, error: null });
+    const response = await post({ action: 'send', previewId: campaignId });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { campaignId, scheduled: true, scheduledAt, expiresAt, inAppSent: 0 } });
+    expect(mockRpc).toHaveBeenCalledWith('admin_send_notification_preview', { p_actor_id: actorId, p_preview_id: campaignId });
+    expect(mockWebPushSendNotification).not.toHaveBeenCalled();
   });
 });

@@ -24,6 +24,8 @@ export type AdminNotificationRecipient = {
 export type AdminNotificationPreview = {
   previewId: string;
   expiresAt: string;
+  scheduledAt: string | null;
+  notificationExpiresAt: string | null;
   recipientCount: number;
   pushRequested: boolean;
   pushTokenCount: number;
@@ -39,7 +41,9 @@ export type AdminNotificationCampaign = {
   push_requested: boolean;
   is_test: boolean;
   audience: Record<string, unknown>;
-  status: 'sending' | 'sent' | 'partial' | 'failed';
+  status: 'scheduled' | 'sending' | 'sent' | 'partial' | 'failed' | 'expired' | 'cancelled';
+  scheduled_at: string | null;
+  expires_at: string | null;
   recipient_count: number;
   in_app_sent_count: number;
   push_sent_count: number;

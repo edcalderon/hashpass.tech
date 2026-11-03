@@ -200,17 +200,16 @@ export default function NotificationsScreen() {
     }
   };
 
-  const updatePushSettings = async () => {
+  const updatePushSettings = async (action: 'enable-device' | 'disable-all') => {
     setPushSettingsLoading(true);
     setPushFeedback(null);
-    const wasEnabled = pushDeviceCount > 0;
     try {
-      const result = wasEnabled
+      const result = action === 'disable-all'
         ? await disablePushForCurrentAccount()
         : await registerCurrentDeviceForPush();
       if (!result.success) throw new Error(result.error);
       await refreshPushSettings();
-      setPushFeedback(wasEnabled ? 'Push notifications disabled for this account.' : 'Push notifications enabled on this device.');
+      setPushFeedback(action === 'disable-all' ? 'Push notifications disabled for all devices on this account.' : 'Push notifications enabled on this device.');
     } catch (error) {
       setPushFeedback(error instanceof Error ? error.message : 'Unable to update push notification settings.');
     } finally {
@@ -635,20 +634,30 @@ export default function NotificationsScreen() {
             <Text style={{ color: palette.text, fontSize: uiTokens.type.body, fontWeight: '700' }}>Push notifications</Text>
             <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 20 }}>
               {pushDeviceCount > 0
-                ? `Enabled on ${pushDeviceCount} device(s). In-app notifications remain available if push is turned off.`
+                ? `Enabled on ${pushDeviceCount} device(s). You can enable this device too, or turn off push on all devices.`
                 : Platform.OS === 'web'
                   ? 'Enable browser alerts on this device. In-app notifications remain available if push is turned off.'
                   : 'Enable device alerts for important in-app updates.'}
             </Text>
           </View>
-          <ActionButton
-            mode={mode}
-            label={pushDeviceCount > 0 ? 'Turn off push' : 'Enable push'}
-            variant={pushDeviceCount > 0 ? 'secondary' : 'primary'}
-            loading={pushSettingsLoading}
-            disabled={pushSettingsLoading}
-            onPress={() => void updatePushSettings()}
-          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
+            <ActionButton
+              mode={mode}
+              label="Enable on this device"
+              variant="primary"
+              loading={pushSettingsLoading}
+              disabled={pushSettingsLoading}
+              onPress={() => void updatePushSettings('enable-device')}
+            />
+            {pushDeviceCount > 0 ? <ActionButton
+              mode={mode}
+              label="Turn off on all devices"
+              variant="secondary"
+              loading={pushSettingsLoading}
+              disabled={pushSettingsLoading}
+              onPress={() => void updatePushSettings('disable-all')}
+            /> : null}
+          </View>
         </View>
         {pushFeedback ? <Text accessibilityRole="alert" style={{ color: pushFeedback.includes('enabled') || pushFeedback.includes('disabled') ? palette.success : palette.danger, fontSize: uiTokens.type.caption }}>{pushFeedback}</Text> : null}
       </Surface>

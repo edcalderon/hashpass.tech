@@ -194,6 +194,23 @@ describe('setup and PIN migration plan', () => {
   });
 });
 
+describe('admin notification migration plan', () => {
+  it('registers app notifications and campaign approvals for both core databases', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const expected = [
+      'db/migrations/V171__admin_in_app_push_notifications.sql',
+      'db/migrations/V172__marketing_campaign_approval_queue.sql',
+      'db/migrations/V173__scheduled_expiring_admin_notifications.sql',
+    ];
+
+    expect(config.groups['admin-notifications']).toEqual(expected);
+    expect(config.defaultGroups).not.toContain('admin-notifications');
+    expect(config.profileGroups['core-development']).toContain('admin-notifications');
+    expect(config.profileGroups['core-production']).toContain('admin-notifications');
+    expect(config.profileGroups['bsl-development']).not.toContain('admin-notifications');
+  });
+});
+
 describe('event-scoped speaker administration migrations', () => {
   it('ships speaker schema and role enforcement migrations after the Better Auth V106 migration', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
@@ -669,7 +686,10 @@ describe('encrypted meeting chat realtime contract', () => {
     const securityMigration = 'db/migrations/V161__authenticate_meeting_chat_api_access.sql';
 
     expect(config.defaultGroups).not.toContain('meeting-chat-api-security');
-    expect(config.groups['meeting-chat-api-security']).toEqual([securityMigration]);
+    expect(config.groups['meeting-chat-api-security']).toEqual([
+      securityMigration,
+      'db/migrations/V162__explicit_meeting_chat_key_reset.sql',
+    ]);
     for (const profileName of ['core-development', 'core-production']) {
       const groups = config.profileGroups[profileName];
       expect(groups.indexOf('meeting-chat-api-security')).toBeGreaterThan(groups.indexOf('chat-key-backup'));

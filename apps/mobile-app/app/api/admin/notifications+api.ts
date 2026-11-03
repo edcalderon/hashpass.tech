@@ -1,5 +1,7 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
+import { marketingRunnerAuthorized } from '@/lib/server/marketing-runner-auth';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { EVENTS } from '@/config/events';
 import webPush from 'web-push';
 import type {
@@ -154,37 +156,41 @@ function normalizeContent(body: Record<string, unknown>) {
   return { title, message, level, deepLink };
 }
 
-async function sendPushNotifications(
-  supabase: any,
-  campaignId: string,
-  deliveries: { user_id: string; notification_id: string }[],
-  content: { title: string; message: string; deepLink: string | null; level: AdminNotificationLevel },
-) {
-  const userIds = [...new Set(deliveries.map((delivery) => delivery.user_id))];
-  const expoTokens: { user_id: string; token: string }[] = [];
-  const webTokens: { user_id: string; token: string; subscription: webPush.PushSubscription }[] = [];
-  for (let offset = 0; offset < userIds.length; offset += 500) {
-    const { data, error } = await supabase
-      .from('notification_push_tokens')
-      .select('user_id,token,platform,subscription')
-      .in('user_id', userIds.slice(offset, offset + 500))
-      .eq('enabled', true);
-    if (error) throw new Error('Unable to load registered push devices');
-    for (const row of data || []) {
-      if (row.platform === 'web' && row.subscription?.endpoint === row.token) {
-        webTokens.push({ user_id: row.user_id, token: row.token, subscription: row.subscription as webPush.PushSubscription });
-      } else if (EXPO_TOKEN_PATTERN.test(row.token)) {
-        expoTokens.push({ user_id: row.user_id, token: row.token });
-      }
-    }
-  }
+function optionalTimestamp(value: unknown): string | null | undefined {
+  const raw = clean(value, 64);
+  if (!raw) return null;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)) return undefined;
+  const timestamp = Date.parse(raw);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined;
+}
 
-  const successfulUsers = new Set<string>();
-  const failedUsers = new Set<string>();
-  const tokenRowsToDisable: string[] = [];
-  const accessToken = process.env.EXPO_ACCESS_TOKEN;
-  for (let offset = 0; offset < expoTokens.length; offset += 100) {
-    const batch = expoTokens.slice(offset, offset + 100);
+function normalizeTiming(body: Record<string, unknown>) {
+  const scheduledAt = optionalTimestamp(body.scheduledAt);
+  const expiresAt = optionalTimestamp(body.expiresAt);
+  if (scheduledAt === undefined) return { error: 'Enter a valid scheduled date and time with its timezone.' } as const;
+  if (expiresAt === undefined) return { error: 'Enter a valid expiry date and time with its timezone.' } as const;
+  const referenceTime = scheduledAt ? Date.parse(scheduledAt) : Date.now();
+  if (scheduledAt && referenceTime <= Date.now()) {
+    return { error: 'Scheduled send time must be in the future.' } as const;
+  }
+  if (expiresAt && Date.parse(expiresAt) <= referenceTime) {
+    return { error: 'Expiry must be later than the scheduled send time.' } as const;
+  }
+  return { scheduledAt, expiresAt } as const;
+}
+
+async function sendPushNotifications(batch: any) {
+  const jobs = Array.isArray(batch?.jobs) ? batch.jobs.slice(0, 20) : [];
+  const results = new Map<string, any>(jobs.map((job: any) => [job.id, {
+    id: job.id,
+    status: 'retry',
+    error: 'Push provider response could not be confirmed; delivery will retry.',
+  }]));
+  const ttlSeconds = batch?.expires_at
+    ? Math.max(0, Math.ceil((Date.parse(batch.expires_at) - Date.now()) / 1000))
+    : 86400;
+  const expoJobs = jobs.filter((job: any) => job.platform !== 'web' && EXPO_TOKEN_PATTERN.test(String(job.token || '')));
+  if (expoJobs.length) {
     try {
       // The Expo push gateway is an external provider; apiClient is reserved for HASHPASS API calls.
       // eslint-disable-next-line no-restricted-syntax
@@ -193,165 +199,91 @@ async function sendPushNotifications(
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
         },
-        body: JSON.stringify(batch.map(({ token }) => ({
-          to: token,
-          title: content.title,
-          body: content.message,
+        body: JSON.stringify(expoJobs.map((job: any) => ({
+          to: job.token,
+          title: batch.title,
+          body: batch.message,
           sound: 'default',
-          priority: content.level === 'important' ? 'high' : 'default',
-          data: { deepLink: content.deepLink, adminNotificationCampaignId: campaignId },
+          priority: batch.level === 'important' ? 'high' : 'default',
+          ttl: ttlSeconds,
+          data: { deepLink: batch.deep_link, adminNotificationCampaignId: batch.campaign_id },
         }))),
         signal: AbortSignal.timeout(8000),
       });
-      if (!response.ok) throw new Error('Push service returned an error');
-      const body = await response.json() as { data?: { status?: string; id?: string; message?: string; details?: { error?: string } }[] };
-      const tickets = Array.isArray(body.data) ? body.data : [];
-      batch.forEach((device, index) => {
-        const ticket = tickets[index];
-        if (ticket?.status === 'ok') successfulUsers.add(device.user_id);
-        else {
-          failedUsers.add(device.user_id);
-          if (ticket?.details?.error === 'DeviceNotRegistered') tokenRowsToDisable.push(device.token);
-        }
-      });
+      if (response.ok) {
+        const body = await response.json() as { data?: { status?: string; id?: string; details?: { error?: string } }[] };
+        const tickets = Array.isArray(body.data) ? body.data : [];
+        expoJobs.forEach((job: any, index: number) => {
+          const ticket = tickets[index];
+          if (ticket?.status === 'ok') {
+            results.set(job.id, { id: job.id, status: 'sent', ticketId: ticket.id });
+          } else if (ticket?.status === 'error') {
+            const deviceNotRegistered = ticket.details?.error === 'DeviceNotRegistered';
+            results.set(job.id, {
+              id: job.id,
+              status: 'failed',
+              error: deviceNotRegistered ? 'Push device is no longer registered.' : 'Push provider rejected this device.',
+              disableToken: deviceNotRegistered,
+            });
+          }
+        });
+      }
     } catch {
-      for (const device of batch) failedUsers.add(device.user_id);
+      // Leave the claimed rows retryable when provider acceptance is uncertain.
     }
   }
 
-  let pushError: string | null = null;
-  if (webTokens.length) {
+  const webJobs = jobs.filter((job: any) => job.platform === 'web');
+  if (webJobs.length) {
     const publicKey = process.env.WEB_PUSH_VAPID_PUBLIC_KEY;
     const privateKey = process.env.WEB_PUSH_VAPID_PRIVATE_KEY;
     const subject = process.env.WEB_PUSH_VAPID_SUBJECT;
     if (!publicKey || !privateKey || !subject) {
-      for (const device of webTokens) failedUsers.add(device.user_id);
-      pushError = 'Browser push is not configured for this environment.';
-    } else {
-      const vapidDetails = { subject, publicKey, privateKey };
-      const payload = JSON.stringify({
-        title: content.title,
-        body: content.message,
-        data: { deepLink: content.deepLink, adminNotificationCampaignId: campaignId },
-      });
-      for (let offset = 0; offset < webTokens.length; offset += 20) {
-        const batch = webTokens.slice(offset, offset + 20);
-        await Promise.all(batch.map(async (device) => {
-          try {
-            await webPush.sendNotification(device.subscription, payload, {
-              TTL: 86400,
-              urgency: content.level === 'important' ? 'high' : 'normal',
-              timeout: 8000,
-              vapidDetails,
-            });
-            successfulUsers.add(device.user_id);
-          } catch (error) {
-            failedUsers.add(device.user_id);
-            const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
-              ? Number((error as { statusCode?: unknown }).statusCode)
-              : 0;
-            if (statusCode === 404 || statusCode === 410) tokenRowsToDisable.push(device.token);
-            pushError ||= 'Some browser push deliveries failed. Review delivery history.';
-          }
-        }));
+      for (const job of webJobs) {
+        results.set(job.id, { id: job.id, status: 'failed', error: 'Browser push is not configured for this environment.' });
       }
+    } else {
+      const payload = JSON.stringify({
+        title: batch.title,
+        body: batch.message,
+        data: { deepLink: batch.deep_link, adminNotificationCampaignId: batch.campaign_id },
+      });
+      await Promise.all(webJobs.map(async (job: any) => {
+        if (!job.subscription || job.subscription.endpoint !== job.token) {
+          results.set(job.id, { id: job.id, status: 'failed', error: 'Browser push subscription is invalid.' });
+          return;
+        }
+        try {
+          await webPush.sendNotification(job.subscription as webPush.PushSubscription, payload, {
+            TTL: ttlSeconds,
+            urgency: batch.level === 'important' ? 'high' : 'normal',
+            timeout: 8000,
+            vapidDetails: { subject, publicKey, privateKey },
+          });
+          results.set(job.id, { id: job.id, status: 'sent' });
+        } catch (error) {
+          const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
+            ? Number((error as { statusCode?: unknown }).statusCode)
+            : 0;
+          const deviceNotRegistered = statusCode === 404 || statusCode === 410;
+          const retry = !deviceNotRegistered && (statusCode === 0 || statusCode >= 500);
+          results.set(job.id, {
+            id: job.id,
+            status: retry ? 'retry' : 'failed',
+            error: deviceNotRegistered ? 'Push device is no longer registered.' : 'Browser push provider did not accept this device.',
+            disableToken: deviceNotRegistered,
+          });
+        }
+      }));
     }
   }
 
-  if (tokenRowsToDisable.length) {
-    await supabase
-      .from('notification_push_tokens')
-      .update({ enabled: false, updated_at: new Date().toISOString() })
-      .in('token', tokenRowsToDisable);
+  for (const job of jobs) {
+    if (!results.has(job.id)) results.set(job.id, { id: job.id, status: 'failed', error: 'Unsupported push device.' });
   }
-
-  const activeUserIds = [...new Set([...expoTokens, ...webTokens].map((row) => row.user_id))];
-  const sentIds = activeUserIds.filter((id) => successfulUsers.has(id));
-  const failedIds = activeUserIds.filter((id) => !successfulUsers.has(id) && failedUsers.has(id));
-  const skippedIds = userIds.filter((id) => !successfulUsers.has(id) && !failedUsers.has(id));
-  const updateStatus = async (ids: string[], status: 'sent' | 'failed' | 'skipped', error?: string) => {
-    for (let offset = 0; offset < ids.length; offset += 500) {
-      const { error: updateError } = await supabase
-        .from('admin_notification_deliveries')
-        .update({ push_status: status, push_error: error || null, updated_at: new Date().toISOString() })
-        .eq('campaign_id', campaignId)
-        .in('user_id', ids.slice(offset, offset + 500));
-      if (updateError) throw new Error('Unable to save push delivery results');
-    }
-  };
-  await Promise.all([
-    updateStatus(sentIds, 'sent'),
-    updateStatus(failedIds, 'failed', 'Push service did not accept any device for this account'),
-    updateStatus(skippedIds, 'skipped'),
-  ]);
-
-  const failed = failedIds.length;
-  const sent = sentIds.length;
-  // In-app notifications are already durable for every recipient. A failed
-  // push channel therefore marks this multi-channel campaign partial.
-  const status = failed > 0 ? 'partial' : 'sent';
-  const { error: campaignUpdateError } = await supabase
-    .from('admin_notification_campaigns')
-    .update({
-      status,
-      push_sent_count: sent,
-      push_failed_count: failed,
-      push_skipped_count: skippedIds.length,
-      push_error: pushError,
-      completed_at: new Date().toISOString(),
-    })
-    .eq('id', campaignId);
-  if (campaignUpdateError) throw new Error('Unable to finalize notification delivery');
-
-  return { pushSent: sent, pushFailed: failed, pushSkipped: skippedIds.length, pushError };
-}
-
-async function finishCampaignWithoutPush(supabase: any, campaignId: string) {
-  const { error } = await supabase
-    .from('admin_notification_campaigns')
-    .update({ status: 'sent', completed_at: new Date().toISOString() })
-    .eq('id', campaignId);
-  if (error) throw new Error('Unable to finalize notification delivery');
-}
-
-async function deliverCampaignPush(
-  supabase: any,
-  campaignId: string,
-  deliveries: { user_id: string; notification_id: string }[],
-  content: { title: string; message: string; deepLink: string | null; level: AdminNotificationLevel },
-  pushRequested: boolean,
-) {
-  if (!pushRequested) {
-    await finishCampaignWithoutPush(supabase, campaignId);
-    return { pushSent: 0, pushFailed: 0, pushSkipped: 0, pushError: null };
-  }
-
-  try {
-    return await sendPushNotifications(supabase, campaignId, deliveries, content);
-  } catch (error) {
-    console.error('[admin-notifications] push result could not be finalized:', error instanceof Error ? error.message : 'unknown');
-    try {
-      const { error: updateError } = await supabase
-        .from('admin_notification_campaigns')
-        .update({
-          status: 'partial',
-          push_error: 'Push results could not be confirmed. Check provider status before retrying.',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', campaignId);
-      if (updateError) console.error('[admin-notifications] push failure audit could not be saved:', updateError.message);
-    } catch (auditError) {
-      console.error('[admin-notifications] push failure audit could not be saved:', auditError instanceof Error ? auditError.message : 'unknown');
-    }
-    return {
-      pushSent: 0,
-      pushFailed: 0,
-      pushSkipped: 0,
-      pushError: 'Push results could not be confirmed. Check delivery history before retrying.',
-    };
-  }
+  return [...results.values()];
 }
 
 async function persistCampaign(
@@ -362,6 +294,7 @@ async function persistCampaign(
   recipients: AdminNotificationRecipient[],
   pushRequested: boolean,
   isTest: boolean,
+  expiresAt: string | null,
 ) {
   const { data, error } = await supabase.rpc('admin_create_notification_campaign', {
     p_actor_id: actorId,
@@ -373,18 +306,23 @@ async function persistCampaign(
     p_is_test: isTest,
     p_audience: audience,
     p_recipient_ids: recipients.map((recipient) => recipient.id),
+    p_scheduled_at: null,
+    p_expires_at: expiresAt,
   });
-  if (error || !data?.campaign_id || !Array.isArray(data.deliveries)) {
+  if (error || !data?.campaign_id) {
     console.error('[admin-notifications] campaign creation failed:', error?.message || 'invalid response');
     throw new Error('Unable to create the notification campaign');
   }
 
-  const pushResult = await deliverCampaignPush(supabase, data.campaign_id, data.deliveries, content, pushRequested);
   return {
     campaignId: data.campaign_id as string,
     recipients: Number(data.recipient_count) || recipients.length,
     inAppSent: Number(data.recipient_count) || recipients.length,
-    ...pushResult,
+    pushRequested,
+    pushQueued: Number(data.push_device_count) || 0,
+    pushSent: 0,
+    pushFailed: 0,
+    pushSkipped: pushRequested && !(Number(data.push_device_count) || 0) ? recipients.length : 0,
   };
 }
 
@@ -394,7 +332,7 @@ export async function GET(request: Request) {
   if ('response' in authorization) return authorization.response;
   const { data, error } = await authorization.supabase
     .from('admin_notification_campaigns')
-    .select('id,title,message,level,deep_link,push_requested,is_test,audience,status,recipient_count,in_app_sent_count,push_sent_count,push_failed_count,push_skipped_count,push_error,created_at,completed_at')
+    .select('id,title,message,level,deep_link,push_requested,is_test,audience,status,scheduled_at,expires_at,recipient_count,in_app_sent_count,push_sent_count,push_failed_count,push_skipped_count,push_error,created_at,completed_at')
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) {
@@ -420,11 +358,57 @@ export async function POST(request: Request) {
     return Response.json({ error: 'A JSON object is required' }, { status: 400 });
   }
   const body = parsedBody as Record<string, unknown>;
+  const action = clean(body.action, 24);
+
+  if (action === 'dispatch') {
+    if (!marketingRunnerAuthorized(request)) {
+      return Response.json({ error: 'Unauthorized scheduler' }, { status: 401 });
+    }
+    const supabase = getSupabaseServerForRequest(request);
+    try {
+      const { data: scheduledCampaign, error: scheduledError } = await supabase.rpc('admin_claim_due_notification_campaign');
+      if (scheduledError) {
+        console.error('[admin-notifications] scheduled campaign claim failed:', scheduledError.message);
+        return Response.json({ error: 'Scheduled notification queue is unavailable' }, { status: 503 });
+      }
+      const { data: pushBatch, error: pushBatchError } = await supabase.rpc('admin_claim_notification_push_batch', { p_limit: 20 });
+      if (pushBatchError) {
+        console.error('[admin-notifications] push batch claim failed:', pushBatchError.message);
+        return Response.json({ error: 'Notification push queue is unavailable' }, { status: 503 });
+      }
+      if (!pushBatch) {
+        return Response.json({ data: {
+          claimed: !!scheduledCampaign,
+          scheduledCampaignClaimed: !!scheduledCampaign,
+          pushDevicesClaimed: 0,
+        } }, { headers: { 'Cache-Control': 'no-store' } });
+      }
+      const results = await sendPushNotifications(pushBatch);
+      const { data: acknowledgement, error: acknowledgementError } = await supabase.rpc('admin_ack_notification_push_batch', {
+        p_claim_token: pushBatch.claim_token,
+        p_results: results,
+      });
+      if (acknowledgementError || Number(acknowledgement?.acknowledged) !== results.length) {
+        console.error('[admin-notifications] push batch acknowledgement failed:', acknowledgementError?.message || 'incomplete acknowledgement');
+        return Response.json({ error: 'Notification push results could not be saved' }, { status: 503 });
+      }
+      return Response.json({ data: {
+        claimed: true,
+        scheduledCampaignClaimed: !!scheduledCampaign,
+        pushDevicesClaimed: results.length,
+        pushSent: results.filter((result: any) => result.status === 'sent').length,
+        pushFailed: results.filter((result: any) => result.status === 'failed').length,
+        pushRetried: results.filter((result: any) => result.status === 'retry').length,
+      } }, { headers: { 'Cache-Control': 'no-store' } });
+    } catch (error) {
+      console.error('[admin-notifications] scheduled campaign delivery failed:', error instanceof Error ? error.message : 'unknown');
+      return Response.json({ error: 'Scheduled notification delivery is temporarily unavailable' }, { status: 503 });
+    }
+  }
 
   const authorization = await authorizeGlobalAdmin(request);
   if ('response' in authorization) return authorization.response;
   const { supabase, userId: actorId } = authorization;
-  const action = clean(body.action, 24);
 
   if (action === 'search') {
     const query = clean(body.query, 100).replace(/[%_,]/g, '');
@@ -451,12 +435,14 @@ export async function POST(request: Request) {
 
   if (action === 'preview') {
     const content = normalizeContent(body);
+    const timing = normalizeTiming(body);
     const audience = clean(body.audience, 24) as AdminNotificationAudience;
     const eventId = clean(body.eventId, 64);
     const passTier = clean(body.passTier || 'all', 16) as AdminNotificationPassTier;
     const selectedIds = normalizeIds(body.selectedUserIds, 1000);
     const pushRequested = body.pushRequested === true;
-    if (!content || !AUDIENCES.has(audience) || !PASS_TIERS.has(passTier)) {
+    if (!content || 'error' in timing || !AUDIENCES.has(audience) || !PASS_TIERS.has(passTier)) {
+      if ('error' in timing) return Response.json({ error: timing.error }, { status: 400 });
       return Response.json({ error: 'Valid notification content and audience are required' }, { status: 400 });
     }
     if (audience === 'event_attendees' && (!EVENT_ID_PATTERN.test(eventId) || !Object.hasOwn(EVENTS, eventId))) {
@@ -508,6 +494,8 @@ export async function POST(request: Request) {
         level: content.level,
         deep_link: content.deepLink,
         push_requested: pushRequested,
+        scheduled_at: timing.scheduledAt,
+        notification_expires_at: timing.expiresAt,
         audience: audienceSnapshot,
         recipient_ids: recipients.map((recipient) => recipient.id),
         recipient_count: recipients.length,
@@ -516,14 +504,23 @@ export async function POST(request: Request) {
       .select('id,expires_at')
       .single();
     if (previewError || !preview?.id) {
-      console.error('[admin-notifications] preview write failed:', previewError?.message || 'invalid response');
-      return Response.json({ error: 'Unable to save this audience preview' }, { status: 500 });
+      console.error('[admin-notifications] preview write failed:', previewError?.code || 'unknown code', previewError?.message || 'invalid response');
+      const errorText = String(previewError?.message || '');
+      const missingSchema = ['42P01', 'PGRST204', 'PGRST205'].includes(String(previewError?.code || ''))
+        || errorText.includes('admin_notification_previews');
+      return Response.json({
+        error: missingSchema
+          ? 'Notification database migrations are missing in this environment. Apply the latest core database migrations, then restart the local API.'
+          : 'Unable to save this audience preview',
+      }, { status: missingSchema ? 503 : 500 });
     }
 
     return Response.json({
       data: {
         previewId: preview.id,
         expiresAt: preview.expires_at,
+        scheduledAt: timing.scheduledAt,
+        notificationExpiresAt: timing.expiresAt,
         recipientCount: recipients.length,
         pushRequested,
         pushTokenCount,
@@ -534,8 +531,9 @@ export async function POST(request: Request) {
 
   if (action === 'test') {
     const content = normalizeContent(body);
+    const expiresAt = optionalTimestamp(body.expiresAt);
     const selectedIds = normalizeIds(body.selectedUserIds, 5);
-    if (!content || !selectedIds) {
+    if (!content || !selectedIds || expiresAt === undefined || (expiresAt && Date.parse(expiresAt) <= Date.now())) {
       return Response.json({ error: 'Valid content and one to five selected test recipients are required' }, { status: 400 });
     }
     try {
@@ -553,6 +551,7 @@ export async function POST(request: Request) {
         recipients,
         body.pushRequested === true,
         true,
+        expiresAt,
       );
       return Response.json({ data: result });
     } catch (error) {
@@ -569,40 +568,41 @@ export async function POST(request: Request) {
       p_actor_id: actorId,
       p_preview_id: previewId,
     });
-    if (error || !data?.campaign_id || !Array.isArray(data.deliveries)) {
+    if (error || !data?.campaign_id) {
       const message = error?.message || 'Unable to send this notification';
-      const status = /expired|already used|not found/i.test(message) ? 409 : 500;
+      const status = /expired|already used|not found|scheduled time must be in the future/i.test(message) ? 409 : 500;
       if (status === 500) console.error('[admin-notifications] send failed:', message);
-      return Response.json({ error: status === 409 ? 'The preview expired or was already used. Preview again.' : 'Unable to send this notification' }, { status });
+      return Response.json({
+        error: /scheduled time must be in the future/i.test(message)
+          ? 'The scheduled time has passed. Preview again and choose a future time.'
+          : status === 409 ? 'The preview expired or was already used. Preview again.' : 'Unable to send this notification',
+      }, { status });
     }
 
-    try {
-      // The stored preview controls channel selection. Reading it back here
-      // avoids trusting a client flag to decide whether push should be sent.
-      const { data: campaign } = await supabase
-        .from('admin_notification_campaigns')
-        .select('id,title,message,level,deep_link,push_requested')
-        .eq('id', data.campaign_id)
-        .maybeSingle();
-      if (!campaign) throw new Error('Unable to load the queued notification');
-      const pushResult = await deliverCampaignPush(supabase, data.campaign_id, data.deliveries, {
-            title: campaign.title,
-            message: campaign.message,
-            level: campaign.level,
-            deepLink: campaign.deep_link,
-          }, campaign.push_requested === true);
-      return Response.json({
-        data: {
-          campaignId: data.campaign_id,
-          recipients: Number(data.recipient_count) || data.deliveries.length,
-          inAppSent: Number(data.recipient_count) || data.deliveries.length,
-          ...pushResult,
-        },
-      });
-    } catch (error) {
-      console.error('[admin-notifications] campaign finalization failed:', error instanceof Error ? error.message : 'unknown');
-      return Response.json({ error: 'In-app notifications were queued, but campaign history could not be finalized' }, { status: 500 });
+    if (data.scheduled === true) {
+      return Response.json({ data: {
+        campaignId: data.campaign_id,
+        recipients: Number(data.recipient_count) || 0,
+        inAppSent: 0,
+        scheduled: true,
+        scheduledAt: data.scheduled_at,
+        expiresAt: data.expires_at,
+        pushRequested: data.push_requested === true,
+        pushQueued: 0,
+      } });
     }
+    const recipientCount = Number(data.recipient_count) || 0;
+    const pushDeviceCount = Number(data.push_device_count) || 0;
+    return Response.json({ data: {
+      campaignId: data.campaign_id,
+      recipients: recipientCount,
+      inAppSent: recipientCount,
+      pushRequested: data.push_requested === true,
+      pushQueued: pushDeviceCount,
+      pushSent: 0,
+      pushFailed: 0,
+      pushSkipped: data.push_requested === true && pushDeviceCount === 0 ? recipientCount : 0,
+    } });
   }
 
   return Response.json({ error: 'Unsupported notification action' }, { status: 400 });
