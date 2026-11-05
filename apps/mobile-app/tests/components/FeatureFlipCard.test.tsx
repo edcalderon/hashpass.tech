@@ -99,6 +99,32 @@ it('ignores synthetic hover on touch-capable devices while keeping tap-to-flip',
 
   act(() => { card.props.onClick({ currentTarget: cardElement }); });
   expect(view.root.findByProps({ role: 'button', 'aria-label': 'Touch' }).props['aria-expanded']).toBe(true);
+
+  act(() => { card.props.onMouseLeave({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'Touch' }).props['aria-expanded']).toBe(true);
+});
+
+it('fails closed when pointer media queries are unavailable', () => {
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: undefined,
+  });
+  act(() => { view = create(<FeatureFlipCard title="No media" description="Details" />); });
+
+  const card = view.root.findByProps({ role: 'button', 'aria-label': 'No media' });
+  const cardElement = {} as HTMLDivElement;
+  act(() => { card.props.onMouseEnter({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'No media' }).props['aria-expanded']).toBe(false);
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {},
+  });
+  act(() => { card.props.onMouseLeave({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'No media' }).props['aria-expanded']).toBe(false);
+
+  act(() => { card.props.onClick({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'No media' }).props['aria-expanded']).toBe(true);
 });
 
 it('keeps hover flipping for a fine-pointer-only device', () => {
