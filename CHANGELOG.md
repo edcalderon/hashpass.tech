@@ -1,3 +1,20 @@
+## [1.9.218](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.217...v1.9.218) (2026-11-05)
+
+
+### Bug Fixes
+
+* **ui:** avoid flicker on touch-capable devices ([85f2ba4](https://github.com/hashpass-tech/hashpass.tech/commit/85f2ba4a13fb7ded9096278e5dc2406b983e3ca6))
+* **ui:** crossfade metric cards on touch ([d8d0bb9](https://github.com/hashpass-tech/hashpass.tech/commit/d8d0bb9a47d99e94b46350b55edc0a46c089ebfe))
+* **ui:** gate feature card hover on fine pointers ([aff0844](https://github.com/hashpass-tech/hashpass.tech/commit/aff0844d140beba2a0b0609f10244e4551d026ee))
+### Release Highlights
+- avoid flicker on touch-capable devices; crossfade metric cards on touch; gate feature card hover on fine pointers
+
+### Release scope
+- Compared with: `v1.9.217` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.217](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.216...v1.9.217) (2026-11-03)
 
 

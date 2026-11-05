@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.217)
+## 📋 Latest Changes (v1.9.218)
 
 ### Bug Fixes
 
-* improve BSL welcome campaign video ([4cbdd42](https://github.com/hashpass-tech/hashpass.tech/commit/4cbdd429d8f7ea2b564d5a6261fd3cb1afc0beda))
+* **ui:** avoid flicker on touch-capable devices ([85f2ba4](https://github.com/hashpass-tech/hashpass.tech/commit/85f2ba4a13fb7ded9096278e5dc2406b983e3ca6))
+* **ui:** crossfade metric cards on touch ([d8d0bb9](https://github.com/hashpass-tech/hashpass.tech/commit/d8d0bb9a47d99e94b46350b55edc0a46c089ebfe))
+* **ui:** gate feature card hover on fine pointers ([aff0844](https://github.com/hashpass-tech/hashpass.tech/commit/aff0844d140beba2a0b0609f10244e4551d026ee))
 ### Release Highlights
-- improve BSL welcome campaign video
+- avoid flicker on touch-capable devices; crossfade metric cards on touch; gate feature card hover on fine pointers
 
 ### Release scope
-- Compared with: `v1.9.216` (the previous global release tag)
+- Compared with: `v1.9.217` (the previous global release tag)
 
 ### Affected products & packages
-- Shared repository changes only
+- Mobile app
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
