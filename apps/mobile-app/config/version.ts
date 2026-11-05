@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611030552, // Updated to current timestamp
-  releaseDate: '2026-11-03',
+  buildNumber: 202611051824, // Updated to current timestamp
+  releaseDate: '2026-11-05',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'improve BSL welcome campaign video'
+    'avoid flicker on touch-capable devices',
+    'crossfade metric cards on touch',
+    'gate feature card hover on fine pointers'
   ],
   breakingChanges: [],
-  notes: 'improve BSL welcome campaign video'
+  notes: 'avoid flicker on touch-capable devices; crossfade metric cards on touch; gate feature card hover on fine pointers'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.218': {
+    version: '1.9.218',
+    buildNumber: 202611051824,
+    releaseDate: '2026-11-05',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'avoid flicker on touch-capable devices',
+      'crossfade metric cards on touch',
+      'gate feature card hover on fine pointers'
+    ],
+    breakingChanges: [],
+    notes: 'avoid flicker on touch-capable devices; crossfade metric cards on touch; gate feature card hover on fine pointers'
+  },
   '1.9.217': {
     version: '1.9.217',
     buildNumber: 202611030552,
