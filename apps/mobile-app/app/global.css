@@ -35,6 +35,33 @@
   }
 }
 
+/* Touch browsers can report 3D transform support while still compositing
+   back faces unreliably. Crossfade the faces on coarse-pointer devices. */
+@media (hover: none) and (pointer: coarse) {
+  .hp-feature-flip-card {
+    height: 260px !important;
+  }
+
+  .hp-feature-flip-card__inner {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .hp-feature-flip-card__face {
+    transform: none !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 160ms ease-out, visibility 160ms ease-out;
+  }
+
+  .hp-feature-flip-card__face[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hp-feature-flip-card__inner,
   .hp-feature-flip-card__face {
