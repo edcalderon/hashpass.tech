@@ -19,6 +19,16 @@ jest.mock('../../lib/utils', () => ({ cn: (...values: (string | false | undefine
 
 let view: ReactTestRenderer;
 const originalRaf = global.requestAnimationFrame;
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+
+const mockPointerMedia = (matches: Record<string, boolean>) => {
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      matchMedia: (query: string) => ({ matches: matches[query] ?? false }),
+    },
+  });
+};
 
 beforeEach(() => {
   mockPush.mockReset();
@@ -33,6 +43,11 @@ beforeEach(() => {
 
 afterEach(() => {
   Object.defineProperty(global, 'requestAnimationFrame', { configurable: true, value: originalRaf });
+  if (originalWindowDescriptor) {
+    Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+  } else {
+    Reflect.deleteProperty(globalThis, 'window');
+  }
   act(() => view?.unmount());
 });
 
@@ -68,6 +83,35 @@ it('reports the flipped card to its carousel owner', () => {
   act(() => { card.props.onClick({ currentTarget: cardElement }); });
 
   expect(onFlipChange).toHaveBeenCalledWith(true, cardElement);
+});
+
+it('ignores synthetic hover on touch-capable devices while keeping tap-to-flip', () => {
+  mockPointerMedia({
+    '(hover: hover) and (pointer: fine)': true,
+    '(any-pointer: coarse)': true,
+  });
+  act(() => { view = create(<FeatureFlipCard title="Touch" description="Details" />); });
+
+  const card = view.root.findByProps({ role: 'button', 'aria-label': 'Touch' });
+  const cardElement = {} as HTMLDivElement;
+  act(() => { card.props.onMouseEnter({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'Touch' }).props['aria-expanded']).toBe(false);
+
+  act(() => { card.props.onClick({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'Touch' }).props['aria-expanded']).toBe(true);
+});
+
+it('keeps hover flipping for a fine-pointer-only device', () => {
+  mockPointerMedia({
+    '(hover: hover) and (pointer: fine)': true,
+    '(any-pointer: coarse)': false,
+  });
+  act(() => { view = create(<FeatureFlipCard title="Mouse" description="Details" />); });
+
+  const card = view.root.findByProps({ role: 'button', 'aria-label': 'Mouse' });
+  act(() => { card.props.onMouseEnter({ currentTarget: {} as HTMLDivElement }); });
+
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'Mouse' }).props['aria-expanded']).toBe(true);
 });
 
 it('keeps the CTA isolated from the flip action and routes to its destination', () => {

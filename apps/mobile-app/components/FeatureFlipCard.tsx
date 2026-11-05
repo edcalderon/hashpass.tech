@@ -61,10 +61,14 @@ export default function FeatureFlipCard({
     }
     onFlipChange?.(nextIsFlipped, card);
   };
-  const supportsHover = () =>
-    typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const supportsHover = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+      && !window.matchMedia('(any-pointer: coarse)').matches;
+  };
 
   return (
     <div
