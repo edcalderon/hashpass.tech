@@ -109,9 +109,12 @@ it('keeps hover flipping for a fine-pointer-only device', () => {
   act(() => { view = create(<FeatureFlipCard title="Mouse" description="Details" />); });
 
   const card = view.root.findByProps({ role: 'button', 'aria-label': 'Mouse' });
-  act(() => { card.props.onMouseEnter({ currentTarget: {} as HTMLDivElement }); });
-
+  const cardElement = {} as HTMLDivElement;
+  act(() => { card.props.onMouseEnter({ currentTarget: cardElement }); });
   expect(view.root.findByProps({ role: 'button', 'aria-label': 'Mouse' }).props['aria-expanded']).toBe(true);
+
+  act(() => { card.props.onMouseLeave({ currentTarget: cardElement }); });
+  expect(view.root.findByProps({ role: 'button', 'aria-label': 'Mouse' }).props['aria-expanded']).toBe(false);
 });
 
 it('keeps the CTA isolated from the flip action and routes to its destination', () => {
