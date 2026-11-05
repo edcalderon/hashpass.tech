@@ -61,6 +61,10 @@ export default function FeatureFlipCard({
     }
     onFlipChange?.(nextIsFlipped, card);
   };
+  const supportsHover = () =>
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   return (
     <div
@@ -72,8 +76,12 @@ export default function FeatureFlipCard({
         } as React.CSSProperties
       }
       className="hp-feature-flip-card group relative overflow-hidden [perspective:2000px]"
-      onMouseEnter={(event) => setFlipped(true, event.currentTarget)}
-      onMouseLeave={(event) => setFlipped(false, event.currentTarget)}
+      onMouseEnter={(event) => {
+        if (supportsHover()) setFlipped(true, event.currentTarget);
+      }}
+      onMouseLeave={(event) => {
+        if (supportsHover()) setFlipped(false, event.currentTarget);
+      }}
       onClick={(event) => setFlipped(!isFlipped, event.currentTarget)}
       role="button"
       tabIndex={0}
