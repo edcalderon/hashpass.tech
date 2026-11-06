@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.63",
-    "buildNumber": 20261030194441,
-    "releaseDate": "2026-10-30",
+    "version": "1.0.64",
+    "buildNumber": 20261106002240,
+    "releaseDate": "2026-11-06",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.63 release"
+    "notes": "Fix WebKit Safari flicker while scrolling the landing page"
   },
   "versions": [
+    {
+      "version": "1.0.64",
+      "buildNumber": 20261106002240,
+      "releaseDate": "2026-11-06",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Fix WebKit Safari flicker while scrolling the landing page"
+    },
     {
       "version": "1.0.63",
       "buildNumber": 20261030194441,

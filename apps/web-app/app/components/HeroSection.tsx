@@ -12,6 +12,7 @@ import {
   GalleryContainer,
 } from '@/components/blocks/animated-gallery';
 import { DownloadShowcase } from '@/components/ui/download-options-section';
+import { useWebKit } from '@/lib/useWebKit';
 
 // ── HASHPASS event / club / membership photography ───────────────────────────
 type GalleryImage = {
@@ -61,6 +62,7 @@ export function HeroSection() {
   const { t } = useTranslation('hero');
   const { resolvedTheme } = useTheme();
   const { animationMode } = useLandingAnimationMode();
+  const isWebKit = useWebKit();
   const galleryRef = useRef<HTMLDivElement>(null);
   const titleEffectRef = useRef<HTMLDivElement>(null);
   const [titlePulse, setTitlePulse] = useState(0);
@@ -196,9 +198,9 @@ export function HeroSection() {
             className="club-hero-title-orbit"
             data-pulse={titlePulse}
             style={titleEffectStyle}
-            onPointerMove={moveTitleLight}
-            onPointerEnter={moveTitleLight}
-            onClick={activateTitleEffect}
+            onPointerMove={isWebKit ? undefined : moveTitleLight}
+            onPointerEnter={isWebKit ? undefined : moveTitleLight}
+            onClick={isWebKit ? undefined : activateTitleEffect}
           >
             <span className="club-hero-title-glass" aria-hidden />
             <span className="club-hero-title-dust" aria-hidden>
@@ -216,10 +218,10 @@ export function HeroSection() {
                     className="club-hero-title-letter"
                     key={`${character}-${index}`}
                     data-active={activeTitleLetter === index || undefined}
-                    onPointerEnter={(event) => moveTitleLetter(event, index)}
-                    onPointerMove={(event) => moveTitleLetter(event, index)}
-                    onPointerDown={(event) => moveTitleLetter(event, index)}
-                    onPointerLeave={(event) => clearTitleLetter(event, index)}
+                    onPointerEnter={isWebKit ? undefined : (event) => moveTitleLetter(event, index)}
+                    onPointerMove={isWebKit ? undefined : (event) => moveTitleLetter(event, index)}
+                    onPointerDown={isWebKit ? undefined : (event) => moveTitleLetter(event, index)}
+                    onPointerLeave={isWebKit ? undefined : (event) => clearTitleLetter(event, index)}
                   >
                     {character}
                   </span>
@@ -500,6 +502,22 @@ export function HeroSection() {
             .club-gallery-command span,
             .club-gallery-command strong { animation: none; }
             .club-hero-title-glass, .club-hero-title-orbit:hover .club-hero-title-glass { opacity: 0; }
+          }
+          @supports (-webkit-touch-callout: none) {
+            .club-hero-title-letter { transform: none; will-change: auto; }
+            .club-hero-title-letter[data-active=\"true\"] {
+              color: var(--club-title-base);
+              background: none;
+              -webkit-text-fill-color: currentColor;
+              -webkit-text-stroke: 0;
+              mix-blend-mode: normal;
+              filter: none;
+              transform: none;
+              animation: none;
+            }
+            .club-hero-title-glass,
+            .club-hero-title-dust { display: none; }
+            .club-gallery-card { transform: none; }
           }
         `}</style>
       </ShaderBackground>

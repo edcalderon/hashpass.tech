@@ -3,7 +3,6 @@
 import * as React from 'react';
 import {
   type HTMLMotionProps,
-  type MotionValue,
   type Variants,
   motion,
   useScroll,
@@ -11,10 +10,8 @@ import {
   useTransform,
 } from 'motion/react';
 import { cn } from '@/lib/utils';
-
-interface ContainerScrollContextValue {
-  scrollYProgress: MotionValue<number>;
-}
+import { useWebKit } from '@/lib/useWebKit';
+import type { ContainerScrollContextValue } from './types/animated-gallery.types';
 
 const SPRING_CONFIG = {
   type: 'spring',
@@ -50,6 +47,7 @@ export const ContainerScroll = ({
   ...props
 }: React.HtmlHTMLAttributes<HTMLDivElement>) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const isWebKit = useWebKit();
   const { scrollYProgress } = useScroll({ target: scrollRef });
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 55,
@@ -58,14 +56,16 @@ export const ContainerScroll = ({
   });
 
   return (
-    <ContainerScrollContext.Provider value={{ scrollYProgress: smoothProgress }}>
+    <ContainerScrollContext.Provider value={{ scrollYProgress: smoothProgress, isWebKit }}>
       <div
         ref={scrollRef}
         className={cn('relative min-h-[120vh]', className)}
         style={{
-          perspective: '1000px',
+          height: isWebKit ? 'auto' : undefined,
+          minHeight: isWebKit ? 0 : undefined,
+          perspective: isWebKit ? 'none' : '1000px',
           perspectiveOrigin: 'center top',
-          transformStyle: 'preserve-3d',
+          transformStyle: isWebKit ? 'flat' : 'preserve-3d',
           ...style,
         }}
         {...props}
@@ -81,19 +81,27 @@ export const ContainerSticky = ({
   className,
   style,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn('sticky left-0 top-0 min-h-[30rem] w-full overflow-hidden', className)}
-    style={{
-      perspective: '1000px',
-      perspectiveOrigin: 'center top',
-      transformStyle: 'preserve-3d',
-      transformOrigin: '50% 50%',
-      ...style,
-    }}
-    {...props}
-  />
-);
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  const { isWebKit } = useContainerScrollContext();
+
+  return (
+    <div
+      className={cn('sticky left-0 top-0 min-h-[30rem] w-full overflow-hidden', className)}
+      style={{
+        position: isWebKit ? 'relative' : undefined,
+        height: isWebKit ? 'auto' : undefined,
+        minHeight: isWebKit ? 0 : undefined,
+        overflow: isWebKit ? 'visible' : undefined,
+        perspective: isWebKit ? 'none' : '1000px',
+        perspectiveOrigin: 'center top',
+        transformStyle: isWebKit ? 'flat' : 'preserve-3d',
+        transformOrigin: '50% 50%',
+        ...style,
+      }}
+      {...props}
+    />
+  );
+};
 ContainerSticky.displayName = 'ContainerSticky';
 
 export const GalleryContainer = ({
@@ -102,7 +110,7 @@ export const GalleryContainer = ({
   style,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & HTMLMotionProps<'div'>) => {
-  const { scrollYProgress } = useContainerScrollContext();
+  const { scrollYProgress, isWebKit } = useContainerScrollContext();
   const rotateX = useTransform(scrollYProgress, [0, 0.55], [62, 0]);
   const scale = useTransform(scrollYProgress, [0.45, 0.88], [1.15, 1]);
   // Phase 2: columns fan out horizontally once the 3D tilt settles
@@ -111,7 +119,9 @@ export const GalleryContainer = ({
   return (
     <motion.div
       className={cn('relative grid size-full grid-cols-3 gap-2 rounded-2xl', className)}
-      style={{ rotateX, scale, columnGap, transformStyle: 'preserve-3d', perspective: '1000px', ...style }}
+      style={isWebKit
+        ? { height: 'auto', minHeight: 0, ...style }
+        : { rotateX, scale, columnGap, transformStyle: 'preserve-3d', perspective: '1000px', ...style }}
       {...props}
     >
       {children}
@@ -127,7 +137,7 @@ export const GalleryCol = ({
   xRange = ['0%', '0%'],
   ...props
 }: HTMLMotionProps<'div'> & { yRange?: string[]; xRange?: string[] }) => {
-  const { scrollYProgress } = useContainerScrollContext();
+  const { scrollYProgress, isWebKit } = useContainerScrollContext();
   const y = useTransform(scrollYProgress, [0.5, 0.88], yRange);
   // Phase 2: outer columns slide outward to form horizontal panorama
   const x = useTransform(scrollYProgress, [0.72, 1], xRange);
@@ -135,7 +145,7 @@ export const GalleryCol = ({
   return (
     <motion.div
       className={cn('relative flex w-full flex-col gap-2', className)}
-      style={{ y, x, ...style }}
+      style={isWebKit ? { marginTop: 0, ...style } : { y, x, ...style }}
       {...props}
     />
   );
