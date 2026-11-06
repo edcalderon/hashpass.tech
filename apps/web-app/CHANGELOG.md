@@ -5,6 +5,17 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.64] - 2026-11-06
+
+### Stable
+- Fix WebKit Safari flicker while scrolling the landing page
+
+### Technical Details
+- Version: 1.0.64
+- Release Type: stable
+- Build Number: 20261106002240
+- Release Date: 2026-11-06
+
 ## [1.0.63] - 2026-10-30
 
 ### Stable
