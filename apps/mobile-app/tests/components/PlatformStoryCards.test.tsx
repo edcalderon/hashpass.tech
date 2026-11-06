@@ -283,4 +283,46 @@ describe('platform story cards', () => {
     expect(streams.every((stream) => JSON.stringify(stream.props.transition) === JSON.stringify({ duration: 0 }))).toBe(true);
     expect(renderer.root.findAllByType('Surface' as any)).toHaveLength(27);
   });
+
+  it('keeps the metric cards static on touch-capable browsers', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn((query: string) => ({
+        matches: query === '(any-pointer: coarse)',
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+      })),
+    });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    const PlatformStoryCardsWeb = require('../../components/PlatformStoryCards.web').default;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(<PlatformStoryCardsWeb stories={[...stories]} />);
+    });
+
+    const streams = renderer.root.findAllByType('motion.div' as any).filter((node) => node.props.animate);
+    expect(streams).toHaveLength(6);
+    expect(streams.every((stream) => JSON.stringify(stream.props.animate) === JSON.stringify({ y: 0 }))).toBe(true);
+    expect(streams.every((stream) => JSON.stringify(stream.props.transition) === JSON.stringify({ duration: 0 }))).toBe(true);
+    expect(renderer.root.findAllByType('Surface' as any)).toHaveLength(27);
+
+    const mobileViewport = renderer.root.findAllByType('div' as any).find((node) =>
+      String(node.props.className).includes('mt-10 flex justify-center gap-6'),
+    );
+    expect(mobileViewport?.props.className).not.toContain('mask-image');
+    expect(mobileViewport?.props.className).not.toContain('max-h-[740px]');
+
+    const firstCard = renderer.root.findAllByType('motion.div' as any)
+      .find((node) => typeof node.props.onViewportEnter === 'function');
+    act(() => firstCard?.props.onViewportEnter());
+    const metricValues = renderer.root.findAll((node) =>
+      typeof node.type === 'function' && node.type.name === 'PlatformStoryMetricValue',
+    );
+    expect(metricValues.every((node) => node.props.animate === false)).toBe(true);
+    act(() => renderer.unmount());
+  });
 });

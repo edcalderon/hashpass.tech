@@ -14,23 +14,31 @@ import type { PlatformStoryCard } from './types/PlatformStory.types';
 function useStreamMotion(ref: React.RefObject<HTMLDivElement | null>) {
   const { animationLevel } = useAnimationLevel();
   const [systemAllowsMotion, setSystemAllowsMotion] = useState(false);
+  const [hasCoarsePointer, setHasCoarsePointer] = useState(true);
   const [inView, setInView] = useState(false);
   const [foreground, setForeground] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const pointerQuery = window.matchMedia('(any-pointer: coarse)');
     const updateMotionPreference = () => setSystemAllowsMotion(!query.matches);
+    const updatePointerPreference = () => setHasCoarsePointer(pointerQuery.matches);
     const updateVisibility = () => setForeground(document.visibilityState === 'visible');
 
     updateMotionPreference();
+    updatePointerPreference();
     updateVisibility();
     if (query.addEventListener) query.addEventListener('change', updateMotionPreference);
     else query.addListener?.(updateMotionPreference);
+    if (pointerQuery.addEventListener) pointerQuery.addEventListener('change', updatePointerPreference);
+    else pointerQuery.addListener?.(updatePointerPreference);
     document.addEventListener('visibilitychange', updateVisibility);
 
     return () => {
       if (query.removeEventListener) query.removeEventListener('change', updateMotionPreference);
       else query.removeListener?.(updateMotionPreference);
+      if (pointerQuery.removeEventListener) pointerQuery.removeEventListener('change', updatePointerPreference);
+      else pointerQuery.removeListener?.(updatePointerPreference);
       document.removeEventListener('visibilitychange', updateVisibility);
     };
   }, []);
@@ -49,7 +57,10 @@ function useStreamMotion(ref: React.RefObject<HTMLDivElement | null>) {
     return () => observer.disconnect();
   }, [ref]);
 
-  return animationLevel === 'full' && systemAllowsMotion && inView && foreground;
+  // The moving, masked card stream flickers in WebKit on touch devices while
+  // the page is scrolling. Keep the metric cards static whenever any coarse
+  // pointer is available, including touch-capable desktops and iPads.
+  return animationLevel === 'full' && !hasCoarsePointer && systemAllowsMotion && inView && foreground;
 }
 
 function StoryCard({
