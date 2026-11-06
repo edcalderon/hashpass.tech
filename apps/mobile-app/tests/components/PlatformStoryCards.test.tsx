@@ -325,4 +325,29 @@ describe('platform story cards', () => {
     expect(metricValues.every((node) => node.props.animate === false)).toBe(true);
     act(() => renderer.unmount());
   });
+
+  it('supports legacy media-query change listeners', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const addListener = jest.fn();
+    const removeListener = jest.fn();
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn((query: string) => ({
+        matches: query === '(any-pointer: coarse)',
+        addListener,
+        removeListener,
+      })),
+    });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    const PlatformStoryCardsWeb = require('../../components/PlatformStoryCards.web').default;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(<PlatformStoryCardsWeb stories={[...stories]} />);
+    });
+
+    expect(addListener).toHaveBeenCalledTimes(2);
+    act(() => renderer.unmount());
+    expect(removeListener).toHaveBeenCalledTimes(2);
+  });
 });
