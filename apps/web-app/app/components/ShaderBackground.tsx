@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTheme } from './ThemeProvider';
 import type { LandingAnimationMode } from './LandingAnimationProvider';
+import { useWebKit } from '@/lib/useWebKit';
 
 const MeshGradient = dynamic(
   () => import('@paper-design/shaders-react').then((m) => m.MeshGradient),
@@ -31,6 +32,7 @@ export function ShaderBackground({ animationMode, children }: ShaderBackgroundPr
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const { resolvedTheme } = useTheme();
+  const isWebKit = useWebKit();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -58,7 +60,7 @@ export function ShaderBackground({ animationMode, children }: ShaderBackgroundPr
   const primary = isDark ? DARK_PRIMARY : LIGHT_PRIMARY;
   const overlay = isDark ? DARK_OVERLAY : LIGHT_OVERLAY;
   const canvasBg = isDark ? '#000000' : '#ffffff';
-  const useStaticBackground = animationMode === 'static' || prefersReducedMotion;
+  const useStaticBackground = isWebKit || animationMode === 'static' || prefersReducedMotion;
   const useFullAnimation = animationMode === 'full' && !useStaticBackground;
   const useLowAnimation = animationMode === 'low' && !useStaticBackground;
   // Speed zero tells Paper Shaders to cancel its requestAnimationFrame loop.
