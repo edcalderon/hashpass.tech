@@ -22,24 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611051824, // Updated to current timestamp
-  releaseDate: '2026-11-05',
+  buildNumber: 202611060044, // Updated to current timestamp
+  releaseDate: '2026-11-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'avoid flicker on touch-capable devices',
-    'crossfade metric cards on touch',
-    'gate feature card hover on fine pointers'
+    'stop metrics stream on touch',
+    'prevent Safari landing flicker'
   ],
   breakingChanges: [],
-  notes: 'avoid flicker on touch-capable devices; crossfade metric cards on touch; gate feature card hover on fine pointers'
+  notes: 'stop metrics stream on touch; prevent Safari landing flicker'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.219': {
+    version: '1.9.219',
+    buildNumber: 202611060044,
+    releaseDate: '2026-11-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop metrics stream on touch',
+      'prevent Safari landing flicker'
+    ],
+    breakingChanges: [],
+    notes: 'stop metrics stream on touch; prevent Safari landing flicker'
+  },
   '1.9.218': {
     version: '1.9.218',
     buildNumber: 202611051824,

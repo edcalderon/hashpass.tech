@@ -1,3 +1,20 @@
+## [1.9.219](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.218...v1.9.219) (2026-11-06)
+
+
+### Bug Fixes
+
+* **mobile:** stop metrics stream on touch ([4af068e](https://github.com/hashpass-tech/hashpass.tech/commit/4af068e36c85bad3ad738255fe7dcf1a79349da6))
+* **web:** prevent Safari landing flicker ([0262ce0](https://github.com/hashpass-tech/hashpass.tech/commit/0262ce0fbfd27442b96bddbce2ab5c59db0d43e3))
+### Release Highlights
+- stop metrics stream on touch; prevent Safari landing flicker
+
+### Release scope
+- Compared with: `v1.9.218` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Mobile app
+
 ## [1.9.218](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.217...v1.9.218) (2026-11-05)
 
 
