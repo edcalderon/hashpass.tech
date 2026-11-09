@@ -20,19 +20,27 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.220)
+## 📋 Latest Changes (v1.9.221)
 
 ### Bug Fixes
 
-* **auth:** reduce optional consent selector text size ([#597](https://github.com/hashpass-tech/hashpass.tech/issues/597)) ([f1742fd](https://github.com/hashpass-tech/hashpass.tech/commit/f1742fd38a19fec48fca5c98504da118c4373e12))
+* **api:** align Supabase environment resolution with API host ([06eabfc](https://github.com/hashpass-tech/hashpass.tech/commit/06eabfc837281b1c873d4c8615c4f77cc14e25a8))
+* **api:** route opaque event requests by API host ([60f2745](https://github.com/hashpass-tech/hashpass.tech/commit/60f2745a92e2a8547328b7243c7a386ac0c74292))
+* **auth:** tighten optional consent choice spacing ([be7499a](https://github.com/hashpass-tech/hashpass.tech/commit/be7499a248c79ff41a8cc25038c7f37c79769709))
+* **ci:** map infra guard to its configured AWS account ([6c0722b](https://github.com/hashpass-tech/hashpass.tech/commit/6c0722bb9cb7c6d7109d492c5ea4f1d0ba67dc10))
+* **ci:** scope AWS identity checks to target environments ([8a17292](https://github.com/hashpass-tech/hashpass.tech/commit/8a17292f9ef6296ef5be381620bd834267512d98))
+* **ci:** verify AWS account before deployment ([252cb20](https://github.com/hashpass-tech/hashpass.tech/commit/252cb2084331605b6bb6b0ac67956ca316ce7025))
+* **mobile:** stabilize landing cards ([5b63f64](https://github.com/hashpass-tech/hashpass.tech/commit/5b63f64805700b85508390253b3a23f0351d9347)), closes [#595](https://github.com/hashpass-tech/hashpass.tech/issues/595)
 ### Release Highlights
-- reduce optional consent selector text size (#597)
+- stabilize landing cards; tighten optional consent choice spacing; map infra guard to its configured AWS account; scope AWS identity checks to target environments; verify AWS account before deployment; align Supabase environment resolution with API host; route opaque event requests by API host
 
 ### Release scope
-- Compared with: `v1.9.219` (the previous global release tag)
+- Compared with: `v1.9.220` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
