@@ -26,7 +26,8 @@ const mockWeekEvent = {
   eventStartDate: "2026-12-11T19:00:00Z",
 } as any;
 
-const mockEvents = [mockEvent, mockWeekEvent];
+const initialMockEvents = [mockEvent, mockWeekEvent];
+const mockEvents = [...initialMockEvents];
 let mockIsMobile = true;
 let mockThemeIsDark = true;
 let mockAnimationLevel: "full" | "reduced" | "none" = "full";
@@ -110,6 +111,7 @@ beforeEach(() => {
   mockGlobalTenant = true;
   mockSystemReducedMotion = false;
   mockBanners = initialMockBanners.map((banner) => ({ ...banner }));
+  mockEvents.splice(0, mockEvents.length, ...initialMockEvents);
   mockTranslate = (_namespace, _key, fallback) => fallback;
   scrollTo = jest.fn();
   global.requestAnimationFrame = jest.fn(() => 0);
@@ -167,6 +169,46 @@ it("never layers app copy over campaign artwork without explicit approval", () =
   expect(shouldOverlayCampaignText()).toBe(false);
   expect(shouldOverlayCampaignText(false)).toBe(false);
   expect(shouldOverlayCampaignText(true)).toBe(true);
+});
+
+it("keeps Hash Poker and upcoming events while hiding completed events", () => {
+  jest.useFakeTimers().setSystemTime(new Date("2026-11-09T12:00:00.000Z"));
+  mockEvents.splice(
+    0,
+    mockEvents.length,
+    { ...mockEvent, eventEndDate: "2026-10-01T23:59:59Z" },
+    { ...mockWeekEvent, eventEndDate: undefined },
+    {
+      id: "ongoing-event",
+      shortName: "Ongoing Event",
+      title: "Ongoing Event",
+      color: "#00B8D4",
+      eventStartDate: "2026-11-08T09:00:00Z",
+      eventEndDate: "2026-11-12T18:00:00Z",
+    } as any,
+    {
+      id: "colombia2026",
+      shortName: "BSL Colombia 2026",
+      title: "BSL Colombia 2026",
+      color: "#00B8D4",
+      eventStartDate: "2026-11-04T08:00:00-05:00",
+      eventEndDate: "2026-11-06T23:59:59-05:00",
+    } as any,
+    { id: "undated-event", shortName: "Undated Event", title: "Undated Event" } as any,
+  );
+
+  render({ autoPlay: false });
+
+  const visibleEventIds = view.root
+    .findAllByType("EventBanner" as any)
+    .map((banner) => banner.props.eventId);
+  expect(visibleEventIds).toEqual(expect.arrayContaining([
+    "hash-poker",
+    "cbweek2026",
+    "ongoing-event",
+  ]));
+  expect(visibleEventIds).not.toContain("colombia2026");
+  expect(visibleEventIds).not.toContain("undated-event");
 });
 
 it("advances the native pager by one viewport and wraps after the final slide", () => {

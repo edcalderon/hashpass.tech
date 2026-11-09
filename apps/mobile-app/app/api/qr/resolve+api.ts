@@ -1,4 +1,8 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
 import { rateLimitOk } from "@/lib/bsl/rateLimit";
 import {
   isResolveIdentityError,
@@ -111,9 +115,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Too many QR resolution requests" }, { status: 429 });
   }
 
-  const identity = await resolveNotificationIdentity(request);
-  if (isResolveIdentityError(identity)) return Response.json({ error: identity.error }, { status: identity.status });
-
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -127,7 +128,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid event id" }, { status: 400 });
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const profileId = payload.eventId
+    ? getEventSupabaseProfileId(request, payload.eventId) ?? getEventSupabaseProfileIdForRequest(request)
+    : getEventSupabaseProfileIdForRequest(request);
+  const identity = await resolveNotificationIdentity(request, profileId);
+  if (isResolveIdentityError(identity)) return Response.json({ error: identity.error }, { status: identity.status });
+
+  const supabase = getSupabaseServerForRequest(request, profileId);
   if (payload.kind === "wallet" || payload.kind === "network") {
     const response: HashpassQrResolution = {
       valid: Boolean(payload.address || payload.network),

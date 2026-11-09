@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611090052, // Updated to current timestamp
+  buildNumber: 202611091859, // Updated to current timestamp
   releaseDate: '2026-11-09',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,41 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'reduce optional consent selector text size (#597)'
+    'stabilize landing cards',
+    'tighten optional consent choice spacing',
+    'map infra guard to its configured AWS account',
+    'scope AWS identity checks to target environments',
+    'verify AWS account before deployment',
+    'align Supabase environment resolution with API host',
+    'route opaque event requests by API host'
   ],
   breakingChanges: [],
-  notes: 'reduce optional consent selector text size (#597)'
+  notes: 'stabilize landing cards; tighten optional consent choice spacing; map infra guard to its configured AWS account; scope AWS identity checks to target environments; verify AWS account before deployment; align Supabase environment resolution with API host; route opaque event requests by API host'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.221': {
+    version: '1.9.221',
+    buildNumber: 202611091859,
+    releaseDate: '2026-11-09',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize landing cards',
+      'tighten optional consent choice spacing',
+      'map infra guard to its configured AWS account',
+      'scope AWS identity checks to target environments',
+      'verify AWS account before deployment',
+      'align Supabase environment resolution with API host',
+      'route opaque event requests by API host'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize landing cards; tighten optional consent choice spacing; map infra guard to its configured AWS account; scope AWS identity checks to target environments; verify AWS account before deployment; align Supabase environment resolution with API host; route opaque event requests by API host'
+  },
   '1.9.220': {
     version: '1.9.220',
     buildNumber: 202611090052,

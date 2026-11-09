@@ -169,6 +169,7 @@ describe('platform story cards', () => {
     expect(renderer.root.findAllByType('Surface' as any)).toHaveLength(9);
     expect(renderer.root.findAllByType('FeatureIcon' as any)).toHaveLength(9);
     expect(renderer.root.findAllByType('Image' as any)).toHaveLength(0);
+    expect(renderer.root.findAllByType('motion.div' as any)).toHaveLength(0);
     expectNoInteractiveTargets(renderer.root);
     act(() => renderer.unmount());
   });
@@ -218,8 +219,13 @@ describe('platform story cards', () => {
   it('keeps the web layout responsive and presentational', () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const PlatformStoryCardsWeb = require('../../components/PlatformStoryCards.web').default;
+    const originalUserAgent = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     let renderer!: ReactTestRenderer;
 
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    });
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: jest.fn(() => ({
@@ -256,6 +262,8 @@ describe('platform story cards', () => {
     expect(streams.map((stream) => stream.props.transition.duration)).toEqual([42, 18, 21, 18, 21, 19]);
     expect(streams.every((stream) => stream.props.transition.repeat === Infinity)).toBe(true);
     expectNoInteractiveTargets(renderer.root);
+    act(() => renderer.unmount());
+    if (originalUserAgent) Object.defineProperty(navigator, 'userAgent', originalUserAgent);
   });
 
   it('keeps the card stream still when system reduced motion is enabled', () => {
@@ -324,6 +332,42 @@ describe('platform story cards', () => {
     );
     expect(metricValues.every((node) => node.props.animate === false)).toBe(true);
     act(() => renderer.unmount());
+  });
+
+  it('keeps the metric cards static in desktop WebKit Safari', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const originalUserAgent = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+    });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn(() => ({
+        matches: false,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+      })),
+    });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    const PlatformStoryCardsWeb = require('../../components/PlatformStoryCards.web').default;
+    let renderer!: ReactTestRenderer;
+
+    try {
+      act(() => {
+        renderer = create(<PlatformStoryCardsWeb stories={[...stories]} />);
+      });
+
+      const streams = renderer.root.findAllByType('motion.div' as any).filter((node) => node.props.animate);
+      expect(streams).toHaveLength(6);
+      expect(streams.every((stream) => JSON.stringify(stream.props.animate) === JSON.stringify({ y: 0 }))).toBe(true);
+      expect(streams.every((stream) => JSON.stringify(stream.props.transition) === JSON.stringify({ duration: 0 }))).toBe(true);
+    } finally {
+      if (renderer) act(() => renderer.unmount());
+      if (originalUserAgent) Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+    }
   });
 
   it('supports legacy media-query change listeners', () => {

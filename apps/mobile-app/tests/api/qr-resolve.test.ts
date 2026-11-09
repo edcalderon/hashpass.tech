@@ -2,6 +2,7 @@
 
 const mockIdentity = jest.fn();
 const mockSupabase = { from: jest.fn() };
+const mockGetSupabaseServerForRequest = jest.fn();
 const mockRateLimitOk = jest.fn(() => true);
 const mockCanView = jest.fn();
 const mockLoadContact = jest.fn();
@@ -13,10 +14,13 @@ jest.mock("@/lib/server/qr-holder-contact", () => ({
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   isResolveIdentityError: (value: { status?: number }) => typeof value?.status === "number",
-  resolveNotificationIdentity: (_request: Request) => mockIdentity(),
+  resolveNotificationIdentity: (...args: unknown[]) => mockIdentity(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => mockSupabase,
+  getSupabaseServerForRequest: (...args: unknown[]) => {
+    mockGetSupabaseServerForRequest(...args);
+    return mockSupabase;
+  },
 }));
 jest.mock("@/lib/bsl/rateLimit", () => ({
   rateLimitOk: (_key: string) => mockRateLimitOk(),
@@ -37,6 +41,7 @@ describe("/api/qr/resolve", () => {
     jest.resetModules();
     mockIdentity.mockReset();
     mockSupabase.from.mockReset();
+    mockGetSupabaseServerForRequest.mockReset();
     mockRateLimitOk.mockReset().mockReturnValue(true);
     mockCanView.mockReset().mockResolvedValue(false);
     mockLoadContact.mockReset().mockResolvedValue({ email: "ada@example.com", username: "ada" });
@@ -57,6 +62,12 @@ describe("/api/qr/resolve", () => {
     }));
   };
 
+  const postRequest = async (request: Request) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { POST } = require("../../app/api/qr/resolve+api");
+    return POST(request);
+  };
+
   const postRaw = async (body: string) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { POST } = require("../../app/api/qr/resolve+api");
@@ -66,6 +77,25 @@ describe("/api/qr/resolve", () => {
       headers: { "content-type": "application/json" },
     }));
   };
+
+  it("uses the API host for opaque pass lookups, not Origin", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/qr/resolve", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: "https://cbweek.hashpass.tech",
+      },
+      body: JSON.stringify({ kind: "pass_id", passId: "pass-1", raw: "pass-1" }),
+    });
+    mockSupabase.from
+      .mockReturnValueOnce(queryResult({ data: null, error: null }))
+      .mockReturnValueOnce(queryResult({ data: null, error: null }));
+
+    await postRequest(request);
+
+    expect(mockIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
+  });
 
   it("requires an authenticated caller", async () => {
     mockIdentity.mockResolvedValue({ error: "Unauthorized", status: 401 });

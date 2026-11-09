@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import { getEventSupabaseProfileId } from "@/lib/server/event-supabase-profile";
 import {
   isResolveIdentityError,
   resolveNotificationIdentity,
@@ -18,7 +19,14 @@ const json = (body: unknown, status = 200) =>
  * confirms it, so a false report cannot knock out a legitimate claimant.
  */
 export async function POST(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileBody = (await request.clone().json().catch(() => null)) as Record<string, unknown> | null;
+  const profileEventId = typeof profileBody?.eventId === "string"
+    ? profileBody.eventId.trim().toLowerCase()
+    : "";
+  const profileId = EVENT_ID_PATTERN.test(profileEventId)
+    ? getEventSupabaseProfileId(request, profileEventId)
+    : undefined;
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return json({ error: identity.error }, identity.status);
   if (!identity.supabaseUserId) return json({ error: "A linked pass account is required" }, 403);
   if (!rateLimitOk(`ticket-report:${identity.supabaseUserId}`)) {
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
   if (ticketCode.length < 4 || ticketCode.length > 128) return json({ error: "The original ticket code is required" }, 400);
   if (!REASONS.has(reason)) return json({ error: "Unsupported report reason" }, 400);
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data, error } = await supabase.rpc("report_external_ticket", {
     p_reporter_user_id: identity.supabaseUserId,
     p_event_id: eventId,

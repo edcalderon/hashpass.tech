@@ -625,11 +625,22 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Checkout account verifier
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_RUNNER_ROLE_ARN }}
           aws-region: ${{ vars.AWS_RUNNER_REGION || 'us-east-1' }}
+          mask-aws-account-id: true
+
+      - name: Verify AWS account before starting runner
+        env:
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+        run: bash packages/tools/scripts/verify-aws-account.sh
 
       - name: Start EC2 instance
         env:
@@ -1647,11 +1658,22 @@ jobs:
       contents: read
       actions: read
     steps:
+      - name: Checkout account verifier
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_RUNNER_ROLE_ARN }}
           aws-region: ${{ vars.AWS_RUNNER_REGION || 'us-east-1' }}
+          mask-aws-account-id: true
+
+      - name: Verify AWS account before stopping runner
+        env:
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+        run: bash packages/tools/scripts/verify-aws-account.sh
 
       - name: Stop EC2 instance (queue-aware)
         env:

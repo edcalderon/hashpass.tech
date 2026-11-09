@@ -3,6 +3,7 @@
 const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
 const mockSendEmail = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
@@ -12,7 +13,10 @@ jest.mock("@/lib/email", () => ({
   sendCriticalNotificationEmail: (...args: unknown[]) => mockSendEmail(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({ from: (...args: unknown[]) => mockFrom(...args) }),
+  getSupabaseServerForRequest: (...args: unknown[]) => {
+    mockGetSupabaseServerForRequest(...args);
+    return { from: (...queryArgs: unknown[]) => mockFrom(...queryArgs) };
+  },
 }));
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -40,6 +44,24 @@ describe("POST /api/pass-upgrade-requests", () => {
     mockResolveIdentity.mockReset().mockResolvedValue({ supabaseUserId: id });
     mockFrom.mockReset();
     mockSendEmail.mockReset().mockResolvedValue({ success: true });
+    mockGetSupabaseServerForRequest.mockReset();
+  });
+
+  it("uses the API host profile when the pass event is hidden behind an id", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/pass-upgrade-requests", {
+      method: "POST",
+      headers: { origin: "https://cbweek.hashpass.tech" },
+      body: JSON.stringify({ passId, requestedPassType: "business" }),
+    });
+    mockFrom.mockReturnValueOnce(query({ data: null }));
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { POST } = require("../../app/api/pass-upgrade-requests+api");
+    const response = await POST(request);
+    expect(response.status).toBe(403);
+
+    expect(mockResolveIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
   });
 
   it("validates identity and request shape before touching the database", async () => {

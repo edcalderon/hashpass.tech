@@ -5,6 +5,10 @@ import {
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
 
 const PASS_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,8 +19,8 @@ const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", "Vary": "Authorization" } });
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-const authenticatedUser = async (request: Request) => {
-  const identity = await resolveNotificationIdentity(request);
+const authenticatedUser = async (request: Request, profileId?: string) => {
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return { response: json({ error: identity.error }, identity.status) };
   if (!identity.supabaseUserId) return { response: json({ error: "Your account is still being connected. Please try again." }, 409) };
   if (!identity.email || !EMAIL_PATTERN.test(identity.email)) {
@@ -28,7 +32,13 @@ const authenticatedUser = async (request: Request) => {
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const action = typeof body?.action === "string" ? body.action : "request";
-  const supabase = getSupabaseServerForRequest(request);
+  const eventIdForProfile = action === "request" && typeof body?.eventId === "string"
+    ? body.eventId.trim()
+    : "";
+  const profileId = eventIdForProfile
+    ? getEventSupabaseProfileId(request, eventIdForProfile) ?? getEventSupabaseProfileIdForRequest(request)
+    : getEventSupabaseProfileIdForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
 
   // Confirmation links are themselves a high-entropy email factor. Requiring
   // a pre-existing browser session would make a recipient's first click
@@ -84,7 +94,7 @@ export async function POST(request: Request) {
     return json({ data: { requestId: transfer.id, status } });
   }
 
-  const auth = await authenticatedUser(request);
+  const auth = await authenticatedUser(request, profileId);
   if ("response" in auth) return auth.response;
 
   if (action === "request") {

@@ -11,12 +11,19 @@ import { useTheme } from '../hooks/useTheme';
 import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 import type { PlatformStoryCard } from './types/PlatformStory.types';
 
+function isWebKitBrowser(userAgent: string) {
+  const hasWebKit = /AppleWebKit/i.test(userAgent);
+  const hasBlink = /(?:Chrome|Chromium|Edg|OPR|SamsungBrowser|Vivaldi)\//i.test(userAgent);
+  return hasWebKit && !hasBlink;
+}
+
 function useStreamMotion(ref: React.RefObject<HTMLDivElement | null>) {
   const { animationLevel } = useAnimationLevel();
   const [systemAllowsMotion, setSystemAllowsMotion] = useState(false);
   const [hasCoarsePointer, setHasCoarsePointer] = useState(true);
   const [inView, setInView] = useState(false);
   const [foreground, setForeground] = useState(false);
+  const webKitRendering = typeof navigator !== 'undefined' && isWebKitBrowser(navigator.userAgent);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -57,10 +64,15 @@ function useStreamMotion(ref: React.RefObject<HTMLDivElement | null>) {
     return () => observer.disconnect();
   }, [ref]);
 
-  // The moving, masked card stream flickers in WebKit on touch devices while
-  // the page is scrolling. Keep the metric cards static whenever any coarse
-  // pointer is available, including touch-capable desktops and iPads.
-  return animationLevel === 'full' && !hasCoarsePointer && systemAllowsMotion && inView && foreground;
+  // The moving, masked card stream flickers in WebKit while the page scrolls.
+  // Keep it static on WebKit and touch-capable browsers; desktop Blink and
+  // Gecko retain the animated stream.
+  return animationLevel === 'full'
+    && !webKitRendering
+    && !hasCoarsePointer
+    && systemAllowsMotion
+    && inView
+    && foreground;
 }
 
 function StoryCard({

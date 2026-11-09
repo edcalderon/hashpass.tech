@@ -1,4 +1,5 @@
 import { authorizeGlobalAdmin } from "@/lib/server/global-admin";
+import { getEventSupabaseProfileIdForRequest } from "@/lib/server/event-supabase-profile";
 import { authorizeEventAdmin } from "@/lib/server/event-admin";
 import { createHash } from "node:crypto";
 
@@ -12,9 +13,10 @@ export async function GET(request: Request) {
   if (eventId && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(eventId)) {
     return json({ error: "A valid eventId is required" }, 400);
   }
+  const profileId = getEventSupabaseProfileIdForRequest(request);
   const admin = eventId
     ? await authorizeEventAdmin(request, eventId)
-    : await authorizeGlobalAdmin(request);
+    : await authorizeGlobalAdmin(request, profileId);
   if ("response" in admin) return admin.response;
   let query = admin.supabase
     .from("external_ticket_claims")
@@ -60,9 +62,10 @@ export async function POST(request: Request) {
   if (eventId && action !== "inspect" && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(eventId)) {
     return json({ error: "A valid eventId is required" }, 400);
   }
+  const profileId = getEventSupabaseProfileIdForRequest(request);
   const admin = eventId && action !== "inspect"
     ? await authorizeEventAdmin(request, eventId)
-    : await authorizeGlobalAdmin(request);
+    : await authorizeGlobalAdmin(request, profileId);
   if ("response" in admin) return admin.response;
   const supabase = admin.supabase;
   if (action === "inspect") {

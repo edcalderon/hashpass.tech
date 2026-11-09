@@ -436,6 +436,28 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 with a non-printing STS comparison before any mutation. The USD 50 monthly
 cost budget is configured only in the `hashpass` account.
 
+**Standard patch-release AWS identity guard:** AWS-mutating jobs in the
+protected `develop -> main` promotion and matching `develop` deployment must
+run `packages/tools/scripts/verify-aws-account.sh` after each role assumption
+and before mutations. Target-scoped jobs use `EXPECTED_AWS_ACCOUNT_ID` from
+`vars.AWS_TARGET_ACCOUNT_ID` or an explicit action input. The optional EC2
+runner start/stop jobs in the Android release workflow use the same guard when
+selected; the tag-triggered flow normally uses GitHub-hosted runners and skips
+those AWS jobs. Fail closed on a missing or malformed expected ID, failed STS
+lookup, or account mismatch; never log either account ID. In the legacy
+`infra-deploy.yml`, bind the deploy job to `production` on `main` or
+`bsl-development` on `develop`; check `AWS_INFRA_DEPLOY_ROLE_ARN` against the
+independently configured repository `vars.AWS_ACCOUNT_ID`, and check
+`AWS_WEB_PIPELINE_ROLE_ARN` against the active environment's
+`vars.AWS_TARGET_ACCOUNT_ID`. These are distinct explicit mappings, not
+interchangeable fallbacks, and neither may be derived from a role ARN. The
+development static-site job still lacks an explicit target ID in its
+`development` environment; keep it fail-closed until an approved mapping is
+available. Do not rely on the unsupported `allowed-account-ids` input to
+`aws-actions/configure-aws-credentials`. Separate manually dispatched
+infrastructure/campaign workflows and retained CodePipeline/CodeBuild recovery
+paths are outside this patch-release guard.
+
 **For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/done/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
 
 ## Deployment Architecture
@@ -465,7 +487,7 @@ instructions remain in [`archive/amplify/README.md`](archive/amplify/README.md).
 - The core deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`. A stale endpoint fails the deploy.
 - `hashpass-dev-site`, `hashpass-cbweek2026-develop-site`, `bsl-hashpass-dev`, and `hashpass-production-site` have no V2 triggers and explicitly set source `DetectChanges=false`. Their CodeBuild projects remain available for owner-approved recovery, not normal pushes.
 - **Separate legacy workflow still active:** `infra-deploy.yml` retains matching `main`/`develop` push triggers and manual dispatch. It attempts SST deployment and then uses `AWS_WEB_PIPELINE_ROLE_ARN` to run `deploy-api-lambda.sh`, including Lambda configuration sync and version verification. It is not the primary site build path, and the CodePipeline cutover did not disable it. Audit its remaining infrastructure/API responsibilities before changing or retiring it; do not copy its broader configuration-update permissions into the new scoped site roles.
-- The legacy workflow's repository-level `AWS_ACCOUNT_ID` differs from production. Use the `hashpass` profile and a non-printing comparison with private `AWS_TARGET_ACCOUNT_ID` before production mutations; `default` is not a production fallback.
+- The legacy workflow's repository-level `AWS_ACCOUNT_ID` explicitly identifies the account of `AWS_INFRA_DEPLOY_ROLE_ARN`; that account differs from the production API target. Use the `hashpass` profile and a non-printing comparison with private `AWS_TARGET_ACCOUNT_ID` before local production mutations; `default` is not a production fallback.
 - The [canonical build-cost task](.agents/active/task-build-cost-containment-and-cicd-migration.md) records deployment evidence and recovery safeguards. Budget email alerts are live; the daily cost/trigger guard schedule awaits [PR #249](https://github.com/hashpass-tech/hashpass.tech/pull/249) reaching `main`.
 
 ### Historical EC2 worker incidents — not the current build path

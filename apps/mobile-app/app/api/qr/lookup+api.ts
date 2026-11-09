@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import { getEventSupabaseProfileIdForRequest } from "@/lib/server/event-supabase-profile";
 import {
   isResolveIdentityError,
   resolveNotificationIdentity,
@@ -10,12 +11,13 @@ const json = (body: unknown, status = 200) =>
 
 async function canReadQr(request: Request, ownerId: string, identityId: string) {
   if (ownerId === identityId) return true;
-  const admin = await authorizeGlobalAdmin(request);
+  const admin = await authorizeGlobalAdmin(request, getEventSupabaseProfileIdForRequest(request));
   return !('response' in admin);
 }
 
 export async function GET(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return json({ error: identity.error }, identity.status);
   if (!identity.supabaseUserId) return json({ error: "A linked pass account is required" }, 403);
 
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
   const token = url.searchParams.get("token")?.trim();
   const passId = url.searchParams.get("passId")?.trim();
   const owner = url.searchParams.get("owner") === "true";
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
 
   if (!id && !token && !passId && !owner) return json({ error: "A QR id, token, pass id, or owner scope is required" }, 400);
 
