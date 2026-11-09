@@ -4,7 +4,7 @@ title: Database backup and recovery
 
 # Database backup and recovery
 
-**Status (2026-10-21):** 6-hour dumps, read-only backup roles and the freshness alarm are built. The workflows run once they reach `main`. Retention tiers, Object Lock, the cross-region replica and the pre-migration dump are built; the yearly disaster exercise is a manual procedure.
+**Status (2026-11-09):** Scheduled full dumps, read-only DB credentials, freshness alarm, retention, Object Lock, cross-region replication and pre-migration dumps are live. Change-aware backup deduplication is being implemented on `develop` under issue #609; it is not active in production until released and the Terraform writer policy is applied. Until then, every successful scheduled run uploads a full dump.
 
 ## Constraint: Supabase free tier
 
@@ -18,22 +18,25 @@ retired BSL project are on the **free plan**. That plan has no add-ons, so:
   continuous archiving is not possible on a managed project.
 
 Consequence: **the only backups that exist are the ones we take ourselves**, as logical
-dumps (`pg_dump`). Recovery point is the age of the newest dump, not "any second".
-Treat the S3 bucket as the first line of defence, not the second.
+dumps (`pg_dump`). While the current workflow is live, recovery point is the age of the newest
+dump, not "any second". After change-aware deduplication reaches production, it will use the newest
+full dump plus the latest verified unchanged check. Treat the S3 bucket as the first line of defence,
+not the second.
 
 ## What exists
 
 | Piece | Where |
 |-------|-------|
 | Bucket (private, encrypted, versioned, TLS-only, `prevent_destroy`) | `packages/infra/terraform/stacks/hashpass-db-backups` |
-| Dump workflow (core every 6 hours, shared dev weekly) | `.github/workflows/db-backup.yml` |
+| Dump workflow (core every 6 hours, shared dev weekly; currently full dump each run) | `.github/workflows/db-backup.yml` |
 | Quarterly restore drill (restore into throwaway `postgres:17`, compare row counts) | `.github/workflows/db-restore-drill.yml` |
 | Freshness alarm (Lambda + SNS + CloudWatch, independent of GitHub) | same Terraform stack, `lambda/freshness.py` |
 | Row-count helpers | `packages/tools/scripts/db-backup/` |
 | Final BSL archive and the one-off 2026-10-21 dumps | `prod/bsl-final/`, `prod/core/`, `dev/shared/` |
 
-AWS access is OIDC-only: a writer role (`PutObject` on `prod/core/*`, `prod/pre-migration/*`, `dev/shared/*`)
-and a reader role (read on the same prefixes), both trusted only from `main`.
+AWS access is OIDC-only. The live writer role can `PutObject` under the backup prefixes; the
+change-aware update will add scoped object listing and `GetObject` only for fingerprint state files,
+never dump bodies. The reader role reads the dump prefixes. Both are trusted only from `main`.
 
 ## Known limits of the current design
 
@@ -48,6 +51,27 @@ and a reader role (read on the same prefixes), both trusted only from `main`.
   buckets, not Supabase Storage). Schema and policies are reproducible from `db/migrations/`.
 * **Free projects pause after about a week of inactivity.** Production is active; dev may pause and its dump will fail until restored.
 * Single account, single region (us-east-2).
+
+## Change-aware backup policy (in implementation)
+
+The workflow on `develop` implements these rules; they take effect only after the workflow is
+released and the Terraform writer policy is applied:
+
+* Validate that a dump is larger than 100 kB, readable by `pg_restore`, and has a nonempty row-count
+  sidecar. Core production also requires at least one public row; shared development may be empty.
+* Fingerprint the repeatable SQL output of the custom dump. Skip a duplicate full dump only when the
+  fingerprint, table count, and total row count exactly match the last verified state. Any real
+  content change, however small, creates a full dump.
+* Force a full dump at least every seven days, leaving room inside the 14-day frequent retention.
+  Between full dumps, write a small unchanged marker. The freshness checker accepts it only when it
+  points to the newest existing full dump and that dump passes the size threshold.
+* Keep the state JSON and marker objects separate from restore inputs. Restore only `.dump` files and
+  compare their adjacent `.counts.txt` sidecars. The Lambda still uses `s3:ListBucket` only and reads
+  neither database dumps nor state contents.
+
+The fingerprint uses `pg_restore --file=-` with a fixed restrict key only to produce repeatable text
+for hashing; that output is piped to SHA-256 and never executed or saved. PostgreSQL documents this
+option for repeatable output used when comparing dumps.
 
 ## Recommended service (best option on the free tier)
 

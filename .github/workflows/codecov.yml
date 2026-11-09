@@ -40,6 +40,11 @@ jobs:
           node-version-file: '.nvmrc'
           cache: pnpm
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install dependencies
         # pnpm can leave a workspace package link in place when the restored
         # store contains a duplicate inode (for example @noble/hashes). Force
@@ -58,6 +63,23 @@ jobs:
 
       - name: Verify AWS deployment account guard
         run: node --test packages/tools/scripts/verify-aws-account.test.mjs
+
+      - name: Run database backup tests and collect coverage
+        run: |
+          pnpm exec c8 \
+            --include='packages/tools/scripts/db-backup/backup-state.mjs' \
+            --include='packages/tools/scripts/db-backup/validate-row-counts.mjs' \
+            --reporter=lcov --reporter=text --reports-dir=coverage/db-backup-tools \
+            node --test packages/tools/scripts/db-backup/*.test.mjs
+          python -m pip install --disable-pip-version-check coverage==7.17.2
+          python -m coverage run --data-file=coverage/db-backup-tools/python.coverage --branch \
+            --source=packages/infra/terraform/stacks/hashpass-db-backups/lambda \
+            --omit=packages/infra/terraform/stacks/hashpass-db-backups/lambda/test_*.py \
+            -m unittest discover \
+            -s packages/infra/terraform/stacks/hashpass-db-backups/lambda \
+            -p 'test_*.py'
+          python -m coverage xml --data-file=coverage/db-backup-tools/python.coverage \
+            -o coverage/db-backup-tools/freshness.xml
 
       - name: Check native fetch safety
         run: pnpm check:native-fetch
@@ -95,7 +117,7 @@ jobs:
         if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v7
         with:
-          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info,./packages/wallet/coverage/lcov.info
+          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info,./packages/wallet/coverage/lcov.info,./coverage/db-backup-tools/lcov.info,./coverage/db-backup-tools/freshness.xml
           # The coverage test command above remains the required gate. Upload
           # failures are external/transient (and push + PR runs can upload the
           # same report concurrently), so they must not block a valid release.

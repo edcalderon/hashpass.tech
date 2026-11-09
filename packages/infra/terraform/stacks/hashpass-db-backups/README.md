@@ -39,9 +39,14 @@ Compare the S3 `ChecksumSHA256` with the local file before deleting the local co
 
 ## Scheduled backups and restore drill
 
+The change-aware workflow and writer policy described below are being prepared on
+`develop`. Production continues to upload a full dump each run until the workflow
+is released and this Terraform stack is applied. If the new workflow reaches
+production first, missing read/list permissions make it fall back to a full dump.
+
 | Workflow | Schedule | What it does |
 |----------|----------|--------------|
-| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | `pg_dump` (postgres:17) + per-table row counts, size/`pg_restore -l` sanity checks, upload to `prod/core/` or `dev/shared/` |
+| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | Counts public rows and makes a full `pg_dump` (postgres:17). Uploads only for a content change or a seven-day full-dump refresh; records small unchanged markers between full dumps. |
 | `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
 
 AWS access is OIDC only. Both roles retain the repository's `main` branch
@@ -49,7 +54,7 @@ subject for scheduled backups and restore drills. The writer additionally
 accepts the `production` environment subject used by migration jobs, which
 upload pre-migration backups before applying production migrations:
 
-* `hashpass-db-backups-writer`: `PutObject` under `prod/core/*`, `prod/pre-migration/*`, and `dev/shared/*` only.
+* `hashpass-db-backups-writer`: writes dumps and state under `prod/core/*`, `prod/pre-migration/*`, and `dev/shared/*`; reads only the two `_state/latest.json` objects; lists object metadata under the scheduled backup prefixes. It cannot read dump bodies.
 * `hashpass-db-backups-reader`: `GetObject`/`ListBucket` under the current core, pre-migration, and shared-dev prefixes.
 
 Neither role can touch `prod/bsl-final/`, delete, or change the bucket.
@@ -63,7 +68,7 @@ Repository configuration (names only):
 
 ## Retention, lock and replica
 
-* `db-backup.yml` tags uploads `tier=frequent|daily|monthly|dev` (14 / 35 / 365 / 90 days). Untagged objects never expire.
+* `db-backup.yml` tags full dumps with `tier=frequent|daily|monthly|dev` (14 / 35 / 365 / 90 days). State and unchanged-marker objects use `frequent` (14 days). Untagged objects never expire.
 * Object Lock GOVERNANCE, 14 days, on both buckets. Irreversible once enabled.
 * Replica: `hashpass-db-backups-replica-<account>-us-west-2`, versioned, locked, encrypted, no delete-marker replication.
   Same account, so it does not protect against account compromise.
@@ -72,18 +77,23 @@ Repository configuration (names only):
 
 ## Freshness alarm
 
-A Lambda (`hashpass-db-backups-freshness`, every 2 hours, no GitHub dependency) lists the newest
-`.dump` under `prod/core/` and `dev/shared/` and emails the `hashpass-db-backups-alerts` SNS topic
-when core is older than 8 hours, dev older than 200 hours, or a dump is under 100 kB. A CloudWatch
-alarm on the Lambda's own errors (missing data counts as a failure) covers the checker failing.
-The email names the database, the age against the limit, the newest file, why it matters, the likely cause, and the `gh workflow run db-backup.yml` command that fixes it (message built in `lambda/freshness.py`, covered by `lambda/test_freshness.py`: `python3 -B -m unittest test_freshness` from that directory). A late-but-present dump is usually GitHub delaying a scheduled run, not a failed backup; the 8 hour limit leaves only 2 hours of slack over the 6 hour schedule.
-It only has `s3:ListBucket`, so it cannot read dump contents. **The email subscription must be
+A Lambda (`hashpass-db-backups-freshness`, every 2 hours, no GitHub dependency) lists full dumps
+and unchanged markers under `prod/core/` and `dev/shared/`. It counts a marker as fresh only when it
+references the newest existing dump and that dump is at least 100 kB. It emails the
+`hashpass-db-backups-alerts` SNS topic when core's newest verified state is older than 8 hours, dev
+is older than 200 hours, or a full dump is under 100 kB. A CloudWatch alarm on the Lambda's own
+errors (missing data counts as a failure) covers the checker failing. The email names the full dump
+and latest unchanged check when applicable, the age against the limit, why it matters, and the
+`gh workflow run db-backup.yml` command that fixes it (message built in `lambda/freshness.py`, covered
+by `lambda/test_freshness.py`: `python3 -B -m unittest test_freshness` from that directory).
+It only has `s3:ListBucket`, so it cannot read dump or state contents. **The email subscription must be
 confirmed once** from the message AWS sends to the alert address.
 
 ## Gaps
 
 * Supabase is on the **free plan**: no platform backups, no PITR, no add-ons. These dumps are the
-  only backups; recovery point is the age of the newest dump. See
+  only backups; the recovery point is the most recent full dump plus verified unchanged checks.
+  A full dump is forced at least every seven days and retained by the lifecycle tier. See
   `apps/docs/docs/infra/database-backup-and-recovery.md` for limits and the hardening plan.
 * Nothing replicates the bucket to another region.
 * The dump is logical: it covers the `public` schema and the objects `pg_dump` can read

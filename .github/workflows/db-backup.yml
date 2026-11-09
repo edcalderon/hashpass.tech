@@ -2,8 +2,9 @@ name: Database backup
 
 # Dump of core production every 6 hours, weekly dump of shared dev, into the private
 # hashpass-db-backups bucket. AWS access is OIDC-only through a role that can
-# only PutObject under prod/core/ and dev/shared/ (see
-# packages/infra/terraform/stacks/hashpass-db-backups). Restores are proven by
+# write dumps, list scoped object metadata, and read/write one state object
+# under each target prefix (see packages/infra/terraform/stacks/hashpass-db-backups).
+# Restores are proven by
 # db-restore-drill.yml.
 
 on:
@@ -23,7 +24,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: db-backup-${{ github.event.schedule || inputs.target }}
+  group: db-backup-${{ inputs.target || (github.event.schedule == '45 6 * * 0' && 'shared-dev' || 'core-production') }}
   cancel-in-progress: false
 
 jobs:
@@ -56,17 +57,125 @@ jobs:
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
 
-          # Row counts first, then the dump; the restore drill compares against these.
+          COUNTS_FILE="$OUT/${NAME}_${TS}.counts.txt"
+          DUMP_FILE="$OUT/${NAME}_${TS}.dump"
           docker run --rm -e U="$URL" -v "$PWD/packages/tools/scripts/db-backup:/q:ro" postgres:17 \
-            sh -c 'psql "$U" -At -f /q/row-counts.sql' > "$OUT/${NAME}_${TS}.counts.txt"
+            sh -c 'psql "$U" -At -f /q/row-counts.sql' > "$COUNTS_FILE"
+          ROW_SUMMARY="$(node packages/tools/scripts/db-backup/validate-row-counts.mjs "$COUNTS_FILE" "$TARGET")" || {
+            echo "::error::row count validation failed for $TARGET"; exit 1;
+          }
+          TABLE_COUNT="${ROW_SUMMARY%%|*}"
+          TOTAL_ROWS="${ROW_SUMMARY#*|}"
           docker run --rm -e U="$URL" -v "$OUT:/out" postgres:17 \
             sh -c "pg_dump \"\$U\" -Fc --no-owner --no-privileges -f /out/${NAME}_${TS}.dump"
 
           # Never upload a dump that is empty or unreadable.
-          SIZE=$(stat -c %s "$OUT/${NAME}_${TS}.dump")
+          SIZE=$(stat -c %s "$DUMP_FILE")
           [ "$SIZE" -gt 100000 ] || { echo "::error::dump is suspiciously small ($SIZE bytes)"; exit 1; }
-          [ -s "$OUT/${NAME}_${TS}.counts.txt" ] || { echo "::error::no row counts captured"; exit 1; }
           docker run --rm -v "$OUT:/out:ro" postgres:17 pg_restore -l "/out/${NAME}_${TS}.dump" > /dev/null
+
+          # Compare a repeatable SQL representation. The SQL is streamed only to
+          # SHA-256 and is never executed or stored.
+          docker run --rm -v "$OUT:/out:ro" -v "$PWD/packages/tools/scripts/db-backup:/q:ro" postgres:17 \
+            /q/fingerprint-dump.sh "/out/${NAME}_${TS}.dump" > "$OUT/${NAME}_${TS}.sha256"
+          CURRENT_FINGERPRINT="$(cat "$OUT/${NAME}_${TS}.sha256")"
+          [[ "$CURRENT_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::database fingerprint was not produced"; exit 1; }
+          DUMPED_AT="${TS:0:4}-${TS:4:2}-${TS:6:2}T${TS:9:2}:${TS:11:2}:${TS:13:2}Z"
+          VERIFIED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          STATE_KEY="$PREFIX/_state/latest.json"
+          STATE_FILE="$OUT/latest-state.json"
+          STATE_PRESENT=false
+
+          if aws s3api get-object --bucket "$BUCKET" --key "$STATE_KEY" "$STATE_FILE" > /dev/null 2> "$OUT/state-read.err"; then
+            STATE_PRESENT=true
+          elif grep -Eq '404|NoSuchKey|Not Found' "$OUT/state-read.err"; then
+            echo "::notice::No previous fingerprint state; storing a full restore point."
+          else
+            echo "::warning::Could not read previous fingerprint state; storing a full restore point."
+          fi
+
+          PREVIOUS_DUMP_KEY=""
+          PREVIOUS_COUNTS_KEY=""
+          PREVIOUS_DUMP_SIZE=""
+          PREVIOUS_COUNTS_SIZE=""
+          PREVIOUS_DUMPED_AT=""
+          if [ "$STATE_PRESENT" = true ]; then
+            if jq -e --arg database "$NAME" --arg prefix "$PREFIX/" '
+              .schema_version == 1 and
+              .fingerprint_algorithm == "pg_restore_sql_sha256_v1" and
+              .database == $database and
+              (.fingerprint | type == "string" and test("^[a-f0-9]{64}$")) and
+              (.dump_key | type == "string" and startswith($prefix + $database + "_") and endswith(".dump")) and
+              (.counts_key | type == "string" and startswith($prefix + $database + "_") and endswith(".counts.txt")) and
+              (.table_count | type == "number" and floor == . and . >= 1) and
+              (.total_rows | type == "number" and floor == . and . >= 0) and
+              (.dumped_at | type == "string")
+            ' "$STATE_FILE" > /dev/null; then
+              PREVIOUS_DUMP_KEY="$(jq -r '.dump_key' "$STATE_FILE")"
+              PREVIOUS_COUNTS_KEY="$(jq -r '.counts_key' "$STATE_FILE")"
+              PREVIOUS_DUMPED_AT="$(jq -r '.dumped_at' "$STATE_FILE")"
+              PREVIOUS_DUMP_BASENAME="${PREVIOUS_DUMP_KEY##*/}"
+              PREVIOUS_COUNTS_BASENAME="${PREVIOUS_COUNTS_KEY##*/}"
+              if [[ "$PREVIOUS_DUMP_KEY" == "$PREFIX/$PREVIOUS_DUMP_BASENAME" &&
+                    "$PREVIOUS_COUNTS_KEY" == "$PREFIX/$PREVIOUS_COUNTS_BASENAME" &&
+                    "$PREVIOUS_DUMP_BASENAME" =~ ^${NAME}_[0-9]{8}T[0-9]{6}Z\.dump$ &&
+                    "$PREVIOUS_COUNTS_BASENAME" =~ ^${NAME}_[0-9]{8}T[0-9]{6}Z\.counts\.txt$ ]]; then
+                PREVIOUS_DUMP_SIZE="$(aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$PREVIOUS_DUMP_KEY" \
+                  --query "Contents[?Key=='$PREVIOUS_DUMP_KEY'] | [0].Size" --output text 2> "$OUT/list-dump.err" || true)"
+                PREVIOUS_COUNTS_SIZE="$(aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$PREVIOUS_COUNTS_KEY" \
+                  --query "Contents[?Key=='$PREVIOUS_COUNTS_KEY'] | [0].Size" --output text 2> "$OUT/list-counts.err" || true)"
+                if ! [[ "$PREVIOUS_DUMP_SIZE" =~ ^[0-9]+$ && "$PREVIOUS_COUNTS_SIZE" =~ ^[0-9]+$ ]]; then
+                  echo "::warning::Could not verify the previous dump and row-count sidecar; storing a full restore point."
+                fi
+              else
+                echo "::warning::Previous backup state points outside the expected target; storing a full restore point."
+                PREVIOUS_DUMP_KEY=""
+              fi
+            else
+              echo "::warning::Previous backup state is malformed; storing a full restore point."
+              PREVIOUS_DUMP_KEY=""
+            fi
+          fi
+
+          DECISION="$(node packages/tools/scripts/db-backup/backup-state.mjs "$STATE_FILE" "$NAME" "$PREFIX" \
+            "$CURRENT_FINGERPRINT" "$PREVIOUS_DUMP_SIZE" "$PREVIOUS_COUNTS_SIZE" "$TABLE_COUNT" "$TOTAL_ROWS" "$VERIFIED_AT")"
+
+          write_state() {
+            local dump_key="$1" counts_key="$2" dumped_at="$3"
+            jq -n \
+              --arg database "$NAME" \
+              --arg fingerprint "$CURRENT_FINGERPRINT" \
+              --arg dump_key "$dump_key" \
+              --arg counts_key "$counts_key" \
+              --arg dumped_at "$dumped_at" \
+              --arg verified_at "$VERIFIED_AT" \
+              --argjson table_count "$TABLE_COUNT" \
+              --argjson total_rows "$TOTAL_ROWS" \
+              '{schema_version:1,fingerprint_algorithm:"pg_restore_sql_sha256_v1",database:$database,fingerprint:$fingerprint,dump_key:$dump_key,counts_key:$counts_key,dumped_at:$dumped_at,verified_at:$verified_at,table_count:$table_count,total_rows:$total_rows}' \
+              > "$OUT/state.json"
+            aws s3api put-object --bucket "$BUCKET" --key "$STATE_KEY" --body "$OUT/state.json" \
+              --server-side-encryption AES256 --checksum-algorithm SHA256 --tagging "tier=frequent" > /dev/null
+          }
+
+          if [ "$DECISION" = "skip" ]; then
+            PREVIOUS_DUMP_BASENAME="${PREVIOUS_DUMP_KEY##*/}"
+            write_state "$PREVIOUS_DUMP_KEY" "$PREVIOUS_COUNTS_KEY" "$PREVIOUS_DUMPED_AT"
+            MARKER_KEY="$PREFIX/_verification/${NAME}_${TS}__${PREVIOUS_DUMP_BASENAME}.unchanged"
+            jq -n \
+              --arg database "$NAME" \
+              --arg fingerprint "$CURRENT_FINGERPRINT" \
+              --arg dump_key "$PREVIOUS_DUMP_KEY" \
+              --arg counts_key "$PREVIOUS_COUNTS_KEY" \
+              --arg verified_at "$VERIFIED_AT" \
+              --argjson table_count "$TABLE_COUNT" \
+              --argjson total_rows "$TOTAL_ROWS" \
+              '{schema_version:1,database:$database,fingerprint:$fingerprint,dump_key:$dump_key,counts_key:$counts_key,verified_at:$verified_at,table_count:$table_count,total_rows:$total_rows}' \
+              > "$OUT/unchanged.json"
+            aws s3api put-object --bucket "$BUCKET" --key "$MARKER_KEY" --body "$OUT/unchanged.json" \
+              --server-side-encryption AES256 --checksum-algorithm SHA256 --tagging "tier=frequent" > /dev/null
+            echo "Verified $TABLE_COUNT tables and $TOTAL_ROWS public rows unchanged; no duplicate full dump uploaded." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
           # Retention tier, read by the bucket's lifecycle rules (see the Terraform stack):
           #   dev      weekly shared-dev dump           -> 90 days
@@ -83,4 +192,7 @@ jobs:
             aws s3api put-object --bucket "$BUCKET" --key "$PREFIX/$f" --body "$OUT/$f" \
               --server-side-encryption AES256 --checksum-algorithm SHA256 --tagging "tier=$TIER" > /dev/null
           done
-          echo "Uploaded $PREFIX/${NAME}_${TS}.dump (tier=$TIER, $SIZE bytes, $(wc -l < "$OUT/${NAME}_${TS}.counts.txt") tables)" | tee -a "$GITHUB_STEP_SUMMARY"
+          DUMP_KEY="$PREFIX/${NAME}_${TS}.dump"
+          COUNTS_KEY="$PREFIX/${NAME}_${TS}.counts.txt"
+          write_state "$DUMP_KEY" "$COUNTS_KEY" "$DUMPED_AT"
+          echo "Uploaded $DUMP_KEY (tier=$TIER, $SIZE bytes, $TABLE_COUNT tables, $TOTAL_ROWS public rows)." | tee -a "$GITHUB_STEP_SUMMARY"
