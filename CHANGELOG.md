@@ -1,3 +1,15 @@
+## [1.9.222](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.221...v1.9.222) (2026-11-09)
+### Released
+- skip unchanged database backup uploads
+
+### Release scope
+- Compared with: `v1.9.221` (the previous global release tag)
+
+### Affected products & packages
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.221](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.220...v1.9.221) (2026-11-09)
 
 

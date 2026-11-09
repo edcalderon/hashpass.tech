@@ -169,8 +169,9 @@ resource "aws_s3_bucket_policy" "db_backups" {
 # --- GitHub Actions access (OIDC, no long-lived keys) -----------------------
 #
 # Two roles with deliberately split powers:
-#   writer - may only PutObject under prod/core/, prod/pre-migration/, and dev/shared/.
-#            It cannot read, list, overwrite-by-delete, or touch prod/bsl-final/.
+#   writer - may write under prod/core/, prod/pre-migration/, and dev/shared/;
+#            read only the two fingerprint-state objects; and list scoped object metadata.
+#            It cannot read dump bodies, overwrite-by-delete, or touch prod/bsl-final/.
 #   reader - may only read those prefixes plus prod/pre-migration/ (quarterly restore drill).
 # The writer also trusts the production GitHub Environment subject used by
 # pre-migration backups. Scheduled backups and restore drills keep their main
@@ -238,21 +239,39 @@ resource "aws_iam_role" "writer" {
 }
 
 resource "aws_iam_role_policy" "writer" {
-  name = "put-dumps-only"
+  name = "write-dumps-and-state"
   role = aws_iam_role.writer.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "PutDumpsOnly"
-      Effect = "Allow"
-      Action = ["s3:PutObject", "s3:PutObjectTagging"]
-      Resource = [
-        "${aws_s3_bucket.db_backups.arn}/prod/core/*",
-        "${aws_s3_bucket.db_backups.arn}/prod/pre-migration/*",
-        "${aws_s3_bucket.db_backups.arn}/dev/shared/*",
-      ]
-    }]
+    Statement = [
+      {
+        Sid    = "WriteDumpsAndVerificationState"
+        Effect = "Allow"
+        Action = ["s3:PutObject", "s3:PutObjectTagging"]
+        Resource = [
+          "${aws_s3_bucket.db_backups.arn}/prod/core/*",
+          "${aws_s3_bucket.db_backups.arn}/prod/pre-migration/*",
+          "${aws_s3_bucket.db_backups.arn}/dev/shared/*",
+        ]
+      },
+      {
+        Sid    = "ReadFingerprintStateOnly"
+        Effect = "Allow"
+        Action = ["s3:GetObject"]
+        Resource = [
+          "${aws_s3_bucket.db_backups.arn}/prod/core/_state/latest.json",
+          "${aws_s3_bucket.db_backups.arn}/dev/shared/_state/latest.json",
+        ]
+      },
+      {
+        Sid       = "ListBackupMetadata"
+        Effect    = "Allow"
+        Action    = ["s3:ListBucket"]
+        Resource  = aws_s3_bucket.db_backups.arn
+        Condition = { StringLike = { "s3:prefix" = ["prod/core/*", "dev/shared/*"] } }
+      },
+    ]
   })
 }
 
