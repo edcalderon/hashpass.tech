@@ -92,7 +92,7 @@ jobs:
 
       - name: Verify AWS account before infrastructure deployment
         env:
-          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
         run: bash packages/tools/scripts/verify-aws-account.sh
 
       - name: Deploy production

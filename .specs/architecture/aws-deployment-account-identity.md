@@ -19,13 +19,14 @@ The optional EC2 runner lifecycle in the Android release workflow is also guarde
 tag-triggered flow normally uses GitHub-hosted runners and skips those AWS jobs. Every check receives
 an independent, explicit expected account ID; it is never inferred from the role ARN. The legacy
 infrastructure/API workflow binds its deployment job to `production` on `main` and `bsl-development`
-on `develop`, then checks each assumed role against that environment's `AWS_TARGET_ACCOUNT_ID`. The
-repository-level `AWS_ACCOUNT_ID` is not a fallback because it belongs to a different account. Other
-target-scoped jobs use their active environment variable or an action input. Workflow steps invoke the
-shared verifier so scripts shared with legacy CodeBuild or local paths retain their
-credential-source-agnostic behavior. A workflow whose active environment
-lacks an explicit expected ID remains blocked until an approved mapping is available; the development
-static-site workflow currently has this gap.
+on `develop`. It checks `AWS_INFRA_DEPLOY_ROLE_ARN` against the independently configured repository
+`AWS_ACCOUNT_ID`, and checks `AWS_WEB_PIPELINE_ROLE_ARN` against the active environment's
+`AWS_TARGET_ACCOUNT_ID`; these are distinct role-specific mappings, not interchangeable fallbacks.
+Other target-scoped jobs use their active environment variable or an action input. Workflow steps
+invoke the shared verifier so scripts shared with legacy CodeBuild or local paths retain their
+credential-source-agnostic behavior. A workflow whose active environment lacks an explicit expected ID
+remains blocked until an approved mapping is available; the development static-site workflow currently
+has this gap.
 
 ## Invariants
 - Missing or malformed expected account IDs, failed or malformed caller-identity lookups, and
