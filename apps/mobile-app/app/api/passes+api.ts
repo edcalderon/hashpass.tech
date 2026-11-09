@@ -1,5 +1,9 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
+import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
@@ -85,8 +89,8 @@ const validateEventId = (value: unknown): string | null => {
     : null;
 };
 
-async function authenticatedUser(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+async function authenticatedUser(request: Request, profileId?: string) {
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) {
     return {
       response: Response.json(
@@ -107,7 +111,8 @@ async function authenticatedUser(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const auth = await authenticatedUser(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const auth = await authenticatedUser(request, profileId);
   if ("response" in auth) return auth.response;
 
   const url = new URL(request.url);
@@ -117,7 +122,7 @@ export async function GET(request: Request) {
     ?.split(",")
     .map(validateEventId)
     .filter((value): value is string => Boolean(value));
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
 
   try {
     let query = supabase
@@ -169,7 +174,15 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticatedUser(request);
+  const profileBody = (await request.clone().json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
+  const profileEventId = validateEventId(profileBody?.eventId);
+  const profileId = profileEventId
+    ? getEventSupabaseProfileId(request, profileEventId) ?? getEventSupabaseProfileIdForRequest(request)
+    : getEventSupabaseProfileIdForRequest(request);
+  const auth = await authenticatedUser(request, profileId);
   if ("response" in auth) return auth.response;
 
   const body = (await request.json().catch(() => null)) as Record<
@@ -195,7 +208,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = getSupabaseServerForRequest(request);
+    const supabase = getSupabaseServerForRequest(request, profileId);
     const { data, error } = await supabase.rpc("create_default_pass", {
       p_user_id: auth.userId,
       p_pass_type: "general",

@@ -4,6 +4,10 @@ import { rateLimitOk } from "@/lib/bsl/rateLimit";
 import { sendCriticalNotificationEmail } from "@/lib/email";
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
+import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
@@ -23,10 +27,11 @@ const CLAIM_REVIEW_EMAILS: string[] = (
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 
 export async function GET(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return json({ error: identity.error }, identity.status);
   if (!identity.supabaseUserId) return json({ error: "A linked pass account is required" }, 403);
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data, error } = await supabase
     .from("external_ticket_claims")
     .select("id,event_id,issuer,ticket_code_last4,source_ticket_metadata,requested_pass_type,status,reviewer_note,hashpass_pass_id,submitted_at,reviewed_at,converted_at")
@@ -37,7 +42,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileBody = (await request.clone().json().catch(() => null)) as Record<string, unknown> | null;
+  const profileEventId = typeof profileBody?.eventId === "string"
+    ? profileBody.eventId.trim().toLowerCase()
+    : "";
+  const profileId = EVENT_ID_PATTERN.test(profileEventId)
+    ? getEventSupabaseProfileId(request, profileEventId)
+    : undefined;
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return json({ error: identity.error }, identity.status);
   if (!identity.supabaseUserId) return json({ error: "A linked pass account is required" }, 403);
   // Brute-forcing ticket codes through this endpoint is the main abuse path.
@@ -58,7 +70,7 @@ export async function POST(request: Request) {
   if (ticketCode.length < 4 || ticketCode.length > 128) return json({ error: "The original ticket code is required" }, 400);
   if (!["general", "business", "vip"].includes(requestedPassType)) return json({ error: "Invalid requested pass type" }, 400);
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   // Manual codes are only unique within an issuer and event. Keep that scope
   // in the fallback fingerprint so equal codes from different ticket systems
   // cannot collide in the globally unique QR-proof column.

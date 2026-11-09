@@ -5,6 +5,7 @@ const mockFrom = jest.fn();
 const mockRpc = jest.fn();
 const mockAuthorizeAdmin = jest.fn();
 const mockAuthorizeEventAdmin = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
@@ -21,10 +22,7 @@ jest.mock("@/lib/email", () => ({
   sendCriticalNotificationEmail: (...args: unknown[]) => mockSendEmail(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({
-    from: (...args: unknown[]) => mockFrom(...args),
-    rpc: (...args: unknown[]) => mockRpc(...args),
-  }),
+  getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 
 const userId = "11111111-1111-4111-8111-111111111111";
@@ -56,6 +54,10 @@ describe("/api/pass-ticket-claims", () => {
     mockFrom.mockReset();
     mockRpc.mockReset();
     mockSendEmail.mockReset().mockResolvedValue({ success: true });
+    mockGetSupabaseServerForRequest.mockReset().mockImplementation(() => ({
+      from: (...args: unknown[]) => mockFrom(...args),
+      rpc: (...args: unknown[]) => mockRpc(...args),
+    }));
   });
   afterEach(() => jest.restoreAllMocks());
 
@@ -79,6 +81,18 @@ describe("/api/pass-ticket-claims", () => {
     const res = await load().GET(new Request(USER_URL));
     expect(await res.json()).toEqual({ data: [{ id: "c1" }] });
     expect(q.eq).toHaveBeenCalledWith("claimant_user_id", userId);
+  });
+
+  it("selects the event profile from the API host for an unscoped claims list", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/pass-ticket-claims", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    mockFrom.mockReturnValueOnce(chain({ data: [] }));
+
+    await load().GET(request);
+
+    expect(mockResolveIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
   });
 
   it("returns an empty list for null data and 503 on error", async () => {
@@ -266,6 +280,17 @@ describe("/api/admin/pass-ticket-claims", () => {
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const load = () => require("../../app/api/admin/pass-ticket-claims+api");
+
+  it("uses the API host profile for the unscoped review queue, not Origin", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-claims", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    mockFrom.mockReturnValueOnce(chain({ data: [] }));
+
+    await load().GET(request);
+
+    expect(mockAuthorizeAdmin).toHaveBeenCalledWith(request, "bsl-development");
+  });
 
   it("returns the authorization response for non-admins", async () => {
     mockAuthorizeAdmin.mockResolvedValue({ response: new Response("no", { status: 403 }) });

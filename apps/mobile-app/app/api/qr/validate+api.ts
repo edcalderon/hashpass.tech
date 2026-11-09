@@ -1,11 +1,13 @@
 import { authorizeGlobalAdmin } from "@/lib/server/global-admin";
+import { getEventSupabaseProfileIdForRequest } from "@/lib/server/event-supabase-profile";
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization" } });
 
 export async function POST(request: Request) {
-  const admin = await authorizeGlobalAdmin(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const admin = await authorizeGlobalAdmin(request, profileId);
   if ("response" in admin) return admin.response;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const token = typeof body?.token === "string" ? body.token.trim() : "";
@@ -13,7 +15,7 @@ export async function POST(request: Request) {
   const scannerDeviceId = typeof body?.scannerDeviceId === "string" ? body.scannerDeviceId.trim() : null;
   if (!token) return json({ error: "A QR token is required" }, 400);
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   if (consume) {
     const { data, error } = await supabase.rpc("validate_and_use_qr", {
       p_token: token,

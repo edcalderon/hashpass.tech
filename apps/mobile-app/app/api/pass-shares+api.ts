@@ -4,6 +4,10 @@ import {
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
 
 const PASS_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,160}$/;
@@ -19,8 +23,8 @@ const json = (body: unknown, status = 200) =>
 
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 
-const authenticatedUser = async (request: Request) => {
-  const identity = await resolveNotificationIdentity(request);
+const authenticatedUser = async (request: Request, profileId?: string) => {
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return { response: json({ error: identity.error }, identity.status) };
   if (!identity.supabaseUserId) {
     return { response: json({ error: "Your account is still being connected. Please try again." }, 409) };
@@ -29,7 +33,12 @@ const authenticatedUser = async (request: Request) => {
 };
 
 export async function POST(request: Request) {
-  const auth = await authenticatedUser(request);
+  const profileBody = (await request.clone().json().catch(() => null)) as Record<string, unknown> | null;
+  const profileEventId = typeof profileBody?.eventId === "string" ? profileBody.eventId.trim() : "";
+  const profileId = profileEventId
+    ? getEventSupabaseProfileId(request, profileEventId)
+    : undefined;
+  const auth = await authenticatedUser(request, profileId);
   if ("response" in auth) return auth.response;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const passId = typeof body?.passId === "string" ? body.passId.trim() : "";
@@ -38,7 +47,7 @@ export async function POST(request: Request) {
     return json({ error: "A valid pass and event are required" }, 400);
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data: pass, error } = await supabase
     .from("passes")
     .select("id,event_id,pass_type,status")
@@ -75,7 +84,8 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token") || "";
   if (!TOKEN_PATTERN.test(token)) return json({ error: "A valid public pass link is required" }, 400);
-  const supabase = getSupabaseServerForRequest(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data: share, error: shareError } = await supabase
     .from("pass_public_shares")
     .select("pass_id,event_id,expires_at,revoked_at")

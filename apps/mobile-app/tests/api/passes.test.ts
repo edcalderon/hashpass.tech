@@ -3,12 +3,10 @@
 const mockRpc = jest.fn();
 const mockResolveNotificationIdentity = jest.fn();
 const mockFrom = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({
-    rpc: (...args: unknown[]) => mockRpc(...args),
-    from: (...args: unknown[]) => mockFrom(...args),
-  }),
+  getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
@@ -38,6 +36,11 @@ describe("/api/passes self-service provisioning", () => {
     mockFrom.mockReset();
     mockResolveNotificationIdentity.mockReset();
     mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: userId });
+    mockGetSupabaseServerForRequest.mockReset();
+    mockGetSupabaseServerForRequest.mockImplementation(() => ({
+      rpc: (...args: unknown[]) => mockRpc(...args),
+      from: (...args: unknown[]) => mockFrom(...args),
+    }));
   });
 
   it("creates a CBWeek general pass for the authenticated user", async () => {
@@ -48,6 +51,27 @@ describe("/api/passes self-service provisioning", () => {
       p_user_id: userId, p_pass_type: "general", p_event_id: "cbweek2026",
     });
   });
+
+  it.each([
+    ["https://api.hashpass.tech/api/passes", "https://cbweek2026.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/passes", "https://cbweek.hashpass.tech", "bsl-development"],
+  ] as const)(
+    "uses the API host for the body-selected CBWeek profile (%s)",
+    async (url, origin, profileId) => {
+      mockRpc.mockResolvedValue({ data: "cbweek-pass", error: null });
+      const request = new Request(url, {
+        method: "POST",
+        headers: { origin },
+        body: JSON.stringify({ action: "create-default", eventId: "cbweek2026" }),
+      });
+      /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/passes+api");
+      await POST(request);
+
+      expect(mockResolveNotificationIdentity).toHaveBeenCalledWith(request, profileId);
+      expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, profileId);
+    },
+  );
 
   it.each(["business", "vip"])("does not allow a CBWeek user to self-issue %s", async (passType) => {
     const response = await post({ action: "create-default", eventId: "cbweek2026", passType });
@@ -135,6 +159,19 @@ describe("/api/passes event wallet", () => {
     for (const method of ["select", "eq", "in", "order"]) query[method] = jest.fn().mockReturnValue(query);
     query.then = jest.fn((resolve) => resolve({ data: [], error: null }));
     mockFrom.mockReset().mockReturnValue(query);
+  });
+
+  it("selects BSL development for an unscoped pass wallet by API host", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/passes", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/passes+api");
+
+    await GET(request);
+
+    expect(mockResolveNotificationIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
   });
 
   it.each(["?eventId=cbweek2026", "?eventIds=cbweek2026,colombia2026"])("loads CBWeek with %s", async (params) => {

@@ -1,4 +1,7 @@
-import { getSupabaseServerForRequest } from '../supabase-server';
+import {
+  getSupabaseProfileIdForRequest,
+  getSupabaseServerForRequest,
+} from '../supabase-server';
 import { authenticateRequest, extractToken } from '@hashpass/auth';
 import { getBetterAuthSessionUser } from './better-auth-session-client';
 import { resolveSupabaseProfile, hostnameFromRequest } from '../../config/supabase-profiles';
@@ -259,9 +262,13 @@ export async function resolveNotificationIdentity(
   request: Request,
   profileId?: string,
 ): Promise<ResolvedNotificationIdentity | ResolveIdentityError> {
-  const supabase = getSupabaseServerForRequest(request, profileId);
+  const selectedProfileId = profileId || getSupabaseProfileIdForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, selectedProfileId);
   const token = extractToken(request);
-  const resolvedProfile = resolveSupabaseProfile({ hostname: hostnameFromRequest(request), profileId });
+  const resolvedProfile = resolveSupabaseProfile({
+    hostname: hostnameFromRequest(request),
+    profileId: selectedProfileId,
+  });
   const guardContext = { profileId: resolvedProfile.id, environment: resolvedProfile.environment };
 
   // 1. Try a direct Supabase bearer token first — covers native Android and

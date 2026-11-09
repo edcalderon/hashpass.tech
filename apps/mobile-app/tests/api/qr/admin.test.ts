@@ -68,6 +68,26 @@ describe('GET/POST /api/qr/admin admin gate', () => {
     expect(response.status).toBe(200);
   });
 
+  it.each([
+    ['suspend', 'POST', '../../../app/api/qr/admin/suspend+api'],
+    ['reactivate', 'POST', '../../../app/api/qr/admin/reactivate+api'],
+    ['scan logs', 'GET', '../../../app/api/qr/admin/logs+api'],
+  ])('selects the event profile for opaque %s admin requests from the API host', async (_name, method, route) => {
+    const request = new Request('https://api-dev.hashpass.tech/api/qr/admin', {
+      method,
+      headers: { origin: 'https://cbweek.hashpass.tech' },
+      ...(method === 'POST' ? { body: JSON.stringify({}) } : {}),
+    });
+    if (_name === 'scan logs') mockQrCodesQuery({ data: [], error: null, count: 0 });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET, POST } = require(route);
+    if (method === 'GET') await GET(request);
+    else await POST(request);
+
+    expect(mockAuthorizeGlobalAdmin).toHaveBeenCalledWith(request, 'bsl-development');
+  });
+
   it('uses the linked Supabase user ID when revoking a QR code', async () => {
     mockRpc.mockReturnValue({ single: jest.fn().mockResolvedValue({ data: true, error: null }) });
 

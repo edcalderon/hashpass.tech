@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import { getEventSupabaseProfileIdForRequest } from "@/lib/server/event-supabase-profile";
 import {
   isResolveIdentityError,
   resolveNotificationIdentity,
@@ -9,7 +10,8 @@ const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization" } });
 
 export async function POST(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileId = getEventSupabaseProfileIdForRequest(request);
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) return json({ error: identity.error }, identity.status);
   if (!identity.supabaseUserId) return json({ error: "A linked pass account is required" }, 403);
 
@@ -19,7 +21,7 @@ export async function POST(request: Request) {
   const maxUses = Number.isFinite(Number(body?.maxUses)) ? Number(body?.maxUses) : 1;
   if (!passId) return json({ error: "A pass id is required" }, 400);
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data: pass, error: passError } = await supabase
     .from("passes")
     .select("id,user_id,status")
@@ -29,7 +31,7 @@ export async function POST(request: Request) {
   if (!pass || pass.status !== "active") return json({ error: "An active pass is required" }, 403);
 
   if (String(pass.user_id) !== identity.supabaseUserId) {
-    const admin = await authorizeGlobalAdmin(request);
+    const admin = await authorizeGlobalAdmin(request, profileId);
     if ("response" in admin) return json({ error: "You do not own this pass" }, 403);
   }
 

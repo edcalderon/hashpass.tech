@@ -1,5 +1,6 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
+import { getEventSupabaseProfileIdForRequest } from '@/lib/server/event-supabase-profile';
 
 /**
  * GET /api/qr/admin/logs - Get QR scan logs (admin only)
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const authorization = await authorizeGlobalAdmin(request);
+  const authorization = await authorizeGlobalAdmin(request, getEventSupabaseProfileIdForRequest(request));
   if ('response' in authorization) return authorization.response;
 
   const { searchParams } = new URL(request.url);

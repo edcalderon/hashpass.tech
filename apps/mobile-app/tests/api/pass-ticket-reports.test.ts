@@ -4,6 +4,7 @@ const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
 const mockRpc = jest.fn();
 const mockAuthorizeAdmin = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 const mockRateLimit = jest.fn(() => true);
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
@@ -15,10 +16,13 @@ jest.mock("@/lib/server/global-admin", () => ({
 }));
 jest.mock("@/lib/bsl/rateLimit", () => ({ rateLimitOk: () => mockRateLimit() }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({
-    from: (...args: unknown[]) => mockFrom(...args),
-    rpc: (...args: unknown[]) => mockRpc(...args),
-  }),
+  getSupabaseServerForRequest: (...args: unknown[]) => {
+    mockGetSupabaseServerForRequest(...args);
+    return {
+      from: (...queryArgs: unknown[]) => mockFrom(...queryArgs),
+      rpc: (...rpcArgs: unknown[]) => mockRpc(...rpcArgs),
+    };
+  },
 }));
 
 const userId = "11111111-1111-4111-8111-111111111111";
@@ -47,6 +51,7 @@ describe("/api/pass-ticket-reports", () => {
     jest.spyOn(console, "error").mockImplementation(() => undefined);
     mockResolveIdentity.mockReset().mockResolvedValue({ supabaseUserId: userId });
     mockRpc.mockReset();
+    mockGetSupabaseServerForRequest.mockReset();
     mockRateLimit.mockReset().mockReturnValue(true);
   });
   afterEach(() => jest.restoreAllMocks());
@@ -107,6 +112,7 @@ describe("/api/admin/pass-ticket-reports", () => {
   const mockGetUserById = jest.fn();
   const adminSupabase = {
     from: (...a: unknown[]) => mockFrom(...a),
+    rpc: (...a: unknown[]) => mockRpc(...a),
     auth: { admin: { getUserById: (...a: unknown[]) => mockGetUserById(...a) } },
   };
   beforeEach(() => {
@@ -114,6 +120,7 @@ describe("/api/admin/pass-ticket-reports", () => {
     jest.spyOn(console, "error").mockImplementation(() => undefined);
     mockFrom.mockReset();
     mockRpc.mockReset();
+    mockGetSupabaseServerForRequest.mockReset();
     mockGetUserById.mockReset().mockImplementation(async (id: string) => {
       if (id === "bad") throw new Error("auth down");
       return { data: { user: { email: `${id}@example.com` } } };
@@ -123,6 +130,17 @@ describe("/api/admin/pass-ticket-reports", () => {
   afterEach(() => jest.restoreAllMocks());
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const load = () => require("../../app/api/admin/pass-ticket-reports+api");
+
+  it("uses the API host profile for the unscoped review queue, not Origin", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-reports", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    mockFrom.mockReturnValueOnce(chain({ data: [] }));
+
+    await load().GET(request);
+
+    expect(mockAuthorizeAdmin).toHaveBeenCalledWith(request, "bsl-development");
+  });
 
   it("returns the authorization response for non-admins", async () => {
     mockAuthorizeAdmin.mockResolvedValue({ response: new Response("no", { status: 403 }) });
@@ -156,6 +174,21 @@ describe("/api/admin/pass-ticket-reports", () => {
     expect((await load().POST(post(ADMIN_URL, { reportId: "nope", action: "confirm" }))).status).toBe(400);
     expect((await load().POST(post(ADMIN_URL, { reportId, action: "delete" }))).status).toBe(400);
     expect((await load().POST(post(ADMIN_URL, "nope"))).status).toBe(400);
+  });
+
+  it("uses the API-host-selected authorization client for an opaque report ID", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-reports", {
+      method: "POST",
+      headers: { origin: "https://cbweek.hashpass.tech" },
+      body: JSON.stringify({ reportId, action: "confirm" }),
+    });
+    mockRpc.mockResolvedValueOnce({ data: { id: reportId, status: "confirmed" }, error: null });
+
+    await load().POST(request);
+
+    expect(mockAuthorizeAdmin).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockRpc).toHaveBeenCalledWith("resolve_external_ticket_report", expect.any(Object));
+    expect(mockGetSupabaseServerForRequest).not.toHaveBeenCalled();
   });
 
   it("resolves a report through the service RPC and reports failures", async () => {

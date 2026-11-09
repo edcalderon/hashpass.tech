@@ -4,6 +4,7 @@ const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
 const mockRpc = jest.fn();
 const mockAuthorizeAdmin = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
@@ -13,10 +14,13 @@ jest.mock("@/lib/server/global-admin", () => ({
   authorizeGlobalAdmin: (...args: unknown[]) => mockAuthorizeAdmin(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({
-    from: (...args: unknown[]) => mockFrom(...args),
-    rpc: (...args: unknown[]) => mockRpc(...args),
-  }),
+  getSupabaseServerForRequest: (...args: unknown[]) => {
+    mockGetSupabaseServerForRequest(...args);
+    return {
+      from: (...queryArgs: unknown[]) => mockFrom(...queryArgs),
+      rpc: (...rpcArgs: unknown[]) => mockRpc(...rpcArgs),
+    };
+  },
 }));
 
 const userId = "11111111-1111-4111-8111-111111111111";
@@ -27,6 +31,7 @@ const chain = (result: { data: unknown; error?: unknown }) => {
     select: jest.fn(() => c),
     eq: jest.fn(() => c),
     order: jest.fn(() => c),
+    range: jest.fn(() => c),
     insert: jest.fn(() => c),
     maybeSingle: jest.fn(async () => ({ data: result.data, error: result.error ?? null })),
     single: jest.fn(async () => ({ data: result.data, error: result.error ?? null })),
@@ -46,6 +51,7 @@ beforeEach(() => {
   mockAuthorizeAdmin.mockReset().mockResolvedValue(forbidden());
   mockFrom.mockReset();
   mockRpc.mockReset();
+  mockGetSupabaseServerForRequest.mockReset();
 });
 afterEach(() => jest.restoreAllMocks());
 
@@ -62,6 +68,19 @@ describe("GET /api/qr/lookup", () => {
 
   it("requires a scope", async () => {
     expect((await GET("")).status).toBe(400);
+  });
+
+  it("selects the event profile for opaque QR lookups from the API host", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/qr/lookup?id=q", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    mockFrom.mockReturnValueOnce(chain({ data: { id: "q", user_id: userId } }));
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await require("../../app/api/qr/lookup+api").GET(request);
+
+    expect(mockResolveIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
   });
 
   it("returns an owned QR by id or token", async () => {
@@ -139,6 +158,22 @@ describe("POST /api/qr/pass", () => {
     expect((await POST({ passId: "p1" })).status).toBe(200);
   });
 
+  it("selects the event profile for opaque pass ids from the API host", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/qr/pass", {
+      method: "POST",
+      headers: { origin: "https://cbweek.hashpass.tech" },
+      body: JSON.stringify({ passId: "p1" }),
+    });
+    mockFrom.mockReturnValueOnce(activePass());
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: "no qr" } });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await require("../../app/api/qr/pass+api").POST(request);
+
+    expect(mockResolveIdentity).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
+  });
+
   it("generates a QR with clamped limits and returns it", async () => {
     mockFrom.mockReturnValueOnce(activePass()).mockReturnValueOnce(chain({ data: { id: "qr", token: "t" } }));
     mockRpc.mockResolvedValueOnce({ data: "qr", error: null });
@@ -195,6 +230,21 @@ describe("POST /api/qr/validate", () => {
     expect((await POST("nope")).status).toBe(400);
   });
 
+  it("selects the event profile for opaque scanner tokens from the API host", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/qr/validate", {
+      method: "POST",
+      headers: { origin: "https://cbweek.hashpass.tech" },
+      body: JSON.stringify({ token: "t" }),
+    });
+    mockRpc.mockResolvedValueOnce({ data: { valid: true }, error: null });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await require("../../app/api/qr/validate+api").POST(request);
+
+    expect(mockAuthorizeAdmin).toHaveBeenCalledWith(request, "bsl-development");
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
+  });
+
   it("consumes through the atomic RPC by default", async () => {
     mockRpc.mockResolvedValueOnce({ data: { valid: true }, error: null });
     const res = await POST({ token: " t ", scannerDeviceId: " dev " });
@@ -243,6 +293,25 @@ describe("POST /api/qr/validate", () => {
       expect((await preview({ status: "revoked", expires_at: future, usage_count: 0, max_uses: 1 })).body.data)
         .toMatchObject({ valid: false, status: "revoked", message: "QR code is revoked" });
     });
+  });
+});
+
+describe("GET /api/qr/admin", () => {
+  it("selects the event profile by API host for the global QR queue", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/qr/admin", {
+      headers: { origin: "https://cbweek.hashpass.tech" },
+    });
+    const query = chain({ data: [] });
+    mockFrom.mockReturnValueOnce(query);
+    mockAuthorizeAdmin.mockResolvedValue({
+      userId: "admin",
+      supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await require("../../app/api/qr/admin+api").GET(request);
+
+    expect(mockAuthorizeAdmin).toHaveBeenCalledWith(request, "bsl-development");
   });
 });
 

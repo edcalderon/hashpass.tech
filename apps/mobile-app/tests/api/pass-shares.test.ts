@@ -2,13 +2,14 @@
 
 const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
   isResolveIdentityError: (value: { status?: unknown }) => typeof value?.status === "number",
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({ from: (...args: unknown[]) => mockFrom(...args) }),
+  getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 
 const userId = "11111111-1111-4111-8111-111111111111";
@@ -42,6 +43,9 @@ describe("/api/pass-shares", () => {
     jest.spyOn(console, "error").mockImplementation(() => undefined);
     mockResolveIdentity.mockReset().mockResolvedValue({ supabaseUserId: userId });
     mockFrom.mockReset();
+    mockGetSupabaseServerForRequest.mockReset().mockImplementation(() => ({
+      from: (...args: unknown[]) => mockFrom(...args),
+    }));
   });
   afterEach(() => jest.restoreAllMocks());
 
@@ -110,6 +114,17 @@ describe("/api/pass-shares", () => {
     it("rejects a malformed token", async () => {
       expect((await load().GET(get("short"))).status).toBe(400);
       expect((await load().GET(get())).status).toBe(400);
+    });
+
+    it("uses the API host for opaque share tokens, not Origin", async () => {
+      const request = new Request("https://api-dev.hashpass.tech/api/pass-shares?token=" + token, {
+        headers: { origin: "https://cbweek.hashpass.tech" },
+      });
+      mockFrom.mockReturnValueOnce(query({ data: null }));
+
+      await load().GET(request);
+
+      expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
     });
 
     it("returns 503 when the share lookup fails", async () => {
