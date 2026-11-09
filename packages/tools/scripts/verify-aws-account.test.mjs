@@ -145,8 +145,31 @@ test('release-triggered AWS jobs verify identity after role assumption and befor
   assert.doesNotMatch(tenantWorkflow, /allowed-account-ids:/);
   assert.match(tenantWorkflow, /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_TARGET_ACCOUNT_ID \}\}/);
 
-  assert.match(infraWorkflow, /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_TARGET_ACCOUNT_ID \}\}/);
-  assert.doesNotMatch(infraWorkflow, /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_ACCOUNT_ID \}\}/);
+  const infraDeployJob = infraWorkflow.split('\n  deploy:\n')[1];
+  assert.ok(infraDeployJob);
+  assert.match(
+    infraDeployJob,
+    /environment:\s*\$\{\{ github\.ref_name == 'main' && 'production' \|\| 'bsl-development' \}\}/,
+  );
+  assert.doesNotMatch(infraDeployJob.split('steps:')[0], /EXPECTED_AWS_ACCOUNT_ID/);
+
+  const infrastructureAccountCheck = infraDeployJob
+    .split('Verify AWS account before infrastructure deployment')[1]
+    ?.split('Deploy production')[0];
+  assert.ok(infrastructureAccountCheck);
+  assert.match(
+    infrastructureAccountCheck,
+    /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_TARGET_ACCOUNT_ID \}\}/,
+  );
+
+  const apiAccountCheck = infraDeployJob
+    .split('Verify target AWS account before API Lambda deployment')[1]
+    ?.split('Deploy production API Lambda')[0];
+  assert.ok(apiAccountCheck);
+  assert.match(
+    apiAccountCheck,
+    /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_TARGET_ACCOUNT_ID \}\}/,
+  );
   assert.match(coverageWorkflow, /node --test packages\/tools\/scripts\/verify-aws-account\.test\.mjs/);
   const infraCredentialsIndex = infraWorkflow.indexOf('Configure AWS credentials');
   const infraVerifierIndex = infraWorkflow.indexOf('Verify AWS account before infrastructure deployment');
