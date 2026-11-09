@@ -174,6 +174,13 @@ describe("passwordless email reset", () => {
     const consentStyle = StyleSheet.flatten(consent.props.style);
     expect(consentStyle.justifyContent).toBe("flex-start");
     expect(consentStyle.minHeight).toBeGreaterThanOrEqual(48);
+    expect(consentStyle.paddingBottom).toBe(0);
+    expect(partnerConsent.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ minHeight: 48 }),
+        expect.objectContaining({ marginTop: 0, paddingTop: 0, paddingBottom: 6 }),
+      ]),
+    );
     expect(consent.props.accessibilityState.checked).toBe(false);
     expect(partnerConsent.props.accessibilityState.checked).toBe(false);
     expect(partnerConsent.props.accessibilityLabel).toContain("partners for offers");
