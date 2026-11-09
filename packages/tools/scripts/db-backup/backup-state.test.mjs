@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { shouldSkipUnchangedBackup } from './backup-state.mjs';
 
@@ -69,4 +74,33 @@ test('forces a fresh full dump at the seven-day recovery-point limit', () => {
     dumped_at: '2026-11-02T19:59:59Z',
   };
   assert.equal(canSkip({ state: oldState }), false);
+});
+
+test('CLI reads backup state and prints skip/full decisions', () => {
+  const helperPath = fileURLToPath(new URL('./backup-state.mjs', import.meta.url));
+  const tempDir = mkdtempSync(join(tmpdir(), 'hashpass-backup-state-'));
+  const statePath = join(tempDir, 'state.json');
+  writeFileSync(statePath, JSON.stringify(state));
+
+  const invoke = (path, forceFull = false) => spawnSync(process.execPath, [
+    helperPath,
+    path,
+    'core-prod',
+    'prod/core',
+    state.fingerprint,
+    '3000000',
+    '2000',
+    '2',
+    '16',
+    now,
+    String(forceFull),
+  ], { encoding: 'utf8' });
+
+  try {
+    assert.deepEqual([invoke(statePath).status, invoke(statePath).stdout], [0, 'skip\n']);
+    assert.deepEqual([invoke(statePath, true).status, invoke(statePath, true).stdout], [0, 'full\n']);
+    assert.deepEqual([invoke(join(tempDir, 'missing.json')).status, invoke(join(tempDir, 'missing.json')).stdout], [0, 'full\n']);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });

@@ -1,9 +1,11 @@
 """Run: python3 -m unittest packages/infra/terraform/stacks/hashpass-db-backups/lambda/test_freshness.py"""
 import datetime
+import json
 import os
 import sys
 import types
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-2")
 sys.path.insert(0, os.path.dirname(__file__))
@@ -90,10 +92,14 @@ class UnchangedBackupFreshnessTest(unittest.TestCase):
             "core-prod_20261024T221200Z.dump.unchanged"
         )
 
-    def marker(self, hours_old=1, size=250, dump_key=None):
+    def marker(self, hours_old=1, size=250, dump_key=None, verified_at="20261026T211200Z"):
         basename = (dump_key or self.dump_key).rsplit("/", 1)[-1]
-        key = self.marker_key.split("__", 1)[0] + "__" + basename + ".unchanged"
+        key = f"prod/core/_verification/core-prod_{verified_at}__{basename}.unchanged"
         return {"Key": key, "Size": size, "LastModified": NOW - datetime.timedelta(hours=hours_old)}
+
+    def test_no_dump_returns_no_backup_state(self):
+        selected = freshness.newest_backup_state(FakeS3([]), "backup-bucket", "prod/core/", CORE["min_bytes"])
+        self.assertIsNone(selected)
 
     def test_recent_unchanged_marker_keeps_an_older_full_dump_fresh(self):
         selected = freshness.newest_backup_state(
@@ -122,6 +128,27 @@ class UnchangedBackupFreshnessTest(unittest.TestCase):
         self.assertFalse(selected.get("verified_unchanged", False))
         self.assertIsNone(freshness.evaluate(CORE, selected, NOW))
 
+    def test_malformed_markers_and_markers_older_than_the_dump_are_ignored(self):
+        malformed = [
+            {**self.marker(), "Key": "prod/core/_verification/core-prod_without-separator.unchanged"},
+            {**self.marker(), "Key": "prod/core/_verification/core-prod_bad-time__core-prod_20261024T221200Z.dump.unchanged"},
+            {**self.marker(), "Key": "prod/core/_verification/core-prod_20261026T211200Z__other_20261024T221200Z.dump.unchanged"},
+            self.marker(hours_old=72, verified_at="20261023T221200Z"),
+        ]
+        selected = freshness.newest_backup_state(
+            FakeS3([self.dump_obj, *malformed]), "backup-bucket", "prod/core/", CORE["min_bytes"]
+        )
+        self.assertFalse(selected.get("verified_unchanged", False))
+
+    def test_latest_of_multiple_valid_markers_is_used(self):
+        older = self.marker(hours_old=3, verified_at="20261026T191200Z")
+        newer = self.marker(hours_old=1, verified_at="20261026T211200Z")
+        selected = freshness.newest_backup_state(
+            FakeS3([self.dump_obj, older, newer]), "backup-bucket", "prod/core/", CORE["min_bytes"]
+        )
+        self.assertTrue(selected["verified_unchanged"])
+        self.assertEqual(selected["verification_key"], newer["Key"])
+
     def test_stale_unchanged_marker_explains_full_dump_and_verification_age(self):
         selected = freshness.newest_backup_state(
             FakeS3([self.dump_obj, self.marker(hours_old=9)]), "backup-bucket", "prod/core/", CORE["min_bytes"]
@@ -141,6 +168,72 @@ class UnchangedBackupFreshnessTest(unittest.TestCase):
         )
         self.assertFalse(selected.get("verified_unchanged", False))
         self.assertEqual(freshness.evaluate(CORE, selected, NOW)["kind"], "small")
+
+
+class FreshnessHandlerTest(unittest.TestCase):
+    def run_handler(self, objects, checks):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        updated_objects = [
+            {**obj, "LastModified": now - obj["age"]}
+            for obj in objects
+        ]
+        s3 = FakeS3(updated_objects)
+        replica = FakeS3(updated_objects)
+
+        class FakeSns:
+            def __init__(self):
+                self.messages = []
+
+            def publish(self, **message):
+                self.messages.append(message)
+
+        sns = FakeSns()
+        env = {
+            "BUCKET": "backup-bucket",
+            "REPLICA_BUCKET": "replica-bucket",
+            "TOPIC_ARN": "topic-arn",
+            "CHECKS": json.dumps(checks),
+        }
+        with patch.dict(os.environ, env), patch.object(freshness, "s3", s3), patch.object(
+            freshness, "s3_replica", replica
+        ), patch.object(freshness, "sns", sns), patch("builtins.print"):
+            result = freshness.handler({}, None)
+        return result, sns.messages
+
+    def test_handler_checks_primary_and_replica_without_publishing_when_healthy(self):
+        check = {"prefix": "prod/core/", "max_age_hours": 8, "min_bytes": 100_000}
+        recent = {
+            "Key": "prod/core/core-prod_20261109T200000Z.dump",
+            "Size": 500_000,
+            "age": datetime.timedelta(hours=1),
+        }
+        result, messages = self.run_handler([recent], [check, {**check, "replica": True}])
+        self.assertEqual(result, {"problems": []})
+        self.assertEqual(messages, [])
+
+    def test_handler_publishes_stale_problem(self):
+        stale = {
+            "Key": "prod/core/core-prod_20261109T100000Z.dump",
+            "Size": 500_000,
+            "age": datetime.timedelta(hours=10),
+        }
+        result, messages = self.run_handler([stale], [CORE])
+        self.assertEqual(result["problems"][0]["kind"], "stale")
+        self.assertEqual(messages[0]["Subject"], "HASHPASS database backup is late")
+
+    def test_handler_publishes_missing_and_small_subjects(self):
+        missing, missing_messages = self.run_handler([], [CORE])
+        self.assertEqual(missing["problems"][0]["kind"], "missing")
+        self.assertEqual(missing_messages[0]["Subject"], "HASHPASS database backup MISSING")
+
+        small = {
+            "Key": "prod/core/core-prod_20261109T200000Z.dump",
+            "Size": 99_999,
+            "age": datetime.timedelta(hours=1),
+        }
+        small_result, small_messages = self.run_handler([small], [CORE])
+        self.assertEqual(small_result["problems"][0]["kind"], "small")
+        self.assertEqual(small_messages[0]["Subject"], "HASHPASS database backup problem")
 
 
 if __name__ == "__main__":
