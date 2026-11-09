@@ -46,7 +46,7 @@ production first, missing read/list permissions make it fall back to a full dump
 
 | Workflow | Schedule | What it does |
 |----------|----------|--------------|
-| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | Counts public rows and makes a full `pg_dump` (postgres:17). Uploads only for a content change or a seven-day full-dump refresh; records small unchanged markers between full dumps. |
+| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | Counts public rows and makes a full `pg_dump` (postgres:17). Daily/monthly retention runs always keep a full restore point; other runs upload for a content change or seven-day refresh and record small unchanged markers between full dumps. |
 | `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
 
 AWS access is OIDC only. Both roles retain the repository's `main` branch
@@ -68,7 +68,7 @@ Repository configuration (names only):
 
 ## Retention, lock and replica
 
-* `db-backup.yml` tags full dumps with `tier=frequent|daily|monthly|dev` (14 / 35 / 365 / 90 days). State and unchanged-marker objects use `frequent` (14 days). Untagged objects never expire.
+* `db-backup.yml` tags full dumps with `tier=frequent|daily|monthly|dev` (14 / 35 / 365 / 90 days). Daily and monthly runs keep full dumps even when unchanged, preserving the 35-day and 365-day restore points. State and unchanged-marker objects use `frequent` (14 days). Untagged objects never expire.
 * Object Lock GOVERNANCE, 14 days, on both buckets. Irreversible once enabled.
 * Replica: `hashpass-db-backups-replica-<account>-us-west-2`, versioned, locked, encrypted, no delete-marker replication.
   Same account, so it does not protect against account compromise.

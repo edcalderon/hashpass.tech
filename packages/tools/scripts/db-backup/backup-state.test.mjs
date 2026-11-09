@@ -34,6 +34,10 @@ test('skips the full dump only for an identical recent verified dump with its si
   assert.equal(canSkip(), true);
 });
 
+test('keeps daily and monthly retention snapshots even when unchanged', () => {
+  assert.equal(canSkip({ forceFull: true }), false);
+});
+
 test('a one-byte database change keeps a full dump', () => {
   assert.equal(canSkip({ currentFingerprint: 'b'.repeat(64) }), false);
 });

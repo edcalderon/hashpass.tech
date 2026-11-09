@@ -57,6 +57,16 @@ jobs:
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
 
+          # Preserve the scheduled long-retention restore points even when the
+          # database is unchanged. Manual runs always use the frequent tier.
+          if [ "$TARGET" = "shared-dev" ]; then TIER=dev
+          elif [ "${TS:9:2}" = "00" ] && [ "${TS:6:2}" = "01" ]; then TIER=monthly
+          elif [ "${TS:9:2}" = "00" ]; then TIER=daily
+          else TIER=frequent; fi
+          [ "${{ github.event_name }}" = "workflow_dispatch" ] && TIER=frequent
+          FORCE_RETENTION_DUMP=false
+          if [ "$TIER" = "daily" ] || [ "$TIER" = "monthly" ]; then FORCE_RETENTION_DUMP=true; fi
+
           COUNTS_FILE="$OUT/${NAME}_${TS}.counts.txt"
           DUMP_FILE="$OUT/${NAME}_${TS}.dump"
           docker run --rm -e U="$URL" -v "$PWD/packages/tools/scripts/db-backup:/q:ro" postgres:17 \
@@ -138,7 +148,7 @@ jobs:
           fi
 
           DECISION="$(node packages/tools/scripts/db-backup/backup-state.mjs "$STATE_FILE" "$NAME" "$PREFIX" \
-            "$CURRENT_FINGERPRINT" "$PREVIOUS_DUMP_SIZE" "$PREVIOUS_COUNTS_SIZE" "$TABLE_COUNT" "$TOTAL_ROWS" "$VERIFIED_AT")"
+            "$CURRENT_FINGERPRINT" "$PREVIOUS_DUMP_SIZE" "$PREVIOUS_COUNTS_SIZE" "$TABLE_COUNT" "$TOTAL_ROWS" "$VERIFIED_AT" "$FORCE_RETENTION_DUMP")"
 
           write_state() {
             local dump_key="$1" counts_key="$2" dumped_at="$3"
@@ -176,17 +186,6 @@ jobs:
             echo "Verified $TABLE_COUNT tables and $TOTAL_ROWS public rows unchanged; no duplicate full dump uploaded." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-
-          # Retention tier, read by the bucket's lifecycle rules (see the Terraform stack):
-          #   dev      weekly shared-dev dump           -> 90 days
-          #   monthly  the 00:30 UTC dump on the 1st    -> 365 days
-          #   daily    any other 00:30 UTC dump         -> 35 days
-          #   frequent every other 6-hour dump          -> 14 days
-          if [ "$TARGET" = "shared-dev" ]; then TIER=dev
-          elif [ "$(date -u +%H)" = "00" ] && [ "$(date -u +%d)" = "01" ]; then TIER=monthly
-          elif [ "$(date -u +%H)" = "00" ]; then TIER=daily
-          else TIER=frequent; fi
-          [ "${{ github.event_name }}" = "workflow_dispatch" ] && TIER=frequent
 
           for f in "${NAME}_${TS}.dump" "${NAME}_${TS}.counts.txt"; do
             aws s3api put-object --bucket "$BUCKET" --key "$PREFIX/$f" --body "$OUT/$f" \

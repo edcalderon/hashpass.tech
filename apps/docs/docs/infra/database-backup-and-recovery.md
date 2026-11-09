@@ -63,8 +63,10 @@ released and the Terraform writer policy is applied:
   fingerprint, table count, and total row count exactly match the last verified state. Any real
   content change, however small, creates a full dump.
 * Force a full dump at least every seven days, leaving room inside the 14-day frequent retention.
-  Between full dumps, write a small unchanged marker. The freshness checker accepts it only when it
-  points to the newest existing full dump and that dump passes the size threshold.
+  Always retain a full dump on the scheduled daily and monthly tiers, even when unchanged, so the
+  35-day and 365-day restore points are preserved. Between other full dumps, write a small unchanged
+  marker. The freshness checker accepts it only when it points to the newest existing full dump and
+  that dump passes the size threshold.
 * Keep the state JSON and marker objects separate from restore inputs. Restore only `.dump` files and
   compare their adjacent `.counts.txt` sidecars. The Lambda still uses `s3:ListBucket` only and reads
   neither database dumps nor state contents.

@@ -25,8 +25,10 @@ export function shouldSkipUnchangedBackup({
   tableCount,
   totalRows,
   now,
+  forceFull = false,
   minDumpBytes = 100_000,
 }) {
+  if (forceFull) return false;
   if (!FINGERPRINT_PATTERN.test(currentFingerprint ?? '')) return false;
   if (!state || state.schema_version !== 1 || state.fingerprint_algorithm !== 'pg_restore_sql_sha256_v1') return false;
   if (state.database !== database || state.fingerprint !== currentFingerprint) return false;
@@ -62,7 +64,7 @@ function readState(path) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const [, , statePath, database, prefix, currentFingerprint, dumpSize, countsSize, tableCount, totalRows, now] = process.argv;
+  const [, , statePath, database, prefix, currentFingerprint, dumpSize, countsSize, tableCount, totalRows, now, forceFull] = process.argv;
   const skip = shouldSkipUnchangedBackup({
     currentFingerprint,
     database,
@@ -73,6 +75,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     tableCount: Number(tableCount),
     totalRows: Number(totalRows),
     now,
+    forceFull: forceFull === 'true',
   });
   process.stdout.write(skip ? 'skip\n' : 'full\n');
 }
