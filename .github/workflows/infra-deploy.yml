@@ -56,7 +56,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
       HASHPASS_INFRA_TARGET: bsl
       AWS_WEB_PIPELINE_ROLE_ARN: ${{ vars.AWS_WEB_PIPELINE_ROLE_ARN }}
 
@@ -90,6 +90,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_INFRA_DEPLOY_ROLE_ARN }}
           role-session-name: hashpass-infra
 
+      - name: Verify AWS account before infrastructure deployment
+        run: bash packages/tools/scripts/verify-aws-account.sh
+
       - name: Deploy production
         if: github.ref_name == 'main'
         continue-on-error: true
@@ -117,6 +120,10 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ env.AWS_WEB_PIPELINE_ROLE_ARN }}
           role-session-name: hashpass-api-lambda-deploy
+
+      - name: Verify target AWS account before API Lambda deployment
+        if: github.ref_name == 'main' || github.ref_name == 'develop'
+        run: bash packages/tools/scripts/verify-aws-account.sh
 
       - name: Deploy production API Lambda
         if: github.ref_name == 'main'

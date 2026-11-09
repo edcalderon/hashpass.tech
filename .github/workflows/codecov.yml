@@ -56,6 +56,9 @@ jobs:
           pnpm exec tsx --test apps/web-app/lib/attending-artwork.test.ts
           node --test packages/tools/scripts/build-static-site.test.mjs packages/tools/scripts/canonical-redirect.test.mjs
 
+      - name: Verify AWS deployment account guard
+        run: node --test packages/tools/scripts/verify-aws-account.test.mjs
+
       - name: Check native fetch safety
         run: pnpm check:native-fetch
 

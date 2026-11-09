@@ -145,7 +145,8 @@ describe('free GitHub tenant builds', () => {
     expect(deploy).toContain('environment: ${{ matrix.environment }}');
     expect(deploy).toContain('group: static-site-deploy-${{ matrix.target }}');
     expect(deploy).toContain('cancel-in-progress: false');
-    expect(deploy).toContain('allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}');
+    expect(deploy).toContain('EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}');
+    expect(deploy).not.toContain('allowed-account-ids:');
     expect(deploy).toContain('SITE_API_VERSION_URL');
     expect(deploy).toContain("inputs.target == 'cbweek-production'");
     expect(deploy).toContain("needs.migrate-database.result == 'success'");

@@ -221,6 +221,7 @@ jobs:
       id-token: write
     env:
       AWS_REGION: us-east-2
+      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
       TARGET: ${{ matrix.target }}
       SITE_BUILD_DIR: ${{ matrix.bsl && 'dist' || 'dist/client' }}
       SITE_BUCKET_NAME: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_BUCKET || vars.STATIC_SITE_BUCKET }}
@@ -268,9 +269,10 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_AWS_STATIC_SITE_DEPLOY_ROLE_ARN || vars.AWS_STATIC_SITE_DEPLOY_ROLE_ARN }}
-          allowed-account-ids: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
           aws-region: us-east-2
           mask-aws-account-id: true
+      - name: Verify AWS account before static deployment
+        run: bash packages/tools/scripts/verify-aws-account.sh
       - name: Deploy the verified artifact
         run: bash packages/tools/scripts/deploy-static-site.sh
       - name: Record deployment

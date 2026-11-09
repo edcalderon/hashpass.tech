@@ -61,6 +61,13 @@ runs:
         aws-region: us-east-2
         mask-aws-account-id: true
 
+    - name: Verify production backup AWS account
+      if: inputs.profile == 'core-production'
+      shell: bash
+      env:
+        EXPECTED_AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+      run: bash packages/tools/scripts/verify-aws-account.sh
+
     - name: Apply pending migrations
       shell: bash
       env:
