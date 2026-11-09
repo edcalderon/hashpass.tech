@@ -228,6 +228,11 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: hashpass-static-site-development
 
+      - name: Verify AWS account before static deployment
+        env:
+          EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_TARGET_ACCOUNT_ID }}
+        run: bash packages/tools/scripts/verify-aws-account.sh
+
       - name: Deploy the verified static site
         id: deploy
         run: bash packages/tools/scripts/deploy-static-site.sh

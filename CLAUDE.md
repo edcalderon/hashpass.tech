@@ -436,6 +436,20 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 with a non-printing STS comparison before any mutation. The USD 50 monthly
 cost budget is configured only in the `hashpass` account.
 
+**Standard patch-release AWS identity guard:** AWS-mutating jobs in the
+protected `develop -> main` promotion and matching `develop` deployment must
+run `packages/tools/scripts/verify-aws-account.sh` after each role assumption
+and before mutations, using `EXPECTED_AWS_ACCOUNT_ID` from
+`vars.AWS_TARGET_ACCOUNT_ID` or an explicit action input. The optional EC2
+runner start/stop jobs in the Android release workflow use the same guard when
+selected; the tag-triggered flow normally uses GitHub-hosted runners and skips
+those AWS jobs. Fail closed on a missing or malformed expected ID, failed STS
+lookup, or account mismatch; never log either account ID. Do not rely on the
+unsupported `allowed-account-ids` input to
+`aws-actions/configure-aws-credentials`. Separate manually dispatched
+infrastructure/campaign workflows and retained CodePipeline/CodeBuild recovery
+paths are outside this patch-release guard.
+
 **For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/done/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
 
 ## Deployment Architecture
