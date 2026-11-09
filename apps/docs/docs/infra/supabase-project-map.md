@@ -5,10 +5,10 @@ title: Supabase project map (core vs BSL, dev vs prod)
 # Supabase project map
 
 :::info Consolidated on 2026-10-21
-Every tenant and event is served from core production. Both `hashpass.tech`
-and `bsl.hashpass.tech` resolve to the `core-production` profile, the
-production API Lambda's database URLs point at core, and the BSL project is a
-read-only backup. See
+Every production tenant and event uses core production; the existing
+`cbweek2026.hashpass.tech` demo remains on `bsl-development`. The production
+API Lambda's database URLs point at core, and the BSL project is a read-only
+backup. See
 [Decision: one core database](decisions/single-core-database.md).
 :::
 
@@ -23,9 +23,21 @@ needs fixing, not the other way around.
 
 | Project ref | Used as | Notes |
 |---|---|---|
-| `fxgftanraszjjyeidvia` | **production for every tenant** (`hashpass.tech`, `bsl.hashpass.tech`, every event) | Never used for dev. |
+| `fxgftanraszjjyeidvia` | **production for all production tenants and events** (`hashpass.tech`, `bsl.hashpass.tech`, production event hosts) | Never used for dev. |
 | `mnnqryrdlhddorqsrtbn` | **BSL backup (read-only)** | Frozen at the 2026-10-21 cutover. No service may read or write it. |
 | `gsugeqozyeokncpbndna` | **shared dev** for both core and BSL | Deliberate, added 2026-08-06. `core-development` and `bsl-development` both point here. This is the *only* place core and BSL intentionally share a database. |
+
+## CBWeek host and API mapping
+
+| Site host | API | Supabase profile | Project |
+| --- | --- | --- | --- |
+| `cbweek.hashpass.tech` | Production API (`api.hashpass.tech`) | `core-production` | `fxgftanraszjjyeidvia` |
+| `cbweek2026.hashpass.tech` (existing demo) | Development API (`api-dev.hashpass.tech`) | `bsl-development` | `gsugeqozyeokncpbndna` |
+
+Both development profiles, `core-development` and `bsl-development`, use the
+shared dev project `gsugeqozyeokncpbndna`. For CBWeek server API calls, profile
+selection uses the API request hostname, not the browser's `Origin` header; a
+caller-controlled origin therefore cannot switch database profiles.
 
 If you ever see `fxgftanraszjjyeidvia` or `mnnqryrdlhddorqsrtbn` referenced
 from a `*_DEV` variable, or `gsugeqozyeokncpbndna` referenced from a

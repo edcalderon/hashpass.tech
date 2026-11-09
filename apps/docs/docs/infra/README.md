@@ -5,6 +5,7 @@ Current infrastructure documentation for HASHPASS lives here. These pages descri
 ## Active Docs
 
 - [`DEPLOYMENT_MAP.md`](DEPLOYMENT_MAP.md)
+- [`supabase-project-map.md`](supabase-project-map.md) - production and development profile mapping by hostname
 - [`ENVIRONMENT_STRATEGY.md`](env/ENVIRONMENT_STRATEGY.md)
 - [`ENVIRONMENT_VARIABLES.md`](env/ENVIRONMENT_VARIABLES.md)
 - [`INFRA_NAMING_GUIDE.md`](INFRA_NAMING_GUIDE.md)

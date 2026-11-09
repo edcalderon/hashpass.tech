@@ -6,8 +6,8 @@ import {
 import { isRoleActive } from '@/lib/role-summary';
 
 /** Resolve a provider session and verify its linked account has global admin access. */
-export async function authorizeGlobalAdmin(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+export async function authorizeGlobalAdmin(request: Request, profileId?: string) {
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) {
     return { response: Response.json({ error: identity.error }, { status: identity.status }) } as const;
   }
@@ -15,7 +15,7 @@ export async function authorizeGlobalAdmin(request: Request) {
     return { response: Response.json({ error: 'Account is not linked to an administrative identity' }, { status: 403 }) } as const;
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data, error } = await supabase
     .from('user_roles')
     .select('role, expires_at')

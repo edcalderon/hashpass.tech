@@ -4,6 +4,10 @@ import {
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import {
+  getEventSupabaseProfileId,
+  getEventSupabaseProfileIdForRequest,
+} from "@/lib/server/event-supabase-profile";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PASS_TYPES = new Set(["general", "business", "vip"]);
@@ -21,7 +25,12 @@ const nextPassType = (passType: string, requestedPassType: string): boolean =>
   (passType === "business" && requestedPassType === "vip");
 
 export async function POST(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
+  const profileBody = (await request.clone().json().catch(() => null)) as Record<string, unknown> | null;
+  const profileEventId = typeof profileBody?.eventId === "string" ? profileBody.eventId.trim() : "";
+  const profileId = profileEventId
+    ? getEventSupabaseProfileId(request, profileEventId) ?? getEventSupabaseProfileIdForRequest(request)
+    : getEventSupabaseProfileIdForRequest(request);
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
@@ -41,7 +50,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid pass upgrade request" }, { status: 400 });
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data: pass, error: passError } = await supabase
     .from("passes")
     .select("id,user_id,event_id,pass_type,status")

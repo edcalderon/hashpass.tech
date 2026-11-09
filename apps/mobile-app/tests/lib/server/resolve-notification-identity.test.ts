@@ -3,6 +3,7 @@
 const mockAuthenticateRequest = jest.fn();
 const mockExtractToken = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
+const mockGetSupabaseProfileIdForRequest = jest.fn();
 const mockGetBetterAuthSessionUser = jest.fn();
 
 jest.mock('@hashpass/auth', () => ({
@@ -11,6 +12,7 @@ jest.mock('@hashpass/auth', () => ({
 }));
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
+  getSupabaseProfileIdForRequest: (...args: unknown[]) => mockGetSupabaseProfileIdForRequest(...args),
 }));
 jest.mock('../../../lib/server/better-auth-session-client', () => ({
   getBetterAuthSessionUser: (...args: unknown[]) => mockGetBetterAuthSessionUser(...args),
@@ -22,8 +24,26 @@ describe('resolveNotificationIdentity', () => {
     mockAuthenticateRequest.mockReset();
     mockExtractToken.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
+    mockGetSupabaseProfileIdForRequest.mockReset();
+    mockGetSupabaseProfileIdForRequest.mockImplementation((_request, profileId) => profileId);
     mockGetBetterAuthSessionUser.mockReset();
     mockExtractToken.mockReturnValue(null);
+  });
+
+  it('pins identity resolution to the API-selected profile despite a conflicting Origin', async () => {
+    const request = new Request('https://api.hashpass.tech/api/events/cbweek2026/agenda', {
+      headers: { origin: 'https://cbweek2026.hashpass.tech' },
+    });
+    mockGetSupabaseProfileIdForRequest.mockReturnValue('core-production');
+    mockGetSupabaseServerForRequest.mockReturnValue({});
+    mockAuthenticateRequest.mockResolvedValue({ user: null, error: { status: 401, message: 'Unauthorized' } });
+    mockGetBetterAuthSessionUser.mockResolvedValue(null);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    await resolveNotificationIdentity(request);
+
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, 'core-production');
   });
 
   it('keeps a valid provider bearer authoritative over a Better Auth browser cookie', async () => {

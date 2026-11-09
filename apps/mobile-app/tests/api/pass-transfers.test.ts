@@ -3,6 +3,7 @@
 const mockResolveIdentity = jest.fn();
 const mockFrom = jest.fn();
 const mockSendEmail = jest.fn();
+const mockGetSupabaseServerForRequest = jest.fn();
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (...args: unknown[]) => mockResolveIdentity(...args),
@@ -12,7 +13,7 @@ jest.mock("@/lib/email", () => ({
   sendCriticalNotificationEmail: (...args: unknown[]) => mockSendEmail(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: () => ({ from: (...args: unknown[]) => mockFrom(...args) }),
+  getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
 
 const senderId = "11111111-1111-4111-8111-111111111111";
@@ -49,6 +50,9 @@ describe("POST /api/pass-transfers", () => {
     });
     mockFrom.mockReset();
     mockSendEmail.mockReset().mockResolvedValue({ success: true });
+    mockGetSupabaseServerForRequest.mockReset().mockImplementation(() => ({
+      from: (...args: unknown[]) => mockFrom(...args),
+    }));
   });
 
   it("expires an abandoned transfer before creating a replacement", async () => {
@@ -109,6 +113,21 @@ describe("POST /api/pass-transfers", () => {
     expect(recipientPass.eq).toHaveBeenCalledWith("user_id", recipientId);
     expect(recipientPass.eq).toHaveBeenCalledWith("event_id", "colombia2026");
     expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("uses the API host for opaque transfer confirmation tokens, not Origin", async () => {
+    const request = new Request("https://api-dev.hashpass.tech/api/pass-transfers", {
+      method: "POST",
+      headers: { origin: "https://cbweek.hashpass.tech" },
+      body: JSON.stringify({ action: "confirm", token: "a".repeat(32) }),
+    });
+    mockFrom.mockReturnValueOnce(query({ data: null }));
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { POST } = require("../../app/api/pass-transfers+api");
+    await POST(request);
+
+    expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
   });
 
   it("marks an expired confirmation request before rejecting it", async () => {

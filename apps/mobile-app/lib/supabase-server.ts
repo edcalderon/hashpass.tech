@@ -4,6 +4,7 @@ import {
   resolveServerSupabaseConfig,
   type ServerSupabaseConfig,
 } from '../config/supabase-profiles';
+import { getEventSupabaseProfileId } from './server/event-supabase-profile';
 import { loadServerEnvFiles } from './server/load-server-env';
 
 // This client is specifically for server-side operations
@@ -17,10 +18,10 @@ export function getSupabaseServerEnv(input?: Request | { hostname?: string; prof
   loadServerEnvFiles();
 
   const hostname = input instanceof Request ? hostnameFromRequest(input) : input?.hostname;
-  const resolved = resolveServerSupabaseConfig({
-    hostname,
-    profileId: input instanceof Request ? undefined : input?.profileId,
-  });
+  const profileId = input instanceof Request
+    ? getSupabaseProfileIdForRequest(input)
+    : input?.profileId;
+  const resolved = resolveServerSupabaseConfig({ hostname, profileId });
 
   return {
     ...resolved,
@@ -208,15 +209,70 @@ function getSupabaseServer(input?: Request | { hostname?: string; profileId?: st
 }
 
 /**
- * Resolve the server client for a request, optionally overriding hostname
+ * Resolve an explicit profile override first, then event affinity from the
+ * request path. Event API routes must use the API request hostname for profile
+ * selection so a caller-controlled Origin cannot switch CBWeek environments.
+ */
+export const getSupabaseProfileIdForRequest = (
+  request: Request,
+  profileId?: string,
+): string | undefined => {
+  if (profileId) return profileId;
+
+  const requestUrl = new URL(request.url);
+  const pathSegments = requestUrl.pathname.split('/').filter(Boolean);
+  const eventsIndex = pathSegments.indexOf('events');
+  const pathEventId = eventsIndex >= 0 ? pathSegments[eventsIndex + 1] : undefined;
+  const queryEventId = requestUrl.searchParams.get('eventId')?.trim();
+  const queryEventIds = requestUrl.searchParams.get('eventIds')
+    ?.split(',')
+    .map((eventId) => eventId.trim())
+    .filter(Boolean) || [];
+  const isLegacyBslRoute = pathSegments[0] === 'api' && pathSegments[1] === 'bsl';
+  const eventId = pathEventId || queryEventId;
+  const eventProfileId = eventId ? getEventSupabaseProfileId(request, eventId) : undefined;
+  if (eventProfileId) return eventProfileId;
+
+  if (!eventId) {
+    for (const queryEventId of queryEventIds) {
+      const profileId = getEventSupabaseProfileId(request, queryEventId);
+      if (profileId) return profileId;
+    }
+  }
+  if (!eventId && isLegacyBslRoute) {
+    const profileId = getEventSupabaseProfileId(request, 'bsl');
+    if (profileId) return profileId;
+  }
+
+  // The first-party API hostname determines the runtime environment even for
+  // unscoped/token-based routes that have no event id available yet. Origin is
+  // caller-controlled and must not switch a production API request to dev.
+  if (requestUrl.hostname === 'api.hashpass.tech') return 'core-production';
+  if (requestUrl.hostname === 'api-dev.hashpass.tech') return 'core-development';
+  return undefined;
+};
+
+/**
+ * Resolve the server client for a request, optionally overriding event-profile
  * inference. Local Expo requests all arrive as `localhost`, but event-scoped
  * BSL admin routes still need the BSL Supabase project rather than the core
  * project selected by that hostname.
  */
+export const getSupabaseProfileIdForEventRequest = (
+  request: Request,
+  eventId: string,
+): string | undefined =>
+  getEventSupabaseProfileId(request, eventId) || getSupabaseProfileIdForRequest(request);
+
 export const getSupabaseServerForRequest = (
   request: Request,
   profileId?: string,
-) => (profileId ? getSupabaseServer({ profileId }) : getSupabaseServer(request));
+) => {
+  const resolvedProfileId = getSupabaseProfileIdForRequest(request, profileId);
+  return resolvedProfileId
+    ? getSupabaseServer({ profileId: resolvedProfileId })
+    : getSupabaseServer(request);
+};
 
 // Check if we're in a browser/client environment BEFORE creating the Proxy
 const isBrowser = typeof window !== 'undefined';

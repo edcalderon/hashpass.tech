@@ -1,5 +1,5 @@
 import { authorizeGlobalAdmin } from "@/lib/server/global-admin";
-import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import { getEventSupabaseProfileIdForRequest } from "@/lib/server/event-supabase-profile";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization" } });
@@ -7,7 +7,7 @@ const STATUSES = new Set(["open", "confirmed", "dismissed"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
-  const auth = await authorizeGlobalAdmin(request);
+  const auth = await authorizeGlobalAdmin(request, getEventSupabaseProfileIdForRequest(request));
   if ("response" in auth) return auth.response;
   const status = new URL(request.url).searchParams.get("status") || "open";
   if (!STATUSES.has(status)) return json({ error: "Invalid report status" }, 400);
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authorizeGlobalAdmin(request);
+  const auth = await authorizeGlobalAdmin(request, getEventSupabaseProfileIdForRequest(request));
   if ("response" in auth) return auth.response;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const reportId = typeof body?.reportId === "string" ? body.reportId.trim() : "";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   if (!UUID.test(reportId)) return json({ error: "A valid report is required" }, 400);
   if (action !== "confirm" && action !== "dismiss") return json({ error: "Unsupported report action" }, 400);
 
-  const { data, error } = await getSupabaseServerForRequest(request).rpc("resolve_external_ticket_report", {
+  const { data, error } = await auth.supabase.rpc("resolve_external_ticket_report", {
     p_report_id: reportId,
     p_actor_user_id: auth.userId,
     p_action: action,

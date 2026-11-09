@@ -1,5 +1,6 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
+import { getEventSupabaseProfileIdForRequest } from '@/lib/server/event-supabase-profile';
 
 /**
  * POST /api/qr/admin/suspend - Suspend a QR code (admin only)
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const authorization = await authorizeGlobalAdmin(request);
+  const authorization = await authorizeGlobalAdmin(request, getEventSupabaseProfileIdForRequest(request));
   if ('response' in authorization) return authorization.response;
 
   try {

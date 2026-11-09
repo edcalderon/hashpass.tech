@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import { getEventSupabaseProfileId } from '@/lib/server/event-supabase-profile';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeEventAdmin } from '@/lib/server/event-admin';
 import {
@@ -82,7 +83,8 @@ export async function POST(request: Request) {
     return Response.json({ error: 'expiresAt must be a valid date string' }, { status: 400 });
   }
 
-  const identity = await resolveNotificationIdentity(request);
+  const profileId = getEventSupabaseProfileId(request, eventId);
+  const identity = await resolveNotificationIdentity(request, profileId);
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Account is not linked to an administrative identity' }, { status: 403 });
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const { data, error } = await supabase.rpc('admin_mutate_event_role', {
     p_actor_user_id: identity.supabaseUserId,
     p_event_id: eventId,
