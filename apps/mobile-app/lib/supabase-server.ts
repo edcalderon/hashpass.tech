@@ -18,10 +18,10 @@ export function getSupabaseServerEnv(input?: Request | { hostname?: string; prof
   loadServerEnvFiles();
 
   const hostname = input instanceof Request ? hostnameFromRequest(input) : input?.hostname;
-  const resolved = resolveServerSupabaseConfig({
-    hostname,
-    profileId: input instanceof Request ? undefined : input?.profileId,
-  });
+  const profileId = input instanceof Request
+    ? getSupabaseProfileIdForRequest(input)
+    : input?.profileId;
+  const resolved = resolveServerSupabaseConfig({ hostname, profileId });
 
   return {
     ...resolved,

@@ -1,14 +1,26 @@
 /// <reference types="jest" />
-jest.mock('expo/virtual/env', () => ({
-  __esModule: true,
-  env: process.env,
-}), { virtual: true });
-
 import {
   resolvePublicSupabaseConfig,
   resolveServerSupabaseConfig,
   resolveSupabaseProfile,
 } from '../../config/supabase-profiles';
+import { getSupabaseServerEnv } from '../../lib/supabase-server';
+
+jest.mock('expo/virtual/env', () => ({
+  __esModule: true,
+  env: process.env,
+}), { virtual: true });
+
+describe('getSupabaseServerEnv API-host profile selection', () => {
+  it.each([
+    ['https://api.hashpass.tech/api/auth/otp/verify', 'https://cbweek2026.hashpass.tech', 'core-production', 'production'],
+    ['https://api-dev.hashpass.tech/api/auth/otp/verify', 'https://cbweek.hashpass.tech', 'core-development', 'development'],
+  ] as const)('keeps server config on the API-host profile (%s)', (url, origin, profileId, environment) => {
+    const config = getSupabaseServerEnv(new Request(url, { headers: { origin } }));
+    expect(config.profileId).toBe(profileId);
+    expect(config.environment).toBe(environment);
+  });
+});
 
 const PUBLIC_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
 const PUBLIC_SUPABASE_KEY_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY'].join('_');
@@ -87,7 +99,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolvePublicSupabaseConfig({
       profileId: 'bsl-production',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.profileId).toBe('core-production');
@@ -105,7 +117,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolvePublicSupabaseConfig({
       profileId: 'core-production',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.supabaseUrl).toBe('https://generic-project.supabase.co');
@@ -120,7 +132,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolvePublicSupabaseConfig({
       profileId: 'core-production',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.supabaseUrl).toBe('https://generic-project.supabase.co');
@@ -139,7 +151,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolvePublicSupabaseConfig({
       profileId: 'core-development',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.profileId).toBe('core-development');
@@ -159,7 +171,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolvePublicSupabaseConfig({
       profileId: 'core-production',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.profileId).toBe('core-production');
@@ -178,7 +190,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
     const config = resolveServerSupabaseConfig({
       profileId: 'core-production',
-      readEnv: (name) => env[name],
+      readEnv: (name: string) => env[name],
     });
 
     expect(config.profileId).toBe('core-production');
