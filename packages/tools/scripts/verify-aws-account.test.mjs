@@ -159,7 +159,7 @@ test('release-triggered AWS jobs verify identity after role assumption and befor
   assert.ok(infrastructureAccountCheck);
   assert.match(
     infrastructureAccountCheck,
-    /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_TARGET_ACCOUNT_ID \}\}/,
+    /EXPECTED_AWS_ACCOUNT_ID:\s*\$\{\{ vars\.AWS_ACCOUNT_ID \}\}/,
   );
 
   const apiAccountCheck = infraDeployJob
