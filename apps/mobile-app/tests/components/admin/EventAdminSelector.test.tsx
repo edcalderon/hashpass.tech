@@ -41,6 +41,14 @@ const options: AdminEventOption[] = [
 ];
 
 describe("EventAdminSelector", () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-10-26T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("opens with upcoming events, searches and selects an event", () => {
     const onSelect = jest.fn();
     let renderer: ReturnType<typeof create>;

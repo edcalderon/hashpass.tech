@@ -1,3 +1,18 @@
+## [1.9.220](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.219...v1.9.220) (2026-11-09)
+
+
+### Bug Fixes
+
+* **auth:** reduce optional consent selector text size ([#597](https://github.com/hashpass-tech/hashpass.tech/issues/597)) ([f1742fd](https://github.com/hashpass-tech/hashpass.tech/commit/f1742fd38a19fec48fca5c98504da118c4373e12))
+### Release Highlights
+- reduce optional consent selector text size (#597)
+
+### Release scope
+- Compared with: `v1.9.219` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.219](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.218...v1.9.219) (2026-11-06)
 
 

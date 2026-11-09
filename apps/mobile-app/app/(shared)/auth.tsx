@@ -3789,8 +3789,8 @@ const getStyles = (
     },
     marketingOptInTitle: {
       color: colors.text.primary,
-      fontSize: uiTokens.type.caption + 1,
-      lineHeight: uiTokens.type.caption + 5,
+      fontSize: uiTokens.type.caption,
+      lineHeight: uiTokens.type.caption + 4,
       fontWeight: "700",
       textAlign: "left",
     },

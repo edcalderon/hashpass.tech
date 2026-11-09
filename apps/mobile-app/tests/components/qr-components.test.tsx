@@ -138,8 +138,13 @@ describe('ExternalTicketSheet', () => {
   };
 
   beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-26T12:00:00.000Z'));
     mockSubmit.mockReset();
     mockReport.mockReset();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('shows ticket facts with only the last four characters of the code', () => {
