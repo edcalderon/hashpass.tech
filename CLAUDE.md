@@ -444,8 +444,14 @@ and before mutations, using `EXPECTED_AWS_ACCOUNT_ID` from
 runner start/stop jobs in the Android release workflow use the same guard when
 selected; the tag-triggered flow normally uses GitHub-hosted runners and skips
 those AWS jobs. Fail closed on a missing or malformed expected ID, failed STS
-lookup, or account mismatch; never log either account ID. Do not rely on the
-unsupported `allowed-account-ids` input to
+lookup, or account mismatch; never log either account ID. In the legacy
+`infra-deploy.yml`, bind the deploy job to `production` on `main` or
+`bsl-development` on `develop` so both role checks use that environment's explicit
+`AWS_TARGET_ACCOUNT_ID`. Never substitute the different repository-level
+`AWS_ACCOUNT_ID` or derive the expected ID from a role ARN. The development
+static-site job still lacks an explicit target ID in its `development`
+environment; keep it fail-closed until an approved mapping is available. Do not
+rely on the unsupported `allowed-account-ids` input to
 `aws-actions/configure-aws-credentials`. Separate manually dispatched
 infrastructure/campaign workflows and retained CodePipeline/CodeBuild recovery
 paths are outside this patch-release guard.
