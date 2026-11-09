@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611060044, // Updated to current timestamp
-  releaseDate: '2026-11-06',
+  buildNumber: 202611090052, // Updated to current timestamp
+  releaseDate: '2026-11-09',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'stop metrics stream on touch',
-    'prevent Safari landing flicker'
+    'reduce optional consent selector text size (#597)'
   ],
   breakingChanges: [],
-  notes: 'stop metrics stream on touch; prevent Safari landing flicker'
+  notes: 'reduce optional consent selector text size (#597)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.220': {
+    version: '1.9.220',
+    buildNumber: 202611090052,
+    releaseDate: '2026-11-09',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'reduce optional consent selector text size (#597)'
+    ],
+    breakingChanges: [],
+    notes: 'reduce optional consent selector text size (#597)'
+  },
   '1.9.219': {
     version: '1.9.219',
     buildNumber: 202611060044,

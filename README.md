@@ -20,20 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.219)
+## 📋 Latest Changes (v1.9.220)
 
 ### Bug Fixes
 
-* **mobile:** stop metrics stream on touch ([4af068e](https://github.com/hashpass-tech/hashpass.tech/commit/4af068e36c85bad3ad738255fe7dcf1a79349da6))
-* **web:** prevent Safari landing flicker ([0262ce0](https://github.com/hashpass-tech/hashpass.tech/commit/0262ce0fbfd27442b96bddbce2ab5c59db0d43e3))
+* **auth:** reduce optional consent selector text size ([#597](https://github.com/hashpass-tech/hashpass.tech/issues/597)) ([f1742fd](https://github.com/hashpass-tech/hashpass.tech/commit/f1742fd38a19fec48fca5c98504da118c4373e12))
 ### Release Highlights
-- stop metrics stream on touch; prevent Safari landing flicker
+- reduce optional consent selector text size (#597)
 
 ### Release scope
-- Compared with: `v1.9.218` (the previous global release tag)
+- Compared with: `v1.9.219` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
 - Mobile app
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
