@@ -22,28 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611091859, // Updated to current timestamp
+  buildNumber: 202611092310, // Updated to current timestamp
   releaseDate: '2026-11-09',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'skip unchanged database backup uploads'
   ],
   bugfixes: [
-    'stabilize landing cards',
-    'tighten optional consent choice spacing',
-    'map infra guard to its configured AWS account',
-    'scope AWS identity checks to target environments',
-    'verify AWS account before deployment',
-    'align Supabase environment resolution with API host',
-    'route opaque event requests by API host'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'stabilize landing cards; tighten optional consent choice spacing; map infra guard to its configured AWS account; scope AWS identity checks to target environments; verify AWS account before deployment; align Supabase environment resolution with API host; route opaque event requests by API host'
+  notes: 'skip unchanged database backup uploads'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.222': {
+    version: '1.9.222',
+    buildNumber: 202611092310,
+    releaseDate: '2026-11-09',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'skip unchanged database backup uploads'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'skip unchanged database backup uploads'
+  },
   '1.9.221': {
     version: '1.9.221',
     buildNumber: 202611091859,
