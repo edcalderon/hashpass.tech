@@ -255,6 +255,27 @@ export function rankEventsForCarousel(events: EventInfo[], query: string): Event
     .map(({ event }) => event);
 }
 
+const parseEventTimestamp = (value?: string | null): number | null => {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+/** Keep Hash Poker as the default while excluding completed global events. */
+export function filterUpcomingCarouselEvents(
+  events: EventInfo[],
+  now: Date = new Date(),
+): EventInfo[] {
+  const nowTimestamp = now.getTime();
+  return events.filter((event) => {
+    if (event.id === "hash-poker") return true;
+
+    const endTimestamp = parseEventTimestamp(event.eventEndDate);
+    const completionTimestamp = endTimestamp ?? parseEventTimestamp(event.eventStartDate);
+    return completionTimestamp !== null && completionTimestamp > nowTimestamp;
+  });
+}
+
 export interface LampBrandingConfig {
   logoSrcDark?: string;
   logoSrcLight?: string;
@@ -491,7 +512,9 @@ export default function EventBannerCarousel({
   const PAST_OR_REDUNDANT_EVENT_IDS = new Set(["bsl", "peru2026", "chile2026", "bsl2025"]);
   const carouselEvents = selectedEvent
     ? availableEvents
-    : availableEvents.filter((event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id));
+    : filterUpcomingCarouselEvents(
+        availableEvents.filter((event) => !PAST_OR_REDUNDANT_EVENT_IDS.has(event.id)),
+      );
   const orderedCarouselEvents = selectedEvent
     ? carouselEvents
     : [
