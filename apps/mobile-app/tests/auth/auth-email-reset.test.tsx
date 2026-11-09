@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { IconButton } from "@hashpass/ui/primitives";
+import { uiTokens } from "@hashpass/ui/tokens";
 import AuthScreen from "../../app/(shared)/auth";
 
 // Coverage instrumentation makes the large auth render occasionally exceed
@@ -178,10 +179,25 @@ describe("passwordless email reset", () => {
     expect(partnerConsent.props.accessibilityLabel).toContain("partners for offers");
     expect(consent.findAll((node) => node.props.name === "checkbox-outline")).toHaveLength(1);
 
-    const title = renderer.root
-      .findAllByType(Text)
-      .find((node) => node.props.children === "HASHPASS updates")!;
-    expect(StyleSheet.flatten(title.props.style).textAlign).toBe("left");
+    const consentCopy = [
+      "HASHPASS updates",
+      "Optional emails · Unsubscribe anytime.",
+      "Partner offers",
+      "Share my email and contact details with partners for offers.",
+    ].map((copy) =>
+      renderer.root
+        .findAllByType(Text)
+        .find((node) => node.props.children === copy)!,
+    );
+    const consentCopyStyles = consentCopy.map((node) =>
+      StyleSheet.flatten(node.props.style),
+    );
+    expect(consentCopyStyles.map((style) => style.fontSize)).toEqual(
+      Array(4).fill(uiTokens.type.caption),
+    );
+    expect(consentCopyStyles[0].fontWeight).toBe("700");
+    expect(consentCopyStyles[2].fontWeight).toBe("700");
+    expect(consentCopyStyles[0].textAlign).toBe("left");
 
     await act(async () => { consent.props.onPress(); });
     const selected = marketingConsentToggles()[0];
