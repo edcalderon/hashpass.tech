@@ -73,6 +73,7 @@ describe('AdminPanel pass codes', () => {
       });
     }
     mountedRenderer = null;
+    jest.useRealTimers();
   });
 
   beforeEach(() => {
@@ -522,6 +523,7 @@ describe('AdminPanel pass codes', () => {
   });
 
   it('uses the searchable event selector for event-admin event selection', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-26T12:00:00.000Z'));
     mockAdminAccess = {
       globalRole: null,
       eventRoles: [
@@ -555,6 +557,7 @@ describe('AdminPanel pass codes', () => {
   });
 
   it('uses the searchable event selector for global-admin event selection', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-26T12:00:00.000Z'));
     mockGet.mockResolvedValue({ success: true, data: { data: [] } });
 
     const renderer = await renderPanel();
