@@ -3770,9 +3770,13 @@ const getStyles = (
       gap: 12,
       marginTop: uiTokens.space.md,
       paddingVertical: 6,
+      // Tighten only the shared boundary; the second row restores bottom padding.
+      paddingBottom: 0,
     },
     partnerPromotionsOption: {
-      marginTop: 2,
+      marginTop: 0,
+      paddingTop: 0,
+      paddingBottom: 6,
     },
     marketingOptInIcon: {
       width: 24,
