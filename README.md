@@ -20,15 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.222)
+## 📋 Latest Changes (v1.9.223)
 
-### Released
-- skip unchanged database backup uploads
+### Bug Fixes
+
+* **backup:** run core dumps every 3 hours and add a daily all-clear email ([3c64bf2](https://github.com/hashpass-tech/hashpass.tech/commit/3c64bf20ce1e116472c37f5256d01fa686f75844))
+### Release Highlights
+- run core dumps every 3 hours and add a daily all-clear email
 
 ### Release scope
-- Compared with: `v1.9.221` (the previous global release tag)
+- Compared with: `v1.9.222` (the previous global release tag)
 
 ### Affected products & packages
+- Mobile app
 - Infrastructure
 - Documentation
 - Release tooling

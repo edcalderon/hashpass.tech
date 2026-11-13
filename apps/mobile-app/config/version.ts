@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611092310, // Updated to current timestamp
-  releaseDate: '2026-11-09',
+  buildNumber: 202611130246, // Updated to current timestamp
+  releaseDate: '2026-11-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'skip unchanged database backup uploads'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'run core dumps every 3 hours and add a daily all-clear email'
   ],
   breakingChanges: [],
-  notes: 'skip unchanged database backup uploads'
+  notes: 'run core dumps every 3 hours and add a daily all-clear email'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.223': {
+    version: '1.9.223',
+    buildNumber: 202611130246,
+    releaseDate: '2026-11-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'run core dumps every 3 hours and add a daily all-clear email'
+    ],
+    breakingChanges: [],
+    notes: 'run core dumps every 3 hours and add a daily all-clear email'
+  },
   '1.9.222': {
     version: '1.9.222',
     buildNumber: 202611092310,

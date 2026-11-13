@@ -1,3 +1,21 @@
+## [1.9.223](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.222...v1.9.223) (2026-11-13)
+
+
+### Bug Fixes
+
+* **backup:** run core dumps every 3 hours and add a daily all-clear email ([3c64bf2](https://github.com/hashpass-tech/hashpass.tech/commit/3c64bf20ce1e116472c37f5256d01fa686f75844))
+### Release Highlights
+- run core dumps every 3 hours and add a daily all-clear email
+
+### Release scope
+- Compared with: `v1.9.222` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.222](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.221...v1.9.222) (2026-11-09)
 ### Released
 - skip unchanged database backup uploads
