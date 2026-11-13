@@ -1,6 +1,6 @@
 name: Database backup
 
-# Dump of core production every 6 hours, weekly dump of shared dev, into the private
+# Dump of core production every 3 hours (GitHub drops or delays scheduled runs, so the extra runs are redundancy), weekly dump of shared dev, into the private
 # hashpass-db-backups bucket. AWS access is OIDC-only through a role that can
 # write dumps, list scoped object metadata, and read/write one state object
 # under each target prefix (see packages/infra/terraform/stacks/hashpass-db-backups).
@@ -9,7 +9,7 @@ name: Database backup
 
 on:
   schedule:
-    - cron: "30 */6 * * *"   # core production, every 6 hours
+    - cron: "30 */3 * * *"   # core production, every 3 hours
     - cron: "45 6 * * 0"   # shared dev, Sundays
   workflow_dispatch:
     inputs:

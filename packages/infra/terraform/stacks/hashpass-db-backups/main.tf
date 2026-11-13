@@ -425,6 +425,28 @@ resource "aws_cloudwatch_event_target" "freshness" {
   arn  = aws_lambda_function.freshness.arn
 }
 
+# Daily all-clear email: proves the monitor itself is alive and says whether the
+# data changed or was verified unchanged. Problems still alert on the 2-hour check.
+resource "aws_cloudwatch_event_rule" "freshness_digest" {
+  name                = "hashpass-db-backups-freshness-digest"
+  description         = "Daily healthy-backup summary email."
+  schedule_expression = "cron(0 13 * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "freshness_digest" {
+  rule  = aws_cloudwatch_event_rule.freshness_digest.name
+  arn   = aws_lambda_function.freshness.arn
+  input = jsonencode({ digest = true })
+}
+
+resource "aws_lambda_permission" "freshness_digest" {
+  statement_id  = "AllowEventBridgeDigest"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.freshness.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.freshness_digest.arn
+}
+
 resource "aws_lambda_permission" "freshness" {
   statement_id  = "AllowEventBridge"
   action        = "lambda:InvokeFunction"

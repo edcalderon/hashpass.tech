@@ -28,7 +28,7 @@ not the second.
 | Piece | Where |
 |-------|-------|
 | Bucket (private, encrypted, versioned, TLS-only, `prevent_destroy`) | `packages/infra/terraform/stacks/hashpass-db-backups` |
-| Dump workflow (core every 6 hours, shared dev weekly; currently full dump each run) | `.github/workflows/db-backup.yml` |
+| Dump workflow (core every 3 hours, shared dev weekly; currently full dump each run) | `.github/workflows/db-backup.yml` |
 | Quarterly restore drill (restore into throwaway `postgres:17`, compare row counts) | `.github/workflows/db-restore-drill.yml` |
 | Freshness alarm (Lambda + SNS + CloudWatch, independent of GitHub) | same Terraform stack, `lambda/freshness.py` |
 | Row-count helpers | `packages/tools/scripts/db-backup/` |
@@ -40,7 +40,7 @@ never dump bodies. The reader role reads the dump prefixes. Both are trusted onl
 
 ## Known limits of the current design
 
-* **RPO is up to 6 hours** (core) / 7 days (dev). Anything written after the last dump is lost in a disaster.
+* **RPO is up to 3 hours** when the schedule runs on time, and up to ~8 hours if GitHub drops a run (core) / 7 days (dev). Anything written after the last dump is lost in a disaster.
 * **Silent failure is covered only once the alert email is confirmed.** The freshness Lambda emails when the newest
   dump is too old or too small, which also catches a schedule that never ran. The SNS subscription is created
   `PendingConfirmation` and does nothing until the recipient confirms it.
@@ -79,7 +79,7 @@ option for repeatable output used when comparing dumps.
 
 Keep it small and owned by us. Do not build WAL tooling that the platform will not let us run.
 
-1. **Dump more often** (built). Every 6 hours for core; the database is a few MB.
+1. **Dump more often** (built). Every 3 hours for core (GitHub drops scheduled runs, so the extra runs are redundancy); the database is a few MB.
 2. **Read-only backup role** (built). `backup_reader` with `pg_read_all_data`, `bypassrls`, read-only by default, used by `DB_BACKUP_*_DB_URL`.
 3. **Independent freshness alarm** (built). EventBridge-scheduled Lambda that checks the age and size of the newest dump and emails through SNS.
 4. **Retention tiers** (built). `db-backup.yml` tags each upload `tier=frequent|daily|monthly|dev`; the bucket's lifecycle
@@ -103,7 +103,7 @@ Keep it small and owned by us. Do not build WAL tooling that the platform will n
 
 ### Build vs upgrade
 
-If the event load or the cost of 6 hours of lost data becomes unacceptable, the answer is the paid
+If the event load or the cost of 3 hours of lost data becomes unacceptable, the answer is the paid
 plan (platform daily backups, then the PITR add-on), not more custom tooling. The custom service above
 is still worth keeping then as an independent copy outside Supabase.
 

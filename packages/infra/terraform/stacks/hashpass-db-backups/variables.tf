@@ -35,7 +35,7 @@ variable "alert_email" {
 }
 
 variable "core_max_age_hours" {
-  description = "Alert when the newest prod/core dump is older than this. The workflow runs every 6 hours."
+  description = "Alert when the newest prod/core dump is older than this. The workflow runs every 3 hours."
   type        = number
   default     = 8
 }

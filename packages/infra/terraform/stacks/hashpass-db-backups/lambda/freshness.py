@@ -1,4 +1,5 @@
-"""Alert when the newest verified database state is too old or suspicious.
+"""Alert when the newest verified database state is too old or suspicious, and
+send a daily all-clear summary (event {"digest": true}) when everything is healthy.
 
 Runs on EventBridge, independent of GitHub, so it also catches a backup schedule
 that silently stopped. Uses only s3:ListBucket (object metadata), never object
@@ -150,9 +151,10 @@ def describe(problem):
                 lines += [
                     f"  Why it matters: if this database were lost right now, you would lose everything written in the last {_hours(problem['age_h'])}.",
                     "  This is the only backup: the Supabase free plan has no point-in-time recovery.",
-                    "  Likely cause (most common): GitHub delayed or skipped a scheduled run. The job is meant to run every 6 hours,",
-                    "  but GitHub does not guarantee scheduled workflows start on time. Less common: the workflow is failing,",
-                    "  the database credential/secret was rotated, the AWS role was changed, or the project is paused.",
+                    "  Likely cause (most common): GitHub delayed or dropped scheduled runs. The job is scheduled every 3 hours,",
+                    "  but GitHub does not guarantee scheduled workflows start on time and sometimes skips them under load.",
+                    "  Less common: the workflow is failing, the database credential/secret was rotated, the AWS role was changed,",
+                    "  or the project is paused.",
                 ]
     elif kind == "small":
         lines += [
@@ -201,10 +203,52 @@ def build_message(problems, now):
     )
 
 
+def drop_duplicate_replica_problems(problems):
+    """A replica copy of the same stale dump is the same incident, not a second one."""
+    primary_stale = {(p["database"], p["key"]) for p in problems if p["kind"] == "stale" and not p["replica"]}
+    return [p for p in problems if not (p["replica"] and p["kind"] == "stale" and (p["database"], p["key"]) in primary_stale)]
+
+
+def describe_healthy(check, obj, now):
+    name, _, _ = DATABASES.get(check["prefix"], (check["prefix"], "core-production", check["prefix"]))
+    scope = name + (" - replica copy (us-west-2)" if check.get("replica") else "")
+    age_h = (now - obj["LastModified"]).total_seconds() / 3600
+    if obj.get("verified_unchanged"):
+        dump_ts = obj["dump_last_modified"].strftime("%Y-%m-%d %H:%M UTC")
+        return (
+            f"* {scope}: OK. Nothing new to back up: the data was checked {_hours(age_h)} ago and is identical to the "
+            f"full dump from {dump_ts} ({obj['Size']:,} bytes), which is still the valid restore point."
+        )
+    ts = obj["LastModified"].strftime("%Y-%m-%d %H:%M UTC")
+    return f"* {scope}: OK. Newest full dump {obj['Key']} written {ts} ({_hours(age_h)} ago, {obj['Size']:,} bytes)."
+
+
+def build_ok_message(lines, now):
+    return "\n".join(
+        [
+            "All HASHPASS database backups are healthy. No action needed.",
+            "",
+            f"Checked at: {now.strftime('%Y-%m-%d %H:%M UTC')}",
+            "",
+            "STATUS",
+            "\n".join(lines),
+            "",
+            "A backup is only flagged when the newest verified state is older than its limit. When the database has not",
+            "changed since the last full dump, the backup job records a small verification instead of a duplicate dump.",
+            "",
+            f"Backup runs: {WORKFLOW_URL}",
+            f"Runbook: {RUNBOOK_URL}",
+            "",
+            "This daily summary is sent by the same independent check that raises late-backup alerts.",
+        ]
+    )
+
+
 def handler(event, context):
     bucket = os.environ["BUCKET"]
     now = datetime.datetime.now(datetime.timezone.utc)
     problems = []
+    healthy = []
     for check in json.loads(os.environ["CHECKS"]):
         replica = check.get("replica", False)
         obj = (
@@ -215,6 +259,9 @@ def handler(event, context):
         problem = evaluate(check, obj, now)
         if problem:
             problems.append(problem)
+        else:
+            healthy.append(describe_healthy(check, obj, now))
+    problems = drop_duplicate_replica_problems(problems)
     if problems:
         kinds = {p["kind"] for p in problems}
         subject = (
@@ -223,6 +270,12 @@ def handler(event, context):
             else "HASHPASS database backup problem"
         )
         sns.publish(TopicArn=os.environ["TOPIC_ARN"], Subject=subject, Message=build_message(problems, now))
+    elif isinstance(event, dict) and event.get("digest"):
+        sns.publish(
+            TopicArn=os.environ["TOPIC_ARN"],
+            Subject="HASHPASS database backups OK",
+            Message=build_ok_message(healthy, now),
+        )
     summary = [{k: str(v) for k, v in p.items() if k in ("database", "kind", "key", "replica", "verified_unchanged")} for p in problems]
     print(json.dumps({"problems": summary}))
     return {"problems": summary}

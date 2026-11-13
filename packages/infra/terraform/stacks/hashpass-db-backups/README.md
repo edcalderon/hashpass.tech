@@ -46,7 +46,7 @@ production first, missing read/list permissions make it fall back to a full dump
 
 | Workflow | Schedule | What it does |
 |----------|----------|--------------|
-| `.github/workflows/db-backup.yml` | core production every 6 hours (:30 past 00/06/12/18 UTC); shared dev Sundays 06:45 UTC | Counts public rows and makes a full `pg_dump` (postgres:17). Daily/monthly retention runs always keep a full restore point; other runs upload for a content change or seven-day refresh and record small unchanged markers between full dumps. |
+| `.github/workflows/db-backup.yml` | core production every 3 hours (:30 past 00/03/06/…/21 UTC); shared dev Sundays 06:45 UTC | Counts public rows and makes a full `pg_dump` (postgres:17). Daily/monthly retention runs always keep a full restore point; other runs upload for a content change or seven-day refresh and record small unchanged markers between full dumps. |
 | `.github/workflows/db-restore-drill.yml` | quarterly (Jan/Apr/Jul/Oct, day 5) | Restores the newest dump into a throwaway postgres:17 and compares every public table's row count with the counts captured at backup time |
 
 AWS access is OIDC only. Both roles retain the repository's `main` branch
@@ -88,6 +88,12 @@ and latest unchanged check when applicable, the age against the limit, why it ma
 by `lambda/test_freshness.py`: `python3 -B -m unittest test_freshness` from that directory).
 It only has `s3:ListBucket`, so it cannot read dump or state contents. **The email subscription must be
 confirmed once** from the message AWS sends to the alert address.
+
+A second EventBridge rule (`hashpass-db-backups-freshness-digest`, 13:00 UTC daily) invokes the same Lambda with
+`{"digest": true}`. When everything is healthy it emails "HASHPASS database backups OK", saying whether each
+database has new data or was verified unchanged against the last full dump (so "nothing to back up" is an explicit,
+positive message, not silence). If anything is wrong, the normal alert is sent instead. A replica alert for the same
+stale dump as the primary is folded into the primary alert, so one incident is one email.
 
 ## Gaps
 

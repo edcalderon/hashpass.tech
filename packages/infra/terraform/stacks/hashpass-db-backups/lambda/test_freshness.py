@@ -41,6 +41,14 @@ class FakeS3:
         return FakePaginator(self.objects)
 
 
+class FakeSns:
+    def __init__(self):
+        self.messages = []
+
+    def publish(self, **message):
+        self.messages.append(message)
+
+
 class FreshnessMessageTest(unittest.TestCase):
     def test_healthy_dump_produces_no_problem(self):
         self.assertIsNone(freshness.evaluate(CORE, dump(5), NOW))
@@ -53,7 +61,7 @@ class FreshnessMessageTest(unittest.TestCase):
         self.assertIn("must be under 8 hours", message)
         self.assertIn("0.8 hours overdue", message)
         self.assertIn("core-prod_20261026T132230Z.dump", message)
-        self.assertIn("delayed or skipped a scheduled run", message)
+        self.assertIn("delayed or dropped scheduled runs", message)
         self.assertIn("--field target=core-production", message)
         self.assertIn("actions/workflows/db-backup.yml", message)
         self.assertIn("blob/main/apps/docs/docs/infra/database-backup-and-recovery.md", message)
@@ -234,6 +242,57 @@ class FreshnessHandlerTest(unittest.TestCase):
         small_result, small_messages = self.run_handler([small], [CORE])
         self.assertEqual(small_result["problems"][0]["kind"], "small")
         self.assertEqual(small_messages[0]["Subject"], "HASHPASS database backup problem")
+
+    def test_replica_alert_for_the_same_stale_dump_is_folded_into_the_primary_alert(self):
+        stale = {
+            "Key": "prod/core/core-prod_20261109T100000Z.dump",
+            "Size": 500_000,
+            "age": datetime.timedelta(hours=13),
+        }
+        result, messages = self.run_handler([stale], [CORE, {**CORE, "max_age_hours": 12, "replica": True}])
+        self.assertEqual([p["replica"] for p in result["problems"]], ["False"])
+        self.assertEqual(len(messages), 1)
+        self.assertNotIn("replica bucket", messages[0]["Message"])
+
+    def test_late_email_says_the_job_runs_every_three_hours(self):
+        stale = {
+            "Key": "prod/core/core-prod_20261109T100000Z.dump",
+            "Size": 500_000,
+            "age": datetime.timedelta(hours=10),
+        }
+        _, messages = self.run_handler([stale], [CORE])
+        self.assertIn("every 3 hours", messages[0]["Message"])
+
+    def test_digest_event_sends_all_clear_only_when_healthy(self):
+        check = {"prefix": "prod/core/", "max_age_hours": 8, "min_bytes": 100_000}
+        recent = {
+            "Key": "prod/core/core-prod_20261109T200000Z.dump",
+            "Size": 500_000,
+            "age": datetime.timedelta(hours=1),
+        }
+        sns = FakeSns()
+        s3 = FakeS3([{**recent, "LastModified": NOW - recent["age"]}])
+        env = {"BUCKET": "b", "REPLICA_BUCKET": "r", "TOPIC_ARN": "t", "CHECKS": json.dumps([check])}
+        with patch.dict(os.environ, env), patch.object(freshness, "s3", s3), patch.object(
+            freshness, "sns", sns
+        ), patch.object(freshness.datetime, "datetime", wraps=freshness.datetime.datetime) as dt, patch("builtins.print"):
+            dt.now.return_value = NOW
+            freshness.handler({}, None)
+            self.assertEqual(sns.messages, [])
+            freshness.handler({"digest": True}, None)
+        self.assertEqual(sns.messages[0]["Subject"], "HASHPASS database backups OK")
+        self.assertIn("No action needed", sns.messages[0]["Message"])
+
+    def test_digest_explains_unchanged_database(self):
+        obj = {
+            "Key": "prod/core/core-prod_20261026T132230Z.dump",
+            "Size": 5_000_000,
+            "LastModified": NOW - datetime.timedelta(hours=1),
+            "verified_unchanged": True,
+            "dump_last_modified": NOW - datetime.timedelta(hours=30),
+        }
+        line = freshness.describe_healthy(CORE, obj, NOW)
+        self.assertIn("Nothing new to back up", line)
 
 
 if __name__ == "__main__":
