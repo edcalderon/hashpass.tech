@@ -1,3 +1,27 @@
+## [1.9.224](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.223...v1.9.224) (2026-11-15)
+
+
+### Bug Fixes
+
+* **security:** preserve authenticator handoffs and contact drafts ([8ebda46](https://github.com/hashpass-tech/hashpass.tech/commit/8ebda4678202ab618fdcd4acf3bbd70fbfd6f254))
+
+
+### Features
+
+* make authenticator optional and merge profile settings ([9cb2a70](https://github.com/hashpass-tech/hashpass.tech/commit/9cb2a706b4ef8b55a2c3e8e01cb0233bd17b146c))
+* **security:** protect Wallet and Contacts with authenticator verification ([bd75621](https://github.com/hashpass-tech/hashpass.tech/commit/bd75621229081343a6eb123ba1590a2146992252)), closes [#616](https://github.com/hashpass-tech/hashpass.tech/issues/616)
+### Release Highlights
+- make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts
+
+### Release scope
+- Compared with: `v1.9.223` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Infrastructure
+- Documentation
+
 ## [1.9.223](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.222...v1.9.223) (2026-11-13)
 
 
