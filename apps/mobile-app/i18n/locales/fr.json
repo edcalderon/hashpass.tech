@@ -1561,10 +1561,13 @@
   "pin": {
     "authenticator": {
       "optionalTitle": "Application d’authentification recommandée",
-      "optionalBody": "Vous pouvez continuer avec votre code PIN pour le moment. Pour renforcer la sécurité et récupérer votre code PIN, nous vous recommandons de configurer une application d’authentification.",
+      "optionalBody": "L’accès par PIN reste disponible. Une application d’authentification renforce la sécurité et permet de récupérer votre PIN.",
       "setup": "Configurer l’application",
       "continuePin": "Continuer avec le PIN",
       "pinRequired": "Aucune application d’authentification n’est configurée. Une vérification récente du PIN est nécessaire pour continuer avec le PIN seul.",
+      "setupUnavailable": "La configuration de l’application d’authentification n’a pas pu être préparée. Réessayez dans un instant ; l’accès par PIN reste disponible.",
+      "emailSendUnavailable": "La configuration est prête, mais le code par e-mail n’a pas pu être envoyé. Réessayez ou continuez avec votre PIN.",
+      "emailRateLimited": "Un e-mail de configuration a été envoyé récemment. Vérifiez votre boîte de réception ou réessayez dans une minute.",
       "unavailable": "Nous n’avons pas pu confirmer le statut de votre application d’authentification ni préparer sa configuration. Vérifiez votre connexion et réessayez. Si aucune application n’est configurée, vous pouvez utiliser uniquement votre code PIN."
     }
   }

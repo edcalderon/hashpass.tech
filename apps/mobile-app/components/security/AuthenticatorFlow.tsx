@@ -46,9 +46,15 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
     const mine = generation.current;
     try {
       const next = await beginAuthenticator(pinProof);
-      if (mine === generation.current) { setEnrollment(next); setPhase('enroll'); }
+      if (mine !== generation.current) return;
+      setEnrollment(next); setPhase('enroll');
+      if (next.emailStatus === 'rate_limited') {
+        setError(t('authenticator.emailRateLimited', 'A setup email was sent recently. Check your inbox or try again in a minute.'));
+      } else if (next.emailStatus === 'unavailable') {
+        setError(t('authenticator.emailSendUnavailable', 'Setup is ready, but we could not send the email code. Retry or continue with your PIN.'));
+      }
     } catch {
-      if (mine === generation.current) setError(t('authenticator.setupUnavailable', 'We could not start setup. Check your connection and try again. You can still continue with your PIN because two-step verification is not enabled.'));
+      if (mine === generation.current) setError(t('authenticator.setupUnavailable', 'Could not prepare authenticator setup. Try again in a moment; PIN-only access remains available.'));
     } finally {
       inFlight.current = false;
       if (mine === generation.current) setBusy(false);
@@ -64,15 +70,17 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
         setEnrollment((current) => current ? { ...current, emailHint: challenge.emailHint } : current);
         setEmailCode('');
       }
-    } catch {
-      if (mine === generation.current) setError(t('authenticator.emailSendUnavailable', 'We could not send a new setup code. Check your connection and try again shortly.'));
+    } catch (failure) {
+      if (mine === generation.current) setError(failure instanceof Error && failure.message === 'rate_limited'
+        ? t('authenticator.emailRateLimited', 'A setup email was sent recently. Check your inbox or try again in a minute.')
+        : t('authenticator.emailSendUnavailable', 'Setup is ready, but we could not send the email code. Retry or continue with your PIN.'));
     } finally {
       inFlight.current = false;
       if (mine === generation.current) setBusy(false);
     }
   };
   const continueWithPin = () => {
-    if (!pinProof || phase !== 'optional') return;
+    if (!pinProof || (phase !== 'optional' && phase !== 'enroll')) return;
     setEnrollment(null); setResult(null); setCode(''); onDone('pin');
   };
   const finish = (value: AuthenticatorResult) => {
@@ -107,18 +115,20 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
     </Text>
     {phase === 'checking' && <Text style={body}>{t('authenticator.checking', 'Checking authenticator protection…')}</Text>}
     {phase === 'optional' && <>
-      <Surface mode={mode} style={styles.recommendation}>
+      <View style={styles.recommendation}>
         <Text accessibilityRole="header" style={[body, { fontWeight: '700' }]}>
           {t('authenticator.optionalTitle', 'Authenticator recommended')}
         </Text>
-        <Text accessibilityRole="alert" style={body}>
-          {t('authenticator.optionalBody', 'You can continue with your PIN for now. For stronger security, we recommend setting up an authenticator app. We will email a one-time code to confirm setup.')}
+        <Text style={body}>
+          {t('authenticator.optionalBody', 'PIN-only access is available. Add an authenticator for stronger security and PIN recovery.')}
         </Text>
-      </Surface>
-      <ActionButton mode={mode} label={t('authenticator.setup', 'Set up authenticator')}
-        loading={busy} disabled={busy} onPress={() => { void startEnrollment(); }} />
-      <ActionButton mode={mode} variant="secondary" label={t('authenticator.continuePin', 'Continue with PIN')}
-        disabled={busy} onPress={continueWithPin} />
+      </View>
+      <View style={styles.optionalActions}>
+        <ActionButton mode={mode} label={t('authenticator.setup', 'Set up authenticator')}
+          loading={busy} disabled={busy} onPress={() => { void startEnrollment(); }} />
+        <ActionButton mode={mode} variant="secondary" label={t('authenticator.continuePin', 'Continue with PIN')}
+          disabled={busy} onPress={continueWithPin} />
+      </View>
     </>}
     {phase === 'pinRequired' && <Text accessibilityRole="alert" style={body}>
       {t('authenticator.pinRequired', 'No authenticator is enrolled. A recent PIN check is required to continue with PIN-only access.')}
@@ -142,6 +152,8 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
       <Text style={body}>{t('authenticator.key', 'Manual setup key (time-based, 6 digits, 30 seconds)')}</Text>
       <Text selectable style={body}>{enrollment.secret}</Text>
       <Text style={body}>{t('authenticator.confirm', 'Enter the current authenticator app code to finish enrollment. Setup expires after 10 minutes. Keep your device time set automatically.')}</Text>
+      <ActionButton mode={mode} variant="ghost" label={t('authenticator.continuePin', 'Continue with PIN')}
+        disabled={busy} onPress={continueWithPin} />
     </>}
     {phase === 'verify' && <Text style={body}>{scope === 'access'
       ? t('authenticator.access', 'Enter your authenticator code to open Wallet & Contacts. Your PIN and authenticator protect every visit.')
@@ -169,7 +181,13 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
   </Surface>;
 }
 const styles = StyleSheet.create({
-  root: { gap: uiTokens.space.lg, width: '100%' },
+  root: { gap: uiTokens.space.md, width: '100%' },
   qr: { alignItems: 'center', padding: uiTokens.space.md },
-  recommendation: { gap: uiTokens.space.sm },
+  recommendation: { gap: uiTokens.space.xs },
+  optionalActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: uiTokens.space.sm,
+  },
 });

@@ -1560,10 +1560,13 @@
   "pin": {
     "authenticator": {
       "optionalTitle": "Authenticator empfohlen",
-      "optionalBody": "Du kannst vorerst mit deiner PIN fortfahren. Für mehr Sicherheit und zur PIN-Wiederherstellung empfehlen wir eine Authenticator-App einzurichten.",
+      "optionalBody": "Der Zugang per PIN bleibt verfügbar. Eine Authenticator-App erhöht die Sicherheit und ermöglicht die PIN-Wiederherstellung.",
       "setup": "Authenticator einrichten",
       "continuePin": "Mit PIN fortfahren",
       "pinRequired": "Es ist kein Authenticator eingerichtet. Für die Anmeldung nur mit PIN ist eine aktuelle PIN-Prüfung erforderlich.",
+      "setupUnavailable": "Die Authenticator-Einrichtung konnte nicht vorbereitet werden. Bitte versuche es gleich noch einmal. Der Zugang per PIN bleibt verfügbar.",
+      "emailSendUnavailable": "Die Einrichtung ist bereit, aber der E-Mail-Code konnte nicht gesendet werden. Versuche es erneut oder fahre mit deiner PIN fort.",
+      "emailRateLimited": "Vor Kurzem wurde eine Einrichtungs-E-Mail gesendet. Prüfe deinen Posteingang oder versuche es in einer Minute erneut.",
       "unavailable": "Wir konnten den Authenticator-Status nicht bestätigen oder die Einrichtung vorbereiten. Prüfe deine Verbindung und versuche es erneut. Wenn kein Authenticator eingerichtet ist, kannst du nur deine PIN verwenden."
     }
   }

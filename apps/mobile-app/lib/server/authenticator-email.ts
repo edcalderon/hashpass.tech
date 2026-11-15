@@ -27,7 +27,8 @@ export async function sendAuthenticatorEmailCode(
 ): Promise<'sent' | 'rate_limited'> {
   const normalizedEmail = email.trim().toLowerCase();
   const latest = await db.from('otp_codes').select('created_at').eq('email', normalizedEmail)
-    .eq('purpose', EMAIL_AUTHENTICATOR_PURPOSE).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    .eq('purpose', EMAIL_AUTHENTICATOR_PURPOSE).eq('used', false)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (latest.error) throw new Error('authenticator_unavailable');
   if (latest.data?.created_at && Date.now() - Date.parse(latest.data.created_at) < RESEND_COOLDOWN_MS) {
     return 'rate_limited';

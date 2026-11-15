@@ -312,10 +312,13 @@
   "pin": {
     "authenticator": {
       "optionalTitle": "Autentimisrakendus on soovitatav",
-      "optionalBody": "Praegu saad jätkata PIN-koodiga. Parema turvalisuse ja PIN-koodi taastamise jaoks soovitame seadistada autentimisrakenduse.",
+      "optionalBody": "Saad kasutada ainult PIN-koodi. Autentimisrakendus suurendab turvalisust ja võimaldab PIN-koodi taastada.",
       "setup": "Seadista autentimisrakendus",
       "continuePin": "Jätka PIN-koodiga",
       "pinRequired": "Autentimisrakendus pole seadistatud. Ainult PIN-koodiga jätkamiseks on vaja hiljutist PIN-koodi kontrolli.",
+      "setupUnavailable": "Autentimisrakenduse seadistust ei saanud ette valmistada. Proovi peagi uuesti; PIN-koodiga juurdepääs on endiselt võimalik.",
+      "emailSendUnavailable": "Seadistus on valmis, kuid e-posti koodi ei saanud saata. Proovi uuesti või jätka PIN-koodiga.",
+      "emailRateLimited": "Seadistuse e-kiri saadeti hiljuti. Vaata postkasti või proovi minuti pärast uuesti.",
       "unavailable": "Autentifikaatori olekut ega seadistuse ettevalmistamist ei õnnestunud kinnitada. Kontrolli ühendust ja proovi uuesti. Kui autentifikaator pole seadistatud, saad kasutada ainult PIN-koodi."
     }
   },

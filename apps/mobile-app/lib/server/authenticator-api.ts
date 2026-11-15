@@ -79,14 +79,19 @@ export async function authenticatorRequest(request: Request, write = false): Pro
         if (result.data !== true) return reply('enrollment_conflict', 409);
       }
       const label = encodeURIComponent(['HASHPASS', userId].join(':'));
+      let emailStatus: 'sent' | 'rate_limited' | 'unavailable' = 'unavailable';
       const serviceKey = getSupabaseServerEnv(request).supabaseServiceKey;
-      if (!serviceKey) return reply('unavailable', 503);
-      try {
-        const sent = await sendAuthenticatorEmailCode(db, identity.email, serviceKey);
-        if (sent === 'rate_limited') return reply('rate_limited', 429);
-      } catch { return reply('unavailable', 503); }
+      if (serviceKey) {
+        try {
+          emailStatus = await sendAuthenticatorEmailCode(db, identity.email, serviceKey);
+        } catch {
+          // Enrollment itself is prepared. Report email delivery separately so
+          // a mail outage does not strand the user before the authenticator QR.
+          emailStatus = 'unavailable';
+        }
+      }
       return reply({ secret, uri: `otpauth://totp/${label}?secret=${secret}&issuer=HASHPASS&algorithm=SHA1&digits=6&period=30`,
-        emailHint: maskAuthenticatorEmail(identity.email) });
+        emailHint: maskAuthenticatorEmail(identity.email), emailStatus });
     }
     if (body.action === 'send-setup-code') {
       const stored = await db.rpc('get_user_authenticator', { p_user_id: userId });

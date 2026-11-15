@@ -57,7 +57,25 @@ it('generates a compatible URI but does not activate before code confirmation', 
   expect(body.data.secret).toMatch(/^[A-Z2-7]{32}$/);
   expect(body.data.uri).toContain('algorithm=SHA1&digits=6&period=30');
   expect(body.data.emailHint).toBe('a***@example.com');
+  expect(body.data.emailStatus).toBe('sent');
   expect(mockRpc.mock.calls.map(([name]) => name)).toEqual(['get_user_authenticator', 'begin_user_authenticator']);
+  expect(mockSendEmailCode).toHaveBeenCalledTimes(1);
+});
+it('returns the prepared setup when email delivery is unavailable', async () => {
+  mockRpc.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: true });
+  mockSendEmailCode.mockRejectedValueOnce(new Error('email_unavailable'));
+
+  const response = await call({ action: 'begin' }, pin());
+  const body = await response.json();
+
+  expect(response.status).toBe(200);
+  expect(body.data.secret).toMatch(/^[A-Z2-7]{32}$/);
+  expect(body.data.emailStatus).toBe('unavailable');
+});
+it('sends the email code only after pending authenticator setup is prepared', async () => {
+  mockRpc.mockResolvedValueOnce({ data: { enabled: false, pendingUntil: new Date(Date.now() + 60_000).toISOString() } });
+  const response = await call({ action: 'send-setup-code' }, pin());
+  expect(response.status).toBe(200);
   expect(mockSendEmailCode).toHaveBeenCalledTimes(1);
 });
 it('never overwrites an enabled factor', async () => {

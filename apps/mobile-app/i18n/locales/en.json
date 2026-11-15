@@ -2573,10 +2573,13 @@
     "cancel": "Not now",
     "authenticator": {
       "optionalTitle": "Authenticator recommended",
-      "optionalBody": "You can continue with your PIN for now. For stronger security and PIN recovery, we recommend setting up an authenticator app.",
+      "optionalBody": "PIN-only access is available. Add an authenticator for stronger security and PIN recovery.",
       "setup": "Set up authenticator",
       "continuePin": "Continue with PIN",
       "pinRequired": "No authenticator is enrolled. A recent PIN check is required for PIN-only access.",
+      "setupUnavailable": "Could not prepare authenticator setup. Try again in a moment; PIN-only access remains available.",
+      "emailSendUnavailable": "Setup is ready, but we could not send the email code. Retry or continue with your PIN.",
+      "emailRateLimited": "A setup email was sent recently. Check your inbox or try again in a minute.",
       "unavailable": "We could not confirm your authenticator status or prepare setup. Check your connection and try again. PIN-only access is available when no authenticator is enrolled."
     }
   },

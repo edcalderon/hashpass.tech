@@ -8,6 +8,8 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import { ActionButton } from '@hashpass/ui/primitives';
+import { t } from '@lingui/macro';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
@@ -79,7 +81,7 @@ const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
     (typeof attendee.company === 'string' || attendee.company === null);
 };
 
-export default function ProfileScreen({ embedded = false }: EmbeddedDashboardPageProps) {
+export default function ProfileScreen({ embedded = false, onOpenSettings }: EmbeddedDashboardPageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { isDark, colors } = useTheme();
   const { topInset, bottomInset, column } = useDashboardPageLayout();
@@ -745,6 +747,19 @@ export default function ProfileScreen({ embedded = false }: EmbeddedDashboardPag
               <Ionicons name="chevron-forward" size={20} color={colors.text?.secondary || '#999'} />
             </TouchableOpacity>
           </View>
+
+          {onOpenSettings && (
+            <View style={styles.section}>
+              <ActionButton
+                mode={isDark ? 'dark' : 'light'}
+                variant="secondary"
+                label={t({ id: 'nav.settings', message: 'Settings' })}
+                leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
+                trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
+                onPress={onOpenSettings}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 

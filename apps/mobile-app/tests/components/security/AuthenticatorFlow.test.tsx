@@ -35,7 +35,7 @@ async function submit(view: ReactTestRenderer, code = '123456') {
 beforeEach(() => {
   jest.clearAllMocks(); clearAuthenticator(); mockOwner = 'alice';
   mockStatus.mockResolvedValue({ enabled: true });
-  mockBegin.mockResolvedValue({ secret: 'MANUALKEY', uri: 'otpauth://totp/HASHPASS?secret=MANUALKEY', emailHint: 'a***@example.com' });
+  mockBegin.mockResolvedValue({ secret: 'MANUALKEY', uri: 'otpauth://totp/HASHPASS?secret=MANUALKEY', emailHint: 'a***@example.com', emailStatus: 'sent' });
   mockSendSetupCode.mockResolvedValue({ emailHint: 'a***@example.com' });
   mockVerify.mockImplementation(async () => ({ proof: proof() }));
 });
@@ -45,9 +45,10 @@ it('enrolls, shows QR and manual key, and requires recovery backup acknowledgmen
   mockVerify.mockResolvedValue({ proof: proof(), recoveryCodes: ['recovery-one'] });
   const { view, onDone } = await mount();
   expect(mockBegin).not.toHaveBeenCalled();
-  expect(JSON.stringify(view.toJSON())).toContain('For stronger security');
+  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is available. Add an authenticator for stronger security and PIN recovery.');
   await act(async () => button(view, 'Set up authenticator').props.onPress());
   expect(mockBegin).toHaveBeenCalledWith('pin');
+  expect(mockSendSetupCode).not.toHaveBeenCalled();
   expect(view.root.findByType('QRCode' as never).props.value).toContain('otpauth://');
   await submit(view);
   expect(mockVerify).toHaveBeenCalledWith('123456', 'access', true, 'pin', '654321');
@@ -83,7 +84,21 @@ it('keeps PIN-only access available when setup fails after status confirms no en
 
   await act(async () => button(view, 'Set up authenticator').props.onPress());
 
-  expect(JSON.stringify(view.toJSON())).toContain('You can still continue with your PIN because two-step verification is not enabled.');
+  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access remains available.');
+  await act(async () => button(view, 'Continue with PIN').props.onPress());
+  expect(onDone).toHaveBeenCalledWith('pin');
+  act(() => view.unmount());
+});
+it('keeps authenticator setup open and PIN access available if setup email delivery fails', async () => {
+  mockStatus.mockResolvedValue({ enabled: false });
+  mockBegin.mockResolvedValue({ secret: 'MANUALKEY', uri: 'otpauth://totp/HASHPASS?secret=MANUALKEY', emailHint: 'a***@example.com', emailStatus: 'unavailable' });
+  const { view, onDone } = await mount();
+
+  await act(async () => button(view, 'Set up authenticator').props.onPress());
+
+  expect(view.root.findByType('QRCode' as never).props.value).toContain('otpauth://');
+  expect(JSON.stringify(view.toJSON())).toContain('Setup is ready, but we could not send the email code.');
+  expect(mockSendSetupCode).not.toHaveBeenCalled();
   await act(async () => button(view, 'Continue with PIN').props.onPress());
   expect(onDone).toHaveBeenCalledWith('pin');
   act(() => view.unmount());

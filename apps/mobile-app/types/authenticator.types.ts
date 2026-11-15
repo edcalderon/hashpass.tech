@@ -5,6 +5,7 @@ export interface AuthenticatorEnrollment {
   secret: string;
   uri: string;
   emailHint?: string;
+  emailStatus?: 'sent' | 'rate_limited' | 'unavailable';
 }
 export interface AuthenticatorEmailChallenge { emailHint: string }
 export interface AuthenticatorResult { proof: AuthenticatorProof; recoveryCodes?: string[] }

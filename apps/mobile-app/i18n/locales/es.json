@@ -2572,10 +2572,13 @@
     "cancel": "Ahora no",
     "authenticator": {
       "optionalTitle": "Recomendamos una app de autenticación",
-      "optionalBody": "Puedes continuar con tu PIN por ahora. Para mayor seguridad y para recuperar el PIN, recomendamos configurar una app de autenticación.",
+      "optionalBody": "Puedes acceder solo con tu PIN. Una app de autenticación mejora la seguridad y permite recuperar el PIN.",
       "setup": "Configurar autenticador",
       "continuePin": "Continuar con PIN",
       "pinRequired": "No hay un autenticador configurado. Se requiere una verificación reciente del PIN para continuar solo con el PIN.",
+      "setupUnavailable": "No se pudo preparar la configuración del autenticador. Inténtalo de nuevo en un momento; el acceso con PIN sigue disponible.",
+      "emailSendUnavailable": "La configuración está lista, pero no se pudo enviar el código por correo. Inténtalo de nuevo o continúa con tu PIN.",
+      "emailRateLimited": "Se envió un correo de configuración hace poco. Revisa tu bandeja de entrada o inténtalo en un minuto.",
       "unavailable": "No pudimos confirmar el estado del autenticador ni preparar la configuración. Revisa tu conexión e inténtalo de nuevo. Puedes usar solo tu PIN si no tienes un autenticador configurado."
     }
   },

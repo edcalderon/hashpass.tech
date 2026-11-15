@@ -1560,10 +1560,13 @@
   "pin": {
     "authenticator": {
       "optionalTitle": "Recomendamos um autenticador",
-      "optionalBody": "Você pode continuar com seu PIN por enquanto. Para mais segurança e recuperação do PIN, recomendamos configurar um app autenticador.",
+      "optionalBody": "O acesso só com PIN continua disponível. Um app autenticador reforça a segurança e permite recuperar o PIN.",
       "setup": "Configurar autenticador",
       "continuePin": "Continuar com PIN",
       "pinRequired": "Nenhum autenticador está configurado. É necessária uma verificação recente do PIN para continuar usando apenas o PIN.",
+      "setupUnavailable": "Não foi possível preparar a configuração do autenticador. Tente novamente em instantes; o acesso só com PIN continua disponível.",
+      "emailSendUnavailable": "A configuração está pronta, mas não foi possível enviar o código por e-mail. Tente novamente ou continue com seu PIN.",
+      "emailRateLimited": "Um e-mail de configuração foi enviado há pouco. Confira sua caixa de entrada ou tente novamente em um minuto.",
       "unavailable": "Não foi possível confirmar o status do autenticador nem preparar a configuração. Verifique sua conexão e tente novamente. Se você não cadastrou um autenticador, pode usar apenas o PIN."
     }
   }
