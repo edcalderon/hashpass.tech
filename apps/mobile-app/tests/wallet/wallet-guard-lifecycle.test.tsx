@@ -2,7 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { useWalletGuard } from '../../hooks/useWalletGuard';
-import { authenticatorProof, rememberAuthenticator } from '../../lib/authenticator-session';
+import { authenticatorProof, beginAuthenticatorChallenge, rememberAuthenticator } from '../../lib/authenticator-session';
 const mockSetup = jest.fn();
 let mockBackground: (value: string) => void;
 let mockFocus: () => (() => void) | undefined;
@@ -51,4 +51,16 @@ it('removes authenticator and PIN authorization when the app backgrounds', async
   await act(async () => mockBackground('background'));
   expect(guard.phase).toBe('locked'); expect(mockUnlocked).toBe(false);
   expect(authenticatorProof('alice', 'access')).toBeNull();
+});
+it('preserves the wallet PIN proof while an authenticator app handoff is active', async () => {
+  await mount(); await unlock(); remember();
+  const endChallenge = beginAuthenticatorChallenge();
+  try {
+    await act(async () => mockBackground('background'));
+    expect(guard.phase).toBe('unlocked'); expect(mockUnlocked).toBe(true);
+    expect(authenticatorProof('alice', 'access')).toBe('totp');
+    expect(mockLock).not.toHaveBeenCalled();
+  } finally {
+    endChallenge();
+  }
 });
