@@ -38,6 +38,12 @@ afterEach(() => act(() => view?.unmount()));
 async function mount() { await act(async () => { view = create(<Harness />); }); }
 const remember = () => rememberAuthenticator('alice', 'access', { token: 'totp', expiresAt: new Date(Date.now() + 60000).toISOString() });
 async function unlock() { mockUnlocked = true; await act(async () => guard.onPinDone()); }
+it('leaves an unopened wallet alone when the app backgrounds', async () => {
+  await mount();
+  await act(async () => mockBackground('background'));
+  expect(guard.phase).toBe('pin_entry'); expect(mockUnlocked).toBe(false);
+  expect(mockLock).not.toHaveBeenCalled();
+});
 it('requires a new check on each visit even when a previous PIN proof exists', async () => {
   mockUnlocked = true; await mount(); expect(guard.phase).toBe('pin_entry');
   await unlock(); expect(guard.phase).toBe('unlocked'); remember();
