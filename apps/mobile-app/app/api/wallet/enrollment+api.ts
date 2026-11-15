@@ -1,3 +1,4 @@
+import { hasAuthenticatorAccess } from '../../../lib/server/authenticator-api';
 import { getSupabaseServerForRequest, getSupabaseServerEnv } from '../../../lib/supabase-server';
 import { resolveNotificationIdentity, isResolveIdentityError } from '../../../lib/server/resolve-notification-identity';
 import { parsePublicWallet } from '@hashpass/wallet/manifest';
@@ -66,6 +67,11 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await identity(request);
     if ('response' in auth) return auth.response;
+    if (!hasAuthenticatorAccess(request, auth.ownerId, 'access') &&
+      !hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
+    if (!verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:unlock' }) &&
+      !verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:recover' }) &&
+      !hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('step_up_required', 403);
     const { data, error } = await getSupabaseServerForRequest(request).from('user_wallet')
       .select(FIELDS).eq('user_id', auth.ownerId).maybeSingle();
     if (error) {
@@ -91,6 +97,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const auth = await identity(request, true);
     if ('response' in auth) return auth.response;
+    if (!hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
     // Mutations require an authenticated bearer session, not ambient cookies.
     // The shared resolver validates the token. This avoids cross-site cookie CSRF.
     if (!/^Bearer\s+\S+$/i.test(request.headers.get('Authorization') ?? '')) return failure('wallet_bearer_required', 401);
@@ -103,6 +110,7 @@ export async function POST(request: Request): Promise<Response> {
     const owned = await db.from('user_wallet').select('id').eq('user_id', auth.ownerId).maybeSingle();
     if (owned.error) return failure('wallet_enrollment_unavailable', 503);
     if (!owned.data || owned.data.id !== body.walletId) return failure('wallet_identity_changed', 409);
+    if (!verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:sign' })) return failure('step_up_required', 403);
     let result;
     if (body.action === 'reserve' && keys === 'action,operationId,walletId') {
       // Creating a wallet is the moment a person gets a second factor: it needs a fresh PIN proof.

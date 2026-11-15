@@ -1,3 +1,5 @@
+import { activeAuthenticatorProof, AUTHENTICATOR_HEADER } from './authenticator-session';
+import { activeStepUpProof, STEP_UP_HEADER } from './step-up-session';
 /**
  * Event-aware API client for HASHPASS white-label platform
  * Automatically handles event-specific API endpoints and configurations
@@ -341,6 +343,17 @@ export class EventApiClient {
     } = options;
     
     const requestHeaders = { ...this.defaultHeaders, ...headers };
+    const securedPath = path.replace(/^\//, '');
+    if (!options.skipAuth && /^(wallet(?:\/|$)|contacts(?:\?|$))/.test(securedPath)) {
+      const proof = method === 'GET' ? (activeAuthenticatorProof('access') ?? activeAuthenticatorProof('critical')) : activeAuthenticatorProof('critical');
+      if (proof) requestHeaders[AUTHENTICATOR_HEADER] = proof;
+      const pinProof = activeStepUpProof();
+      if (pinProof && !requestHeaders[STEP_UP_HEADER]) requestHeaders[STEP_UP_HEADER] = pinProof;
+    }
+    if (!options.skipAuth && securedPath === 'setup/pin' && body?.action === 'set' && body?.currentPin) {
+      const proof = activeAuthenticatorProof('critical');
+      if (proof) requestHeaders[AUTHENTICATOR_HEADER] = proof;
+    }
 
     // Avoid forcing a preflight on cross-origin GET requests.
     // Only send Content-Type when we are actually sending a JSON body.

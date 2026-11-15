@@ -623,15 +623,8 @@ export function CustomDrawerContent({
       tone: "#00A9E0",
     },
     {
-      id: "nav.contacts",
-      message: "Contacts",
-      icon: "people-outline",
-      route: "./contacts" as const,
-      tone: uiTokens.feature.cyan,
-    },
-    {
       id: "nav.wallet",
-      message: "Wallet",
+      message: "Wallet & Contacts",
       icon: "wallet-outline",
       route: "./wallet" as const,
       tone: "#3B82F6",
@@ -681,7 +674,7 @@ export function CustomDrawerContent({
       case "nav.contacts":
         return t({ id: "nav.contacts", message: "Contacts" });
       case "nav.wallet":
-        return t({ id: "nav.wallet", message: "Wallet" });
+        return t({ id: "nav.walletContacts", message: "Wallet & Contacts" });
       case "nav.notifications":
         return t({ id: "nav.notifications", message: "Notifications" });
       case "nav.profile":

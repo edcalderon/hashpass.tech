@@ -1,3 +1,4 @@
+import { securityRequest } from '../security-request';
 const mockIdentity = jest.fn();
 const mockRpc = jest.fn();
 jest.mock('../../lib/server/resolve-notification-identity', () => ({
@@ -11,13 +12,13 @@ import { validContactsAction } from '../../lib/server/contacts-api';
 
 const id = '00000000-0000-4000-8000-000000000001';
 const profile = { name: 'Ari', role: 'Builder', company: '', topics: ['AI'], discoverable: false, leaderboard: false };
-const post = (body: unknown, suffix = '') => POST(new Request(`https://api.hashpass.tech/api/contacts${suffix}`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
+const post = (body: unknown, suffix = '') => POST(securityRequest(id, `https://api.hashpass.tech/api/contacts${suffix}`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
 
 describe('Contacts API boundary', () => {
-  beforeEach(() => { jest.clearAllMocks(); mockIdentity.mockResolvedValue({ registryUserId: id }); mockRpc.mockResolvedValue({ data: { profile: null, contacts: [] }, error: null }); });
+  beforeEach(() => { process.env.HASHPASS_PIN_PEPPER = 'p'.repeat(48); jest.clearAllMocks(); mockIdentity.mockResolvedValue({ registryUserId: id }); mockRpc.mockResolvedValue({ data: { profile: null, contacts: [] }, error: null }); });
   it('requires authentication before reading any contacts', async () => {
     mockIdentity.mockResolvedValue({ error: 'Unauthorized', status: 401 });
-    const response = await GET(new Request('https://api.hashpass.tech/api/contacts'));
+    const response = await GET(securityRequest(id, 'https://api.hashpass.tech/api/contacts'));
     expect(response.status).toBe(401); expect(mockRpc).not.toHaveBeenCalled();
   });
   it('uses the verified registry identity, ignoring a forged actor in the body', async () => {
@@ -50,15 +51,21 @@ describe('Contacts API boundary', () => {
   });
   it('does not reveal SQL details on an unavailable backend', async () => {
     mockRpc.mockResolvedValue({ error: { code: '42P01', message: 'private database details' } });
-    const response = await GET(new Request('https://api.hashpass.tech/api/contacts'));
+    const response = await GET(securityRequest(id, 'https://api.hashpass.tech/api/contacts'));
     expect(response.status).toBe(503);
     expect(JSON.stringify(await response.json())).not.toContain('private database details');
   });
   it('rejects unlinked accounts and malformed card links', async () => {
     mockIdentity.mockResolvedValue({ registryUserId: null });
-    expect((await GET(new Request('https://api.hashpass.tech/api/contacts'))).status).toBe(403);
+    expect((await GET(securityRequest(id, 'https://api.hashpass.tech/api/contacts'))).status).toBe(403);
     mockIdentity.mockResolvedValue({ registryUserId: id });
-    expect((await GET(new Request('https://api.hashpass.tech/api/contacts?card=invalid'))).status).toBe(400);
+    expect((await GET(securityRequest(id, 'https://api.hashpass.tech/api/contacts?card=invalid'))).status).toBe(400);
     expect(mockRpc).not.toHaveBeenCalled();
   });
+});
+
+it('requires PIN and authenticator proofs before contacts access', async () => {
+  mockIdentity.mockResolvedValue({ registryUserId: id });
+  const result = await GET(new Request('https://localhost/api/contacts'));
+  expect(result.status).toBe(403); expect(mockRpc).not.toHaveBeenCalled();
 });

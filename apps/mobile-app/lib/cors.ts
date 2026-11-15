@@ -32,7 +32,7 @@ export const MCP_CONSENT_CORS_ALLOWED_ORIGINS = [
 ] as const;
 
 const DEFAULT_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'] as const;
-const DEFAULT_HEADERS = ['Content-Type', 'Authorization'] as const;
+const DEFAULT_HEADERS = ['Content-Type', 'Authorization', 'X-Hashpass-Step-Up', 'X-Hashpass-Authenticator'] as const;
 const CORS_ORIGIN_ENV_VARS = ['CORS_ALLOW_ORIGINS', 'API_CORS_ORIGINS', 'BETTER_AUTH_TRUSTED_ORIGINS'] as const;
 
 const splitCsv = (value: string | undefined) => String(value || '')

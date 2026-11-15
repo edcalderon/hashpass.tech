@@ -1,3 +1,5 @@
+jest.mock('../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
+jest.mock('../../lib/authenticator-session', () => ({ authenticatorProof: () => 'critical-proof' }));
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable, TextInput } from 'react-native';

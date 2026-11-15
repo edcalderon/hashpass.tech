@@ -6,6 +6,7 @@ import type { StepUpScope } from '../../../types/step-up.types';
 export type Translate = (key: string, fallback: string, params?: Record<string, unknown>) => string;
 
 export interface PinFlowProps {
+  authenticatorScope?: import('../../../types/authenticator.types').AuthenticatorScope;
   mode: ColorMode;
   pin: UsePin;
   /** What the proof is for: it only works for this action. */

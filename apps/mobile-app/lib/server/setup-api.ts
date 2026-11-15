@@ -1,3 +1,4 @@
+import { hasAuthenticatorAccess } from './authenticator-api';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { isResolveIdentityError, resolveNotificationIdentity } from './resolve-notification-identity';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS } from '../contacts';
@@ -91,6 +92,7 @@ export async function pinRequest(request: Request) {
 
     if (body.action === 'set') {
       const current = body.currentPin;
+      if (current !== undefined && !hasAuthenticatorAccess(request, who.userId, 'critical')) return failure('authenticator_required', 403);
       if (typeof body.pin !== 'string' || !PIN_PATTERN.test(body.pin) || (current !== undefined && (typeof current !== 'string' || !PIN_PATTERN.test(current)))) return failure('invalid_request', 400);
       if (Object.keys(body).some(key => !['action', 'pin', 'currentPin'].includes(key))) return failure('invalid_request', 400);
       const { data, error } = await db.rpc('set_user_pin', {

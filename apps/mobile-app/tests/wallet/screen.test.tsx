@@ -2,6 +2,8 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable } from 'react-native';
 
+jest.mock('../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
+jest.mock('../../components/contacts/ContactsScreen', () => ({ __esModule: true, default: 'ContactsScreen' }));
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
 let mockDark = false;
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: mockDark, colors: {
@@ -59,10 +61,10 @@ it('explains setup availability, expands security, and navigates to genuine pass
   expect(securityButton().props.accessibilityState.expanded).toBe(true);
   expect(JSON.stringify(view.toJSON())).toContain('never enter its recovery phrase here');
   const tabs = () => view.root.findAllByType(Pressable).filter(node => node.props.accessibilityRole === 'tab');
-  act(() => tabs()[1].props.onPress());
-  expect(view.root.findAllByType('Rewards' as any)).toHaveLength(1);
-  expect(tabs()[1].props.accessibilityState.selected).toBe(true);
   act(() => tabs()[2].props.onPress());
+  expect(view.root.findAllByType('Rewards' as any)).toHaveLength(1);
+  expect(tabs()[2].props.accessibilityState.selected).toBe(true);
+  act(() => tabs()[3].props.onPress());
   expect(view.root.findByType('PassesDisplay' as any).props.mode).toBe('dashboard');
   expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
   act(() => view.unmount());
@@ -125,6 +127,8 @@ it('offers the email-code recovery from the locked gate, without unlocking the w
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     // The recovery mounts in the locked gate: recover-only, never the wallet's home.
     const flow = view.root.findByType('WalletVaultFlow' as any);
     expect(flow.props.recoverOnly).toBe(true);
@@ -148,6 +152,8 @@ it('says so when the locked gate has no wallet to recover', async () => {
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     expect(JSON.stringify(view.toJSON())).toContain('This account has no wallet yet, so there is nothing to recover.');
     expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
   } finally {
@@ -169,6 +175,8 @@ it.each([
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     expect(JSON.stringify(view.toJSON())).toContain('Back to PIN entry');
     expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
     // Back to PIN entry is never a dead end: it returns to the gate's PIN pad. (It is the

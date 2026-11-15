@@ -43,7 +43,9 @@ export const createWalletEnrollmentClient = (stepUpProof: () => string | null = 
     return enrollment(result.data);
   },
   async register(walletId, operationId, wallet) {
-    const result = await apiClient.post('/wallet/enrollment', { action: 'register', walletId, operationId, wallet: parsePublicWallet(wallet) }, { skipEventSegment: true, retries: 0 });
+    const proof = stepUpProof();
+    const result = await apiClient.post('/wallet/enrollment', { action: 'register', walletId, operationId, wallet: parsePublicWallet(wallet) },
+      { skipEventSegment: true, retries: 0, ...(proof ? { headers: { [STEP_UP_HEADER]: proof } } : {}) });
     if (!result.success) throw failure(result.status);
     return enrollment(result.data);
   },

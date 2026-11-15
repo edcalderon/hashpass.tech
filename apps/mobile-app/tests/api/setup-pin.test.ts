@@ -1,3 +1,4 @@
+import { securityRequest } from '../security-request';
 const mockIdentity = jest.fn();
 const mockRpc = jest.fn();
 jest.mock('../../lib/server/resolve-notification-identity', () => ({
@@ -15,7 +16,7 @@ const id = '00000000-0000-4000-8000-000000000001';
 const url = 'https://api.hashpass.tech/api/setup';
 const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer token' };
 const call = (handler: (request: Request) => Promise<Response>, body: unknown, extra: Record<string, string> = headers, path = url) =>
-  handler(new Request(path, { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body), headers: extra }));
+  handler(securityRequest(id, path, { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body), headers: extra }));
 const rpcNames = () => mockRpc.mock.calls.map(([name]) => name);
 
 beforeEach(() => {
@@ -29,13 +30,13 @@ afterAll(() => { delete process.env.HASHPASS_PIN_PEPPER; });
 describe('Setup API', () => {
   it('requires authentication and a linked account', async () => {
     mockIdentity.mockResolvedValue({ error: 'Unauthorized', status: 401 });
-    expect((await GET(new Request(url))).status).toBe(401);
+    expect((await GET(securityRequest(id, url))).status).toBe(401);
     mockIdentity.mockResolvedValue({ registryUserId: null });
-    expect((await GET(new Request(url))).status).toBe(403);
+    expect((await GET(securityRequest(id, url))).status).toBe(403);
     expect(mockRpc).not.toHaveBeenCalled();
   });
   it('reads with the verified identity and never caches', async () => {
-    const response = await GET(new Request(url));
+    const response = await GET(securityRequest(id, url));
     expect(mockRpc).toHaveBeenCalledWith('get_user_setup', { p_user_id: id });
     expect(response.headers.get('Cache-Control')).toContain('no-store');
   });

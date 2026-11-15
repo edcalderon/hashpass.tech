@@ -6,6 +6,7 @@ import { useTranslation } from '../../i18n/i18n';
 import type { PinProblem, UsePin } from '../../hooks/usePin';
 import type { StepUpScope } from '../../lib/step-up-session';
 import PinPad from './PinPad';
+import AuthenticatorFlow from './AuthenticatorFlow';
 import type { PinFlowProps, Translate } from './types/PinFlow.types';
 
 export type { PinFlowProps };
@@ -28,10 +29,16 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
 /**
  * Create-or-unlock, as one flow. A new PIN is entered twice, saved, and used straight away to
  * mint the proof for `scope`, so the person is never asked for a PIN they just chose.
- * The digits exist only in this closure while those requests run.
+ * Wallet scopes then require authenticator verification. Digits stay in transient component
+ * memory until that verification completes or the flow unmounts; they are never persisted.
  */
-export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel }: PinFlowProps) {
+export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, authenticatorScope }: PinFlowProps) {
   const { t } = useTranslation('pin');
+  const [verifiedPin, setVerifiedPin] = useState<string | null>(null);
+  const completed = useCallback((entered: string) => {
+    if (scope === 'wallet:unlock' || scope === 'wallet:sign') setVerifiedPin(entered);
+    else onDone(entered);
+  }, [scope, onDone]);
   const [creating, setCreating] = useState(intent === 'create');
   const [first, setFirst] = useState<string | null>(null);
   const [mismatch, setMismatch] = useState(false);
@@ -54,14 +61,20 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel }: 
 
   const submit = useCallback((entered: string) => {
     setMismatch(false);
-    if (!creating) { void pin.unlock(entered, scope).then((ok: boolean) => { if (ok) onDone(entered); }); return; }
+    if (!creating) { void pin.unlock(entered, scope).then((ok: boolean) => { if (ok) completed(entered); }); return; }
     if (first === null) { clearProblem(); setFirst(entered); return; }
     if (first !== entered) { setFirst(null); setMismatch(true); return; }
     setFirst(null);
     void pin.setPin(entered).then(async (saved: boolean) => {
-      if (saved && await pin.unlock(entered, scope)) onDone(entered);
+      if (saved && await pin.unlock(entered, scope)) completed(entered);
     });
-  }, [creating, first, pin, scope, onDone, clearProblem]);
+  }, [creating, first, pin, scope, completed, clearProblem]);
+
+  if (verifiedPin !== null) return <View style={styles.root}>
+    <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
+      onDone={() => { const digits = verifiedPin; setVerifiedPin(null); if (pin.proofFor(scope)) onDone(digits); }} />
+    <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
+  </View>;
 
   const confirming = creating && first !== null;
   const title = !creating ? t('enterTitle', 'Enter your PIN')

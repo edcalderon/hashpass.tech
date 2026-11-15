@@ -15,6 +15,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import type { StepUpProof } from '../../types/step-up.types';
 import PinFlow from '../security/PinFlow';
+import AuthenticatorFlow from '../security/AuthenticatorFlow';
+import { authenticatorProof } from '../../lib/authenticator-session';
 import PinPad from '../security/PinPad';
 import { walletVaultMachine, vaultFlowStep, type VaultFlowEvent, type VaultFlowOrigin } from '../../hooks/wallet-vault-machine';
 import type { VaultCommand } from './WalletVaultFlow.types';
@@ -84,6 +86,7 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
   const [challengeAnswers, setChallengeAnswers] = useState(['', '', '']);
   const [recoverCode, setRecoverCode] = useState('');
   const [recoverPhrase, setRecoverPhrase] = useState('');
+  const [, refreshAuthenticator] = useState(0);
   const [recoverProof, setRecoverProof] = useState<string | null>(null);
   const recoverProofRef = useRef<StepUpProof | null>(null);
   const [changeCurrent, setChangeCurrent] = useState<string | null>(null);
@@ -489,6 +492,12 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
   // be tapped or read while they are up. The PIN pads show no secret, so they stay inside
   // the card — the same view the wallet's locked gate uses (per product feedback, the
   // in-card pad reads as one flow, not a second lock).
+  if (['recover_send', 'recover_code', 'recover_pin'].includes(step) && !authenticatorProof(initial.scope.ownerId, 'critical')) {
+    return <View style={stack}><AuthenticatorFlow scope="critical" onDone={() => refreshAuthenticator(value => value + 1)} />
+      <ActionButton mode={mode} variant="ghost" label={label('cancel', 'Cancel')} onPress={() => { send({ type: 'CANCEL' }); onExit?.(); }} />
+    </View>;
+  }
+
   const inline = step === 'enter_pin' || step === 'reveal_pin' || step === 'change_pin' || step === 'recover_pin';
   const secure = step !== 'intro' && step !== 'home' && !inline;
   if (!secure) return content;

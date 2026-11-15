@@ -1,3 +1,4 @@
+import { hasAuthenticatorAccess } from '../../../lib/server/authenticator-api';
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../lib/supabase-server';
 import { isResolveIdentityError, resolveNotificationIdentity } from '../../../lib/server/resolve-notification-identity';
 import { derivePinVerifier, issueStepUpProof, PIN_PATTERN, verifyStepUpProof } from '../../../lib/server/pin-auth';
@@ -28,6 +29,7 @@ export async function POST(request: Request): Promise<Response> {
     const auth = await resolveNotificationIdentity(new Request(request.url, { headers }));
     if (isResolveIdentityError(auth)) return failure('wallet_auth_required', auth.status);
     if (!auth.registryUserId || !auth.email) return failure('wallet_identity_unavailable', 403);
+    if (!hasAuthenticatorAccess(request, auth.registryUserId, 'critical')) return failure('authenticator_required', 403);
     const env = getSupabaseServerEnv(request);
     // Internal testnet rollout only; mainnet needs the reviewed release.
     if (env.environment !== 'development' || process.env.HASHPASS_WALLET_SETUP_ENABLED !== 'true') return failure('wallet_setup_disabled', 503);

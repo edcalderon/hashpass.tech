@@ -122,7 +122,9 @@ variable "cors_allow_headers" {
     "Cache-Control",
     "Pragma",
     "Expires",
-    "X-Client-Version"
+    "X-Client-Version",
+    "X-Hashpass-Step-Up",
+    "X-Hashpass-Authenticator"
   ]
 }
 

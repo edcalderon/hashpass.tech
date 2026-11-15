@@ -6,6 +6,7 @@
  * Mirrors the SDK's `StepUpProofStore` contract (see `packages/sdk/src/auth/step-up.ts`),
  * so a device-locker or biometric method can later mint proofs into the same place.
  */
+import { clearAuthenticator } from './authenticator-session';
 import type { StepUpProof, StepUpScope } from '../types/step-up.types';
 
 export type { StepUpProof, StepUpScope };
@@ -46,7 +47,7 @@ function expireAt(scope: StepUpScope, proof: StepUpProof): void {
 }
 
 export function rememberProof(userId: string, proof: StepUpProof): void {
-  if (owner !== userId) for (const scope of [...proofs.keys()]) drop(scope);
+  if (owner !== userId) { clearAuthenticator(); for (const scope of [...proofs.keys()]) drop(scope); }
   owner = userId;
   drop(proof.scope);
   proofs.set(proof.scope, proof);
@@ -63,7 +64,7 @@ export function currentProof(userId: string | null, scope: StepUpScope, now = Da
 
 export function forgetProofs(scope?: StepUpScope): void {
   if (scope) drop(scope);
-  else { for (const key of [...proofs.keys()]) drop(key); owner = null; }
+  else { clearAuthenticator(); for (const key of [...proofs.keys()]) drop(key); owner = null; }
   notify();
 }
 
@@ -73,3 +74,5 @@ export function subscribeToProofs(listener: () => void): () => void {
   listeners.add(listener);
   return () => { listeners.delete(listener); };
 }
+
+export function activeStepUpProof(): string | null { return currentProof(owner, 'wallet:unlock')?.token ?? null; }

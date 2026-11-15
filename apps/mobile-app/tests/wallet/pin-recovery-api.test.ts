@@ -1,3 +1,4 @@
+import { securityRequest } from '../security-request';
 const mockIdentity = jest.fn();
 const mockRpc = jest.fn();
 const mockFrom = jest.fn();
@@ -24,7 +25,7 @@ import { STEP_UP_HEADER } from '../../lib/step-up-session';
 const id = '00000000-0000-4000-8000-000000000001';
 const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer token' };
 const call = (body: unknown, extra: Record<string, string> = {}, proof?: string) =>
-  POST(new Request('https://localhost/api/wallet/pin-recovery', {
+  POST(securityRequest(id, 'https://localhost/api/wallet/pin-recovery', {
     method: 'POST', body: JSON.stringify(body),
     headers: { ...headers, ...extra, ...(proof ? { [STEP_UP_HEADER]: proof } : {}) },
   }));
@@ -60,7 +61,7 @@ afterAll(() => {
 
 describe('wallet pin recovery route', () => {
   it('requires a bearer token, ignoring ambient cookies', async () => {
-    const response = await POST(new Request('https://localhost/api/wallet/pin-recovery', {
+    const response = await POST(securityRequest(id, 'https://localhost/api/wallet/pin-recovery', {
       method: 'POST', body: JSON.stringify({ action: 'send' }),
       headers: { 'Content-Type': 'application/json', Cookie: 'session=abc' },
     }));
@@ -134,7 +135,7 @@ describe('wallet pin recovery route', () => {
 describe('the recovery proof cannot be minted from the PIN it replaces', () => {
   it('rejects wallet:recover as a verify-PIN scope', async () => {
     mockRpc.mockResolvedValue({ data: { ok: true, enabled: true, remainingAttempts: 5 }, error: null });
-    const response = await PIN(new Request('https://localhost/api/setup/pin', {
+    const response = await PIN(securityRequest(id, 'https://localhost/api/setup/pin', {
       method: 'POST', body: JSON.stringify({ action: 'verify', pin: '1234', scope: 'wallet:recover' }),
       headers,
     }));
@@ -142,7 +143,7 @@ describe('the recovery proof cannot be minted from the PIN it replaces', () => {
     expect(mockRpc).not.toHaveBeenCalled();
     // The scopes a PIN can mint stay unchanged.
     for (const scope of ['app:unlock', 'wallet:sign', 'wallet:unlock']) {
-      const ok = await PIN(new Request('https://localhost/api/setup/pin', {
+      const ok = await PIN(securityRequest(id, 'https://localhost/api/setup/pin', {
         method: 'POST', body: JSON.stringify({ action: 'verify', pin: '1234', scope }),
         headers,
       }));
