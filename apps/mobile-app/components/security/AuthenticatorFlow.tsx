@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import { authenticatorStatus, beginAuthenticator, verifyAuthenticator } from '../../lib/authenticator-client';
-import { rememberAuthenticator } from '../../lib/authenticator-session';
+import { beginAuthenticatorChallenge, rememberAuthenticator } from '../../lib/authenticator-session';
 import type { AuthenticatorEnrollment, AuthenticatorFlowProps, AuthenticatorResult } from '../../types/authenticator.types';
 
 /** Secrets, codes and recovery material stay in this mounted wizard only. */
@@ -25,6 +25,7 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
   const inFlight = useRef(false);
   const generation = useRef(0);
   const [retry, setRetry] = useState(0);
+  useEffect(() => beginAuthenticatorChallenge(), []);
   useEffect(() => {
     const mine = ++generation.current;
     setEnrollment(null); setResult(null); setCode(''); setError(null); setPhase('checking');

@@ -3,7 +3,7 @@ import { authenticatorCode, matchAuthenticatorCode, newAuthenticatorSecret, seal
 import { authenticatorProof, rememberAuthenticator, clearAuthenticator } from '../../lib/authenticator-session';
 
 const secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'; // RFC 6238 SHA-1 test secret
-const env = { HASHPASS_TOTP_KEY: 'ab'.repeat(32) } as NodeJS.ProcessEnv;
+const env = { NODE_ENV: 'test', HASHPASS_TOTP_KEY: 'ab'.repeat(32) } as NodeJS.ProcessEnv;
 describe('RFC 6238 authenticator', () => {
   it.each([[59, '287082'], [1111111109, '081804'], [1111111111, '050471'], [1234567890, '005924'], [2000000000, '279037'], [20000000000, '353130']])('matches the SHA-1 reference at %s', (seconds, code) => {
     expect(authenticatorCode(secret, Math.floor(Number(seconds) / 30))).toBe(code);
@@ -24,7 +24,7 @@ describe('RFC 6238 authenticator', () => {
     expect(openAuthenticatorSecret(sealed, 'alice', env)).toBe(secret);
     expect(sealAuthenticatorSecret(secret, 'alice', env)).not.toBe(sealed);
     expect(() => openAuthenticatorSecret(sealed, 'bob', env)).toThrow();
-    expect(() => openAuthenticatorSecret(sealed, 'alice', { HASHPASS_TOTP_KEY: 'cd'.repeat(32) } as NodeJS.ProcessEnv)).toThrow();
+    expect(() => openAuthenticatorSecret(sealed, 'alice', { NODE_ENV: 'test', HASHPASS_TOTP_KEY: 'cd'.repeat(32) } as NodeJS.ProcessEnv)).toThrow();
     expect(() => sealAuthenticatorSecret(secret, 'alice', {} as NodeJS.ProcessEnv)).toThrow('authenticator_unavailable');
   });
   it('binds proofs to actor, scope, server key and expiry', () => {

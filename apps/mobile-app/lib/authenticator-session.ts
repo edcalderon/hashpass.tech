@@ -3,6 +3,23 @@ import type { AuthenticatorProof, AuthenticatorScope } from '../types/authentica
 export const AUTHENTICATOR_HEADER = 'X-Hashpass-Authenticator';
 let owner: string | null = null;
 const proofs = new Map<AuthenticatorScope, AuthenticatorProof>();
+let activeChallenges = 0;
+
+/** Keep the current protected flow mounted across an authenticator-app handoff. */
+export function beginAuthenticatorChallenge() {
+  activeChallenges += 1;
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    activeChallenges = Math.max(0, activeChallenges - 1);
+  };
+}
+
+export function hasActiveAuthenticatorChallenge() {
+  return activeChallenges > 0;
+}
+
 export function rememberAuthenticator(userId: string, scope: AuthenticatorScope, proof: AuthenticatorProof) {
   if (owner !== userId) proofs.clear();
   owner = userId; proofs.set(scope, proof);

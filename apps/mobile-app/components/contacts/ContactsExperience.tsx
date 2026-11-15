@@ -14,7 +14,7 @@ import { Ionicons } from '../../lib/vector-icons';
 import type { ContactGrouping, ContactIdentityMode, ContactProfile, ContactProfileDraft, ContactsExperienceProps, ContactsTab } from '../../types/contacts';
 import ContactsGraph from './ContactsGraph';
 
-export default function ContactsExperience({ snapshot, loading = false, busy = false, error, signedIn, standalone, mode, onAction, onRetry, onSignIn, onDashboard, onStandalone }: ContactsExperienceProps) {
+export default function ContactsExperience({ snapshot, loading = false, busy = false, error, signedIn, standalone, mode, authenticating = false, onAction, onRetry, onSignIn, onDashboard, onStandalone }: ContactsExperienceProps) {
   const { t } = useTranslation('contacts');
   const palette = uiPalette(mode);
   const { width } = useWindowDimensions();
@@ -264,7 +264,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
       {!wide && interests}
     </View>
 
-    <Modal visible={editing} transparent animationType="none" onRequestClose={() => !busy && setEditing(false)}>
+    <Modal visible={editing && !authenticating} transparent animationType="none" onRequestClose={() => !busy && setEditing(false)}>
       <ModalBackdrop mode={mode} style={styles.modalBackdrop}>
         <Surface mode={mode} style={styles.dialog} accessibilityViewIsModal>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.stack}>

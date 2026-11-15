@@ -4,8 +4,10 @@ Tracked by https://github.com/hashpass-tech/hashpass.tech/issues/616 (under #455
 
 Wallet and Contacts share the Wallet & Contacts sidebar item. Existing contacts links preserve
 card parameters and redirect into its Contacts tab. Each visit checks the PIN and then requires
-an authenticator code. Leaving the route, backgrounding the app, account changes and logout clear
-the authenticator session. Content closes when the five-minute PIN proof expires.
+an authenticator code. Leaving the route, account changes and logout clear the authenticator
+session. Backgrounding locks an unlocked wallet unless an authenticator challenge is active;
+while that challenge is open, the pending flow stays mounted for an authenticator-app handoff.
+Content closes when the five-minute PIN proof expires.
 
 ## Enrollment and verification
 

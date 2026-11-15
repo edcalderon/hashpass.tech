@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { createActor } from 'xstate';
 
-import { clearAuthenticator } from '../lib/authenticator-session';
+import { clearAuthenticator, hasActiveAuthenticatorChallenge } from '../lib/authenticator-session';
 import { fetchSetup } from '../lib/setup-client';
 import { walletGuardMachine, walletGuardPhase, type WalletGuardPhase } from './wallet-guard-machine';
 import { usePin, type UsePin } from './usePin';
@@ -41,7 +41,13 @@ export function useWalletGuard(userId: string | null): UseWalletGuard {
     const subscription = actor.subscribe(snapshot => setPhase(walletGuardPhase(snapshot.value)));
     actor.start();
     void check(actor, () => stopped);
-    const app = AppState.addEventListener('change', state => { if (state !== 'active') { clearAuthenticator(); pin.lock(WALLET_UNLOCK_SCOPE); actor.send({ type: 'APP_BACKGROUND' }); } });
+    const app = AppState.addEventListener('change', state => {
+      if (state !== 'active' && !hasActiveAuthenticatorChallenge() && actor.getSnapshot().matches('unlocked')) {
+        clearAuthenticator();
+        pin.lock(WALLET_UNLOCK_SCOPE);
+        actor.send({ type: 'APP_BACKGROUND' });
+      }
+    });
     return () => { clearAuthenticator(); pin.lock(WALLET_UNLOCK_SCOPE); stopped = true; app.remove(); subscription.unsubscribe(); actor.stop(); actorRef.current = null; };
   }, [userId, check, pin.lock]));
 
