@@ -52,6 +52,7 @@ it('explains setup availability, expands security, and navigates to genuine pass
   let view!: ReactTestRenderer;
   act(() => { view = create(<Wallet />); });
   expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(1);
+  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active. For stronger security, set up an authenticator in Profile & Settings.');
   expect(JSON.stringify(view.toJSON())).not.toContain('BSL2025-VIP-001');
   // The security accordion is the only button whose state carries `expanded`; the balance
   // card's Send/Receive action buttons come first in the tree.
@@ -68,6 +69,31 @@ it('explains setup availability, expands security, and navigates to genuine pass
   expect(view.root.findByType('PassesDisplay' as any).props.mode).toBe('dashboard');
   expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
   act(() => view.unmount());
+});
+
+it('shows the security recommendation after PIN-only unlock and clears it after authenticator unlock', () => {
+  mockPhase = 'pin_entry';
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const pinFlow = view.root.findByType('PinFlow' as any);
+    act(() => { pinFlow.props.onAuthenticatorComplete('pin'); });
+    mockPhase = 'unlocked';
+    act(() => { view.update(<Wallet />); });
+    expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active.');
+    expect(JSON.stringify(view.toJSON())).toContain('A PIN protects wallet access; an authenticator adds another step when enabled.');
+
+    mockPhase = 'pin_entry';
+    act(() => { view.update(<Wallet />); });
+    const authenticatorFlow = view.root.findByType('PinFlow' as any);
+    act(() => { authenticatorFlow.props.onAuthenticatorComplete('authenticator'); });
+    mockPhase = 'unlocked';
+    act(() => { view.update(<Wallet />); });
+    expect(JSON.stringify(view.toJSON())).not.toContain('PIN-only access is active.');
+  } finally {
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
 });
 
 it('renders the shared segmented tabs in dark mode', () => {

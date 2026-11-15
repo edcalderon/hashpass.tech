@@ -32,7 +32,7 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
  * Enrolled authenticators add a verification step; otherwise the PIN can be used on its own.
  * Digits stay in transient component memory until the flow completes or unmounts; they are never persisted.
  */
-export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, authenticatorScope }: PinFlowProps) {
+export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope }: PinFlowProps) {
   const { t } = useTranslation('pin');
   const [verifiedPin, setVerifiedPin] = useState<string | null>(null);
   const completed = useCallback((entered: string) => {
@@ -72,7 +72,11 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, au
 
   if (verifiedPin !== null) return <View style={styles.root}>
     <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
-      onDone={() => { const digits = verifiedPin; setVerifiedPin(null); if (pin.proofFor(scope)) onDone(digits); }} />
+      onDone={(completion) => {
+        const digits = verifiedPin;
+        setVerifiedPin(null);
+        if (pin.proofFor(scope)) { onAuthenticatorComplete?.(completion); onDone(digits); }
+      }} />
     <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
   </View>;
 

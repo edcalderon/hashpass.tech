@@ -38,6 +38,10 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
+  const [authenticatorEnabled, setAuthenticatorEnabled] = useState(false);
+  useEffect(() => {
+    if (guard.phase !== 'unlocked') setAuthenticatorEnabled(false);
+  }, [guard.phase]);
   // The email-code recovery must be reachable from the locked gate: both in-flow recovery
   // entry points sit inside WalletContent, which mounts only after a successful unlock.
   const [recovery, setRecovery] = useState<'idle' | 'authenticator' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
@@ -51,7 +55,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
   }, []);
   const endRecovery = useCallback(() => setRecovery('idle'), []);
-  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} />;
+  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} />;
   const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
@@ -95,7 +99,9 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
               </View>
             : <>
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
-                  authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'} onDone={guard.onPinDone} />
+                  authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
+                  onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
+                  onDone={guard.onPinDone} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
                     person who cannot enter a PIN they never knew or no longer remember. */}
                 {!settingUp && <Pressable accessibilityRole="button" accessibilityLabel={t('guard.forgotPin', 'I forgot my PIN')}
@@ -107,7 +113,10 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
 }
 
-function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] }) {
+function WalletContent({ pin, authenticatorEnabled }: {
+  pin: ReturnType<typeof useWalletGuard>['pin'];
+  authenticatorEnabled: boolean;
+}) {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors, isDark } = useTheme();
   const { topInset, bottomInset } = useDashboardPageLayout();
@@ -135,8 +144,12 @@ function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] 
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
-      <Text style={styles.body}>{t('overview.unifiedSubtitle', 'Your contacts, assets, rewards and event passes, protected by your PIN and authenticator.')}</Text>
+      <Text style={styles.body}>{t('overview.unifiedSubtitle', 'Your contacts, assets, rewards and event passes. A PIN protects wallet access; an authenticator adds another step when enabled.')}</Text>
     </View>
+    {!authenticatorEnabled && <View style={styles.panel}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>{t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}</Text>
+      <Text style={styles.body}>{t('guard.authenticatorRecommendedBody', 'PIN-only access is active. For stronger security, set up an authenticator in Profile & Settings. Email confirms setup only; authenticator app codes protect wallet access.')}</Text>
+    </View>}
     <SegmentedTabs
       mode={isDark ? 'dark' : 'light'}
       tabs={tabs}

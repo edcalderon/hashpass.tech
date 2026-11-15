@@ -1,6 +1,7 @@
 import type { ColorMode } from '@hashpass/ui/tokens';
 import type { PinProblem, UsePin } from '../../../types/pin.types';
 import type { StepUpScope } from '../../../types/step-up.types';
+import type { AuthenticatorCompletion } from '../../../types/authenticator.types';
 
 /** The i18n `t` helper's signature, so plain-language mapping stays unit-testable. */
 export type Translate = (key: string, fallback: string, params?: Record<string, unknown>) => string;
@@ -15,5 +16,7 @@ export interface PinFlowProps {
   intent: 'create' | 'unlock';
   /** Carries the entered digits so the caller can wrap/unwrap a vault right away. Never store them. */
   onDone: (pin?: string) => void;
+  /** Reports whether wallet access used PIN-only or a verified authenticator. */
+  onAuthenticatorComplete?: (completion: AuthenticatorCompletion) => void;
   onCancel?: () => void;
 }

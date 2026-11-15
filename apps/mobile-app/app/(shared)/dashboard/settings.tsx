@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, TextInput, Modal, Platform, Linking } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
@@ -16,11 +16,14 @@ import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
+import { usePin } from '../../../hooks/usePin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient, getRuntimeApiBaseUrl } from '../../../lib/api-client';
+import { authenticatorStatus } from '../../../lib/authenticator-client';
 import { getHashpassWebOrigin } from '../../../lib/hashpass-web-url';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
+import PinFlow from '../../../components/security/PinFlow';
 import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../../../lib/native-google-signin-config';
 import { resolveGoogleOAuthClientId } from '../../../lib/auth/oauth/google-credentials';
@@ -37,7 +40,7 @@ import type {
 } from '../../../types/auth-screen.types';
 import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
 
-export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPageProps) {
+export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDashboardPageProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometricAuth, setBiometricAuth] = useState(false);
   const [dataUsage, setDataUsage] = useState(false);
@@ -57,7 +60,12 @@ export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPa
   const { t: tSettings } = useTranslation('settings');
   const router = useRouter();
   const { resetTutorial, resetAllTutorials, mainTutorialCompleted, networkingTutorialCompleted } = useTutorialPreferences();
-  const { user, signOut } = useAuth();
+  const { user, dbUserId, signOut } = useAuth();
+  const securityPin = usePin(dbUserId ?? null);
+  const [authenticatorEnabled, setAuthenticatorEnabled] = useState(false);
+  const [authenticatorStatusLoading, setAuthenticatorStatusLoading] = useState(true);
+  const [authenticatorStatusUnavailable, setAuthenticatorStatusUnavailable] = useState(false);
+  const [showAuthenticatorSetup, setShowAuthenticatorSetup] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
@@ -83,6 +91,43 @@ export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPa
   const [trustedPhoneLast4s, setTrustedPhoneLast4s] = useState<string[]>([]);
   const otpInputRef = useRef<TextInput>(null);
   const styles = getStyles(isDark, colors);
+
+  const refreshAuthenticatorStatus = useCallback(async () => {
+    if (!dbUserId) {
+      setAuthenticatorStatusLoading(false);
+      setAuthenticatorStatusUnavailable(true);
+      return;
+    }
+    setAuthenticatorStatusLoading(true);
+    setAuthenticatorStatusUnavailable(false);
+    try {
+      const status = await authenticatorStatus();
+      setAuthenticatorEnabled(status.enabled);
+    } catch {
+      setAuthenticatorStatusUnavailable(true);
+    } finally {
+      setAuthenticatorStatusLoading(false);
+    }
+  }, [dbUserId]);
+
+  useEffect(() => {
+    void refreshAuthenticatorStatus();
+  }, [refreshAuthenticatorStatus]);
+
+  const closeAuthenticatorSetup = useCallback(() => {
+    securityPin.lock('wallet:unlock');
+    setShowAuthenticatorSetup(false);
+    void refreshAuthenticatorStatus();
+  }, [refreshAuthenticatorStatus, securityPin]);
+
+  const openAuthenticatorSetup = () => {
+    if (authenticatorStatusUnavailable) {
+      void refreshAuthenticatorStatus();
+      return;
+    }
+    securityPin.clearProblem();
+    setShowAuthenticatorSetup(true);
+  };
   
   // Focus the OTP input when it becomes visible
   useEffect(() => {
@@ -710,6 +755,17 @@ export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPa
         contentContainerStyle={{ paddingTop: embedded ? 0 : topInset, paddingBottom: bottomInset }}
       >
         <View style={column}>
+        {embedded && onBack && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={tSettings('profileSettingsBack', 'Back to Profile')}
+            style={[styles.authenticatorBack, styles.profileSettingsBack]}
+            onPress={onBack}
+          >
+            <Ionicons name="arrow-back" size={18} color={colors.text.primary} />
+            <Text style={styles.authenticatorBackText}>{tSettings('profileSettingsBack', 'Back to Profile')}</Text>
+          </TouchableOpacity>
+        )}
         {/* App Settings */}
         <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>{tSettings('appSettings', 'App Settings')}</Text>
@@ -922,6 +978,25 @@ export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPa
           })}
 
           {renderSettingItem({
+            icon: 'shield-checkmark-outline',
+            title: tSettings('twoStepVerification', 'Two-step verification'),
+            subtitle: authenticatorStatusLoading
+              ? tSettings('twoStepVerificationChecking', 'Checking security status…')
+              : authenticatorStatusUnavailable
+                ? tSettings('twoStepVerificationUnavailable', 'Status unavailable. Tap to retry.')
+                : authenticatorEnabled
+                  ? tSettings('twoStepVerificationEnabled', 'Enabled · Wallet unlock uses your authenticator app after your PIN.')
+                  : tSettings('twoStepVerificationOptional', 'Optional · PIN-only access works. Set up an authenticator app for stronger security; email confirms setup.'),
+            onPress: authenticatorStatusUnavailable
+              ? () => { void refreshAuthenticatorStatus(); }
+              : authenticatorEnabled
+                ? undefined
+                : openAuthenticatorSetup,
+            showChevron: authenticatorStatusUnavailable || !authenticatorEnabled,
+            disabled: authenticatorStatusLoading,
+          })}
+
+          {renderSettingItem({
             icon: 'phone-portrait-outline',
             title: tSettings('trustedPhone', 'Trusted phone'),
             subtitle: trustedPhoneLast4s.length
@@ -1103,6 +1178,41 @@ export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPa
         </View>
 
       </ScrollView>
+
+      <Modal
+        visible={showAuthenticatorSetup}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAuthenticatorSetup}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.authenticatorSetupContent]}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={tSettings('twoStepVerificationBack', 'Back to settings')}
+              style={styles.authenticatorBack}
+              onPress={closeAuthenticatorSetup}
+            >
+              <Ionicons name="arrow-back" size={18} color={colors.text.primary} />
+              <Text style={styles.authenticatorBackText}>{tSettings('twoStepVerificationBack', 'Back to settings')}</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>{tSettings('twoStepVerificationSetupTitle', 'Set up two-step verification')}</Text>
+            <Text style={styles.modalMessage}>
+              {tSettings('twoStepVerificationSetupBody', 'Confirm your PIN and email, then add an authenticator app. Wallet access will use your PIN and authenticator code. You can go back and keep using PIN-only access.')}
+            </Text>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.authenticatorSetupBody}>
+              <PinFlow
+                mode={isDark ? 'dark' : 'light'}
+                pin={securityPin}
+                scope="wallet:unlock"
+                intent="unlock"
+                onDone={closeAuthenticatorSetup}
+                onCancel={closeAuthenticatorSetup}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <VersionDetailsModal
         visible={showVersionModal}
@@ -1558,6 +1668,32 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     maxWidth: 400,
     borderWidth: 1,
     borderColor: colors.divider,
+  },
+  authenticatorSetupContent: {
+    maxWidth: 520,
+    maxHeight: '92%',
+    flexShrink: 1,
+  },
+  authenticatorBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: uiTokens.space.xs,
+    marginBottom: uiTokens.space.md,
+  },
+  profileSettingsBack: {
+    marginTop: uiTokens.space.md,
+    marginHorizontal: 20,
+    marginBottom: 0,
+  },
+  authenticatorBackText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  authenticatorSetupBody: {
+    gap: uiTokens.space.lg,
+    paddingBottom: uiTokens.space.md,
   },
   modalTitle: {
     fontSize: 20,

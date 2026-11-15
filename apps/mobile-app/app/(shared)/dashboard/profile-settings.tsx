@@ -48,7 +48,7 @@ export default function ProfileSettingsScreen() {
           accessibilityElementsHidden={section !== 'settings'}
           importantForAccessibility={section === 'settings' ? 'auto' : 'no-hide-descendants'}
         >
-          <SettingsScreen embedded />
+          <SettingsScreen embedded onBack={() => setSection('profile')} />
         </View>
       </View>
     </View>

@@ -1,9 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { getSupabaseServerForRequest } from '../supabase-server';
+import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../supabase-server';
 import { resolveNotificationIdentity, isResolveIdentityError } from './resolve-notification-identity';
 import { verifyStepUpProof } from './pin-auth';
 import { AUTHENTICATOR_HEADER, issueAuthenticatorProof, matchAuthenticatorCode, newAuthenticatorSecret,
   openAuthenticatorSecret, recoveryCodeHash, sealAuthenticatorSecret, verifyAuthenticatorProof } from './authenticator';
+import { maskAuthenticatorEmail, sendAuthenticatorEmailCode, verifyAuthenticatorEmailCode } from './authenticator-email';
 import type { AuthenticatorScope } from '../../types/authenticator.types';
 
 const headers = { 'Cache-Control': 'private, no-store', Vary: 'Authorization, Cookie' };
@@ -56,10 +57,10 @@ export async function authenticatorRequest(request: Request, write = false): Pro
     let body: Record<string, unknown>;
     try { body = JSON.parse(text); } catch { return reply('invalid_request', 400); }
     if (!body || typeof body !== 'object' || Array.isArray(body) ||
-      Object.keys(body).some(key => !['action', 'scope', 'code'].includes(key)) ||
-      !['begin', 'confirm', 'verify'].includes(String(body.action))) return reply('invalid_request', 400);
+      Object.keys(body).some(key => !['action', 'scope', 'code', 'emailCode'].includes(key)) ||
+      !['begin', 'send-setup-code', 'confirm', 'verify'].includes(String(body.action))) return reply('invalid_request', 400);
     // Enrollment is a security change; a session alone cannot enroll an attacker's device.
-    if (body.action === 'begin' || body.action === 'confirm') {
+    if (body.action === 'begin' || body.action === 'send-setup-code' || body.action === 'confirm') {
       const pin = request.headers.get('X-Hashpass-Step-Up');
       if (!verifyStepUpProof(pin, { userId, scope: 'wallet:unlock' }) && !verifyStepUpProof(pin, { userId, scope: 'wallet:sign' })) return reply('pin_required', 403);
     }
@@ -78,11 +79,40 @@ export async function authenticatorRequest(request: Request, write = false): Pro
         if (result.data !== true) return reply('enrollment_conflict', 409);
       }
       const label = encodeURIComponent(['HASHPASS', userId].join(':'));
-      return reply({ secret, uri: `otpauth://totp/${label}?secret=${secret}&issuer=HASHPASS&algorithm=SHA1&digits=6&period=30` });
+      const serviceKey = getSupabaseServerEnv(request).supabaseServiceKey;
+      if (!serviceKey) return reply('unavailable', 503);
+      try {
+        const sent = await sendAuthenticatorEmailCode(db, identity.email, serviceKey);
+        if (sent === 'rate_limited') return reply('rate_limited', 429);
+      } catch { return reply('unavailable', 503); }
+      return reply({ secret, uri: `otpauth://totp/${label}?secret=${secret}&issuer=HASHPASS&algorithm=SHA1&digits=6&period=30`,
+        emailHint: maskAuthenticatorEmail(identity.email) });
+    }
+    if (body.action === 'send-setup-code') {
+      const stored = await db.rpc('get_user_authenticator', { p_user_id: userId });
+      if (stored.error) return reply('unavailable', 503);
+      if (!stored.data || stored.data.enabled) return reply('enrollment_required', 403);
+      if (!stored.data.pendingUntil || Date.parse(stored.data.pendingUntil) <= Date.now()) return reply('enrollment_expired', 403);
+      const serviceKey = getSupabaseServerEnv(request).supabaseServiceKey;
+      if (!serviceKey) return reply('unavailable', 503);
+      try {
+        const sent = await sendAuthenticatorEmailCode(db, identity.email, serviceKey);
+        if (sent === 'rate_limited') return reply('rate_limited', 429);
+      } catch { return reply('unavailable', 503); }
+      return reply({ emailHint: maskAuthenticatorEmail(identity.email) });
     }
     if (body.scope !== 'access' && body.scope !== 'critical') return reply('invalid_request', 400);
     if (typeof body.code !== 'string' || !/^(\d{6}|[a-f0-9]{16})$/.test(body.code) ||
-      (body.action === 'confirm' && !/^\d{6}$/.test(body.code))) return reply('invalid_request', 400);
+      (body.action === 'confirm' && (!/^\d{6}$/.test(body.code) || typeof body.emailCode !== 'string' || !/^\d{6}$/.test(body.emailCode))) ||
+      (body.action === 'verify' && body.emailCode !== undefined)) return reply('invalid_request', 400);
+    if (body.action === 'confirm') {
+      const serviceKey = getSupabaseServerEnv(request).supabaseServiceKey;
+      if (!serviceKey) return reply('unavailable', 503);
+      let accepted = false;
+      try { accepted = await verifyAuthenticatorEmailCode(db, identity.email, serviceKey, body.emailCode as string); }
+      catch { return reply('unavailable', 503); }
+      if (!accepted) return reply('invalid_email_setup_code', 403);
+    }
     const stored = await db.rpc('get_user_authenticator', { p_user_id: userId });
     if (stored.error) return reply('unavailable', 503);
     if (!stored.data || (body.action === 'verify' && !stored.data.enabled)) return reply('enrollment_required', 403);

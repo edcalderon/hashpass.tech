@@ -23,6 +23,7 @@ it('keeps Profile and Settings in one tabbed view and hides inactive content fro
   expect(tabs.props.tabs.map((tab: { id: string }) => tab.id)).toEqual(['profile', 'settings']);
   expect(view.root.findByType('ProfileScreen' as never).props.embedded).toBe(true);
   expect(view.root.findByType('SettingsScreen' as never).props.embedded).toBe(true);
+  expect(view.root.findByType('SettingsScreen' as never).props.onBack).toEqual(expect.any(Function));
   expect(view.root.findByType('SettingsScreen' as never).parent?.props.importantForAccessibility).toBe('no-hide-descendants');
 
   await act(async () => { tabs.props.onChange('settings'); });
@@ -30,5 +31,7 @@ it('keeps Profile and Settings in one tabbed view and hides inactive content fro
   expect(view.root.findByType('SegmentedTabs' as never).props.value).toBe('settings');
   expect(view.root.findByType('ProfileScreen' as never).parent?.props.importantForAccessibility).toBe('no-hide-descendants');
   expect(view.root.findByType('SettingsScreen' as never).parent?.props.importantForAccessibility).toBe('auto');
+  await act(async () => { view.root.findByType('SettingsScreen' as never).props.onBack(); });
+  expect(view.root.findByType('SegmentedTabs' as never).props.value).toBe('profile');
   act(() => view.unmount());
 });
