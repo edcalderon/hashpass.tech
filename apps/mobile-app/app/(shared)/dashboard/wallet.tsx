@@ -70,10 +70,10 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
   const settingUp = guard.phase === 'pin_setup';
   const body = settingUp
-    ? t('guard.unifiedSetupBody', 'Choose a 4-digit PIN, then connect your authenticator. Both protect Wallet & Contacts. Sensitive actions require a fresh authenticator code.')
-    : t('guard.unifiedLockedBody', 'Enter your PIN, then your authenticator code to open Wallet & Contacts.');
+    ? t('guard.unifiedSetupBody', 'Choose a 4-digit PIN. Authenticator setup is optional. We recommend an authenticator app for stronger security and wallet PIN recovery.')
+    : t('guard.unifiedLockedBody', 'Enter your PIN to open Wallet & Contacts. If you have not enrolled an authenticator, we recommend one for stronger security and PIN recovery.');
   return shell(<View style={styles.panel}>
-    <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.unifiedSetupTitle', 'Set up your PIN and authenticator') : t('guard.unifiedLockedTitle', 'Wallet & Contacts locked')}</Text>
+    <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.unifiedSetupTitle', 'Set up your PIN') : t('guard.unifiedLockedTitle', 'Wallet & Contacts locked')}</Text>
     <Text style={styles.body}>{body}</Text>
     {recovery === 'authenticator' ? <><AuthenticatorFlow scope="critical" onDone={startRecovery} /><ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('guard.backToPin', 'Back to PIN entry')} onPress={endRecovery} /></> : recovery === 'active' && recoveryRow
       ? // Recovery mounted before the unlock: only the email-code flow runs here, never the

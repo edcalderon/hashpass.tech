@@ -31,7 +31,7 @@ export async function contactsRequest(request: Request, write = false) {
     if (isResolveIdentityError(identity)) return reply({ error: identity.error }, identity.status);
     if (!identity.registryUserId) return reply({ error: 'A linked account is required' }, 403);
     if (!verifyStepUpProof(request.headers.get('X-Hashpass-Step-Up'), { userId: identity.registryUserId, scope: 'wallet:unlock' }) ||
-      !hasAuthenticatorAccess(request, identity.registryUserId, write ? 'critical' : 'access')) return reply({ error: 'step_up_required' }, 403);
+      !await hasAuthenticatorAccess(request, identity.registryUserId, write ? 'critical' : 'access')) return reply({ error: 'step_up_required' }, 403);
     const card = new URL(request.url).searchParams.get('card');
     if (card && !uuid.test(card)) return reply({ error: 'Invalid contact card' }, 400);
     let payload: unknown = {};

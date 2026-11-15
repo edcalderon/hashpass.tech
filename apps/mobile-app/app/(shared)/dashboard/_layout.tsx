@@ -637,18 +637,11 @@ export function CustomDrawerContent({
       tone: "#F59E0B",
     },
     {
-      id: "nav.profile",
-      message: "Profile",
+      id: "nav.profileSettings",
+      message: "Profile & Settings",
       icon: "person-outline",
-      route: "./profile" as const,
+      route: "./profile-settings" as const,
       tone: "#8B5CF6",
-    },
-    {
-      id: "nav.settings",
-      message: "Settings",
-      icon: "settings-outline",
-      route: "./settings" as const,
-      tone: "#64748B",
     },
   ] as const;
 
@@ -681,6 +674,8 @@ export function CustomDrawerContent({
         return t({ id: "nav.profile", message: "Profile" });
       case "nav.settings":
         return t({ id: "nav.settings", message: "Settings" });
+      case "nav.profileSettings":
+        return t({ id: "nav.profileSettings", message: "Profile & Settings" });
       case "nav.admin":
         return t({ id: "nav.admin", message: "Admin Panel" });
       default:
@@ -900,7 +895,7 @@ export function CustomDrawerContent({
         <View style={styles.profileCard}>
           <View style={styles.profileIdentityRow}>
             <TouchableOpacity
-              onPress={() => handleNavigation("./profile")}
+              onPress={() => handleNavigation("./profile-settings")}
               style={styles.profileAvatarButton}
               activeOpacity={0.82}
               accessibilityRole="link"
@@ -926,7 +921,7 @@ export function CustomDrawerContent({
             </TouchableOpacity>
             <View style={styles.profileCopy}>
               <TouchableOpacity
-                onPress={() => handleNavigation("./profile")}
+                onPress={() => handleNavigation("./profile-settings")}
                 style={styles.profileUsernameButton}
                 activeOpacity={0.75}
                 accessibilityRole="link"
@@ -1037,8 +1032,7 @@ export function CustomDrawerContent({
             "./contacts": "sidebarContacts",
             "./wallet": "sidebarWallet",
             "./notifications": "sidebarNotifications",
-            "./profile": "sidebarProfile",
-            "./settings": "sidebarSettings",
+            "./profile-settings": "sidebarProfileSettings",
             "./admin": "sidebarAdmin",
           };
           const stepTexts: Record<string, string> = {
@@ -1064,17 +1058,11 @@ export function CustomDrawerContent({
                 message:
                   "Notifications: Check your meeting requests, updates, and important alerts. The badge shows unread count. Tap to continue.",
               }),
-            "./profile":
+            "./profile-settings":
               t({
-                id: "nav.tour.profile",
+                id: "nav.tour.profileSettings",
                 message:
-                  "Profile: View and edit your profile information and account settings. Tap to continue.",
-              }),
-            "./settings":
-              t({
-                id: "nav.tour.settings",
-                message:
-                  "Settings: Customize app preferences, theme, language, and tutorials. Tap to finish sidebar tour.",
+                  "Profile & Settings: View and edit your profile, account details, and app preferences in one place. Tap to continue.",
               }),
             "./admin":
               t({
@@ -1168,7 +1156,7 @@ export function CustomDrawerContent({
                         copilotHook.handleNth(nextStep);
                       }
 
-                      // If this is the last sidebar item (Settings), close drawer after tutorial moves
+                      // Close the drawer after the final sidebar item advances the tutorial.
                       // This ensures main content steps (Your Passes, Quick Access, etc.) are visible
                       if (index === menuItems.length - 1) {
                         setTimeout(() => {
@@ -2105,6 +2093,7 @@ function AuthenticatedDashboardLayout() {
                 <Drawer.Screen name="wallet" />
                 <Drawer.Screen name="profile" />
                 <Drawer.Screen name="settings" />
+                <Drawer.Screen name="profile-settings" />
                 <Drawer.Screen name="admin" />
                 <Drawer.Screen name="qr-view" />
                 <Drawer.Screen name="pass-details" />

@@ -9,9 +9,30 @@ import type { AuthenticatorScope } from '../../types/authenticator.types';
 const headers = { 'Cache-Control': 'private, no-store', Vary: 'Authorization, Cookie' };
 const reply = (data: unknown, status = 200) => Response.json({ success: status === 200, ...(status === 200 ? { data } : { error: data }) }, { status, headers });
 
-/** Both factors must be present. A PIN-only proof never opens contacts or wallet APIs. */
-export function hasAuthenticatorAccess(request: Request, userId: string, scope: AuthenticatorScope = 'access'): boolean {
-  return verifyAuthenticatorProof(request.headers.get(AUTHENTICATOR_HEADER), userId, scope);
+/**
+ * Check the authenticator factor only. Callers must still verify the route's
+ * PIN or recovery proof independently. Until an authenticator is enrolled, that
+ * existing proof remains sufficient; enrolled accounts always require a fresh
+ * authenticator proof.
+ */
+export async function hasAuthenticatorAccess(
+  request: Request,
+  userId: string,
+  scope: AuthenticatorScope | readonly AuthenticatorScope[] = 'access',
+): Promise<boolean> {
+  const scopes = Array.isArray(scope) ? scope : [scope];
+  const proof = request.headers.get(AUTHENTICATOR_HEADER);
+  if (scopes.some((candidate) => verifyAuthenticatorProof(proof, userId, candidate))) return true;
+
+  try {
+    const status = await getSupabaseServerForRequest(request).rpc('get_user_authenticator', { p_user_id: userId });
+    if (status.error) return false;
+    // A missing row means the user has not enrolled. Treat unexpected row
+    // shapes as unavailable so a database/schema issue cannot bypass 2FA.
+    return status.data === null || status.data?.enabled === false;
+  } catch {
+    return false;
+  }
 }
 
 export async function authenticatorRequest(request: Request, write = false): Promise<Response> {

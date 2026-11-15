@@ -8,7 +8,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import { authenticatorStatus, beginAuthenticator, verifyAuthenticator } from '../../lib/authenticator-client';
 import { beginAuthenticatorChallenge, rememberAuthenticator } from '../../lib/authenticator-session';
-import type { AuthenticatorEnrollment, AuthenticatorFlowProps, AuthenticatorResult } from '../../types/authenticator.types';
+import type { AuthenticatorEnrollment, AuthenticatorFlowProps, AuthenticatorResult, AuthenticatorStatus } from '../../types/authenticator.types';
 
 /** Secrets, codes and recovery material stay in this mounted wizard only. */
 export default function AuthenticatorFlow({ scope, onDone, pinProof }: AuthenticatorFlowProps) {
@@ -16,7 +16,7 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
   const { isDark } = useTheme();
   const { t } = useTranslation('pin');
   const mode = isDark ? 'dark' : 'light', palette = uiPalette(mode);
-  const [phase, setPhase] = useState<'checking' | 'enroll' | 'verify' | 'backup' | 'error'>('checking');
+  const [phase, setPhase] = useState<'checking' | 'optional' | 'pinRequired' | 'enroll' | 'verify' | 'backup' | 'error'>('checking');
   const [enrollment, setEnrollment] = useState<AuthenticatorEnrollment | null>(null);
   const [result, setResult] = useState<AuthenticatorResult | null>(null);
   const [code, setCode] = useState('');
@@ -29,19 +29,36 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
   useEffect(() => {
     const mine = ++generation.current;
     setEnrollment(null); setResult(null); setCode(''); setError(null); setPhase('checking');
-    void authenticatorStatus().then(async status => {
+    void authenticatorStatus().then((status: AuthenticatorStatus) => {
       if (mine !== generation.current) return;
       if (status.enabled) { setPhase('verify'); return; }
-      if (!pinProof) throw new Error('pin_required');
-      const next = await beginAuthenticator(pinProof);
-      if (mine === generation.current) { setEnrollment(next); setPhase('enroll'); }
+      if (!pinProof) { setPhase('pinRequired'); return; }
+      setPhase('optional');
     }).catch(() => { if (mine === generation.current) setPhase('error'); });
     return () => { generation.current += 1; };
   }, [dbUserId, pinProof, retry]);
+  const startEnrollment = async () => {
+    if (inFlight.current || !pinProof) return;
+    inFlight.current = true; setBusy(true); setError(null);
+    const mine = generation.current;
+    try {
+      const next = await beginAuthenticator(pinProof);
+      if (mine === generation.current) { setEnrollment(next); setPhase('enroll'); }
+    } catch {
+      if (mine === generation.current) setPhase('error');
+    } finally {
+      inFlight.current = false;
+      if (mine === generation.current) setBusy(false);
+    }
+  };
+  const continueWithPin = () => {
+    if (!pinProof || phase !== 'optional') return;
+    setEnrollment(null); setResult(null); setCode(''); onDone('pin');
+  };
   const finish = (value: AuthenticatorResult) => {
     if (!dbUserId) return;
     rememberAuthenticator(dbUserId, scope, value.proof);
-    setResult(null); setEnrollment(null); setCode(''); onDone();
+    setResult(null); setEnrollment(null); setCode(''); onDone('authenticator');
   };
   const submit = async () => {
     if (inFlight.current || !dbUserId) return;
@@ -63,8 +80,25 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
       {t('authenticator.title', 'Protect Wallet & Contacts')}
     </Text>
     {phase === 'checking' && <Text style={body}>{t('authenticator.checking', 'Checking authenticator protection…')}</Text>}
+    {phase === 'optional' && <>
+      <Surface mode={mode} style={styles.recommendation}>
+        <Text accessibilityRole="header" style={[body, { fontWeight: '700' }]}>
+          {t('authenticator.optionalTitle', 'Authenticator recommended')}
+        </Text>
+        <Text accessibilityRole="alert" style={body}>
+          {t('authenticator.optionalBody', 'You can continue with your PIN for now. For stronger security, we recommend setting up an authenticator app.')}
+        </Text>
+      </Surface>
+      <ActionButton mode={mode} label={t('authenticator.setup', 'Set up authenticator')}
+        loading={busy} disabled={busy} onPress={() => { void startEnrollment(); }} />
+      <ActionButton mode={mode} variant="secondary" label={t('authenticator.continuePin', 'Continue with PIN')}
+        disabled={busy} onPress={continueWithPin} />
+    </>}
+    {phase === 'pinRequired' && <Text accessibilityRole="alert" style={body}>
+      {t('authenticator.pinRequired', 'No authenticator is enrolled. A recent PIN check is required to continue with PIN-only access.')}
+    </Text>}
     {phase === 'error' && <>
-      <Text accessibilityRole="alert" style={body}>{t('authenticator.unavailable', 'Authenticator setup is unavailable. Check your connection. If your PIN check expired, go back and enter your PIN again.')}</Text>
+      <Text accessibilityRole="alert" style={body}>{t('authenticator.unavailable', 'We could not confirm your authenticator status or prepare setup. Check your connection and try again. PIN-only access is available when no authenticator is enrolled.')}</Text>
       <ActionButton mode={mode} label={t('authenticator.retry', 'Try again')} onPress={() => setRetry(value => value + 1)} />
     </>}
     {phase === 'enroll' && enrollment && <>
@@ -102,4 +136,5 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
 const styles = StyleSheet.create({
   root: { gap: uiTokens.space.lg, width: '100%' },
   qr: { alignItems: 'center', padding: uiTokens.space.md },
+  recommendation: { gap: uiTokens.space.sm },
 });

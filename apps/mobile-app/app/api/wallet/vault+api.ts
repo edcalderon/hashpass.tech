@@ -49,8 +49,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await identity(request, false);
     if ('response' in auth) return auth.response;
-    if (!hasAuthenticatorAccess(request, auth.ownerId, 'access') &&
-      !hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
+    if (!await hasAuthenticatorAccess(request, auth.ownerId, ['access', 'critical'])) return failure('authenticator_required', 403);
     // Recovery reads the same envelope as a PIN unlock; the client needs the server
     // share to re-wrap its vault under the PIN being set during the recovery flow.
     const proof = request.headers.get(STEP_UP_HEADER);
@@ -75,7 +74,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const auth = await identity(request, true);
     if ('response' in auth) return auth.response;
-    if (!hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
+    if (!await hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
     if (!/^Bearer\s+\S+$/i.test(request.headers.get('Authorization') ?? '')) return failure('wallet_bearer_required', 401);
     let body: Record<string, unknown>;
     try { body = await boundedJson(request); } catch { return failure('invalid_wallet_request', 400); }

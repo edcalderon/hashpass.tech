@@ -86,6 +86,7 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
   const [challengeAnswers, setChallengeAnswers] = useState(['', '', '']);
   const [recoverCode, setRecoverCode] = useState('');
   const [recoverPhrase, setRecoverPhrase] = useState('');
+  const [pinOnlyAuthenticatorAccepted, setPinOnlyAuthenticatorAccepted] = useState(false);
   const [, refreshAuthenticator] = useState(0);
   const [recoverProof, setRecoverProof] = useState<string | null>(null);
   const recoverProofRef = useRef<StepUpProof | null>(null);
@@ -119,6 +120,7 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
     setBusy(false);
     setReason(null);
     setRecoverCode(''); setRecoverPhrase(''); setRecoverProof(null); recoverProofRef.current = null;
+    setPinOnlyAuthenticatorAccepted(false);
     setRecoveryNotice(null);
     setChangeCurrent(null);
     send({ type: 'CANCEL' });
@@ -131,6 +133,7 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
     setPhrase(''); setChallengeAnswers(['', '', '']);
     setPhraseOrigin(null);
     setRecoverCode(''); setRecoverPhrase(''); setRecoverProof(null); recoverProofRef.current = null;
+    setPinOnlyAuthenticatorAccepted(false);
     setRecoveryNotice(null);
     setChangeCurrent(null);
     setBackupPinOpen(false); setPortableBackupOpen(false); setBackupPassword(''); setBackupConfirm(''); setBackupProblem(null);
@@ -157,6 +160,10 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
     // machine then would throw away a phrase screen that is open. Only the identity restarts it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.scope.ownerId, initial.scope.walletId]);
+
+  useEffect(() => {
+    if (!['recover_send', 'recover_code', 'recover_pin'].includes(step)) setPinOnlyAuthenticatorAccepted(false);
+  }, [step]);
 
   // Actions picked from the card's menu enter the same machine the in-flow buttons use.
   const lastCommand = useRef(0);
@@ -492,9 +499,15 @@ function Vault({ initial, pin: sharedPin, onChanged, command, recoverOnly = fals
   // be tapped or read while they are up. The PIN pads show no secret, so they stay inside
   // the card — the same view the wallet's locked gate uses (per product feedback, the
   // in-card pad reads as one flow, not a second lock).
-  if (['recover_send', 'recover_code', 'recover_pin'].includes(step) && !authenticatorProof(initial.scope.ownerId, 'critical')) {
-    return <View style={stack}><AuthenticatorFlow scope="critical" onDone={() => refreshAuthenticator(value => value + 1)} />
-      <ActionButton mode={mode} variant="ghost" label={label('cancel', 'Cancel')} onPress={() => { send({ type: 'CANCEL' }); onExit?.(); }} />
+  if (['recover_send', 'recover_code', 'recover_pin'].includes(step) &&
+    !authenticatorProof(initial.scope.ownerId, 'critical') && !pinOnlyAuthenticatorAccepted) {
+    return <View style={stack}><AuthenticatorFlow scope="critical"
+      pinProof={pinRef.current.proofFor('wallet:unlock') ?? pinRef.current.proofFor('wallet:sign')}
+      onDone={completion => {
+        if (completion === 'pin') setPinOnlyAuthenticatorAccepted(true);
+        refreshAuthenticator(value => value + 1);
+      }} />
+      <ActionButton mode={mode} variant="ghost" label={label('cancel', 'Cancel')} onPress={() => { setPinOnlyAuthenticatorAccepted(false); send({ type: 'CANCEL' }); onExit?.(); }} />
     </View>;
   }
 

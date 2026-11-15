@@ -15,6 +15,7 @@ import { apiClient } from '../../../lib/api-client';
 import { resolveAvatarUrl } from '../../../lib/auth/avatar';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
+import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -78,11 +79,12 @@ const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
     (typeof attendee.company === 'string' || attendee.company === null);
 };
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ embedded = false }: EmbeddedDashboardPageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { isDark, colors } = useTheme();
   const { topInset, bottomInset, column } = useDashboardPageLayout();
   const { showSuccess, showError } = useToastHelpers();
+  const contentTopInset = embedded ? 0 : topInset;
   const styles = getStyles(isDark, colors);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -499,7 +501,7 @@ export default function ProfileScreen() {
     return (
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset }]} showsVerticalScrollIndicator={false}>
-          <View style={[styles.header, { paddingTop: topInset }]}>
+          <View style={[styles.header, { paddingTop: contentTopInset }]}>
             <View style={[styles.avatar, styles.skeletonBlock]} />
             <View style={[styles.skeletonLine, styles.skeletonTitle]} />
             <View style={[styles.skeletonLine, styles.skeletonSubtitle]} />
@@ -527,7 +529,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
-        <View style={[styles.header, { paddingTop: topInset }]}>
+        <View style={[styles.header, { paddingTop: contentTopInset }]}>
           <TouchableOpacity 
             style={styles.avatarContainer}
             onPress={handleAvatarPress}

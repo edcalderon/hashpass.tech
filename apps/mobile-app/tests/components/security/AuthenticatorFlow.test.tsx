@@ -35,6 +35,9 @@ it('enrolls, shows QR and manual key, and requires recovery backup acknowledgmen
   mockStatus.mockResolvedValue({ enabled: false });
   mockVerify.mockResolvedValue({ proof: proof(), recoveryCodes: ['recovery-one'] });
   const { view, onDone } = await mount();
+  expect(mockBegin).not.toHaveBeenCalled();
+  expect(JSON.stringify(view.toJSON())).toContain('For stronger security');
+  await act(async () => button(view, 'Set up authenticator').props.onPress());
   expect(mockBegin).toHaveBeenCalledWith('pin');
   expect(view.root.findByType('QRCode' as never).props.value).toContain('otpauth://');
   await submit(view);
@@ -42,6 +45,17 @@ it('enrolls, shows QR and manual key, and requires recovery backup acknowledgmen
   expect(onDone).not.toHaveBeenCalled(); expect(authenticatorProof('alice', 'access')).toBeNull();
   await act(async () => button(view, 'I saved my recovery codes').props.onPress());
   expect(onDone).toHaveBeenCalledTimes(1); expect(authenticatorProof('alice', 'access')).toBe('verified');
+  act(() => view.unmount());
+});
+it('continues with the PIN when authenticator setup is skipped', async () => {
+  mockStatus.mockResolvedValue({ enabled: false });
+  const { view, onDone } = await mount();
+  expect(mockBegin).not.toHaveBeenCalled();
+  expect(authenticatorProof('alice', 'access')).toBeNull();
+  await act(async () => button(view, 'Continue with PIN').props.onPress());
+  expect(onDone).toHaveBeenCalledWith('pin');
+  expect(authenticatorProof('alice', 'access')).toBeNull();
+  expect(mockVerify).not.toHaveBeenCalled();
   act(() => view.unmount());
 });
 it('requires a new code for each critical action and accepts normalized recovery input', async () => {
@@ -63,7 +77,9 @@ it('cannot enroll without a recent PIN proof', async () => {
   mockStatus.mockResolvedValue({ enabled: false });
   const { view, onDone } = await mount('access', null);
   expect(mockBegin).not.toHaveBeenCalled(); expect(onDone).not.toHaveBeenCalled();
-  expect(JSON.stringify(view.toJSON())).toContain('Authenticator setup is unavailable'); act(() => view.unmount());
+  expect(JSON.stringify(view.toJSON())).toContain('No authenticator is enrolled');
+  expect(view.root.findAllByType('ActionButton' as never).some(node => node.props.label === 'Continue with PIN')).toBe(false);
+  act(() => view.unmount());
 });
 it('does not publish a verification response after unmount', async () => {
   let resolve!: (value: unknown) => void;

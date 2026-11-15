@@ -7,6 +7,7 @@ jest.mock('../../../components/security/AuthenticatorFlow', () => ({ __esModule:
 let mockUser: { id: string } | null = { id: 'alice' };
 let mockAuthLoading = false;
 let mockSetup: any;
+let mockPinProof: string | null = null;
 const mockAct = jest.fn();
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }), useLocalSearchParams: () => ({}) }));
@@ -14,7 +15,7 @@ jest.mock('../../../hooks/useAuth', () => ({ useAuth: () => ({ user: mockUser, d
 jest.mock('../../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }));
 jest.mock('../../../hooks/useContacts', () => ({ useContacts: () => ({ snapshot: null, loading: false, busy: false, error: null, act: mockAct, reload: jest.fn() }) }));
 const mockUseSetup = jest.fn((_id: string | null) => mockSetup);
-const mockUsePin = jest.fn((_id: string | null) => ({ pin: true }));
+const mockUsePin = jest.fn((_id: string | null) => ({ pin: true, proofFor: jest.fn(() => mockPinProof) }));
 jest.mock('../../../hooks/useSetup', () => ({ useSetup: (id: string | null) => mockUseSetup(id) }));
 jest.mock('../../../hooks/usePin', () => ({ usePin: (id: string | null) => mockUsePin(id) }));
 jest.mock('@hashpass/ui/primitives', () => ({ ActionButton: 'ActionButton' }));
@@ -26,7 +27,7 @@ const kinds = (view: ReactTestRenderer) => ['SetupWizard', 'ContactsExperience']
 async function mount() { let view!: ReactTestRenderer; await act(async () => { view = create(<ContactsScreen standalone />); }); return view; }
 
 describe('Contacts setup gate', () => {
-  beforeEach(() => { jest.clearAllMocks(); mockUser = { id: 'alice' }; mockAuthLoading = false; mockAct.mockResolvedValue(true); });
+  beforeEach(() => { jest.clearAllMocks(); mockUser = { id: 'alice' }; mockAuthLoading = false; mockPinProof = null; mockAct.mockResolvedValue(true); });
 
   it('shows the setup wizard, and no contacts, until setup is complete', async () => {
     mockSetup = wizard;
@@ -71,6 +72,7 @@ describe('Contacts setup gate', () => {
 
   it('keeps ContactsExperience mounted until authenticator verification and save succeed', async () => {
     mockSetup = { view: { phase: 'complete', step: null }, context: {}, send: jest.fn() };
+    mockPinProof = 'recent-pin-proof';
     const view = await mount();
     const action = { action: 'request', card: 'contact-card' } as const;
     let result!: Promise<boolean>;
@@ -96,6 +98,7 @@ describe('Contacts setup gate', () => {
 
   it('keeps the contact editor mounted when authenticator verification is canceled', async () => {
     mockSetup = { view: { phase: 'complete', step: null }, context: {}, send: jest.fn() };
+    mockPinProof = 'recent-pin-proof';
     const view = await mount();
     let result!: Promise<boolean>;
 

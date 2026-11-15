@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import AuthenticatorFlow from '../security/AuthenticatorFlow';
+import PinFlow from '../security/PinFlow';
 import { ActionButton } from '@hashpass/ui/primitives';
 import type { ContactsAction } from '../../types/contacts';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ export default function ContactsScreen({ standalone = false }) {
   const accountId = authLoading ? null : dbUserId ?? null;
   const setup = useSetup(accountId);
   const pin = usePin(accountId);
+  const pinProof = pin.proofFor('wallet:unlock');
   const [pending, setPending] = useState<ContactsAction | null>(null);
   const resolveAction = useRef<((saved: boolean) => void) | null>(null);
   const processingAction = useRef(false);
@@ -89,8 +91,13 @@ export default function ContactsScreen({ standalone = false }) {
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: uiTokens.space.xl, gap: uiTokens.space.lg }}
         keyboardShouldPersistTaps="handled"
       >
-        <AuthenticatorFlow scope="critical" onDone={() => { void finishPending(); }} />
-        <ActionButton mode={mode} label="Cancel" variant="ghost" disabled={network.busy} onPress={cancelPending} />
+        {pinProof
+          ? <>
+              <AuthenticatorFlow scope="critical" pinProof={pinProof} onDone={() => { void finishPending(); }} />
+              <ActionButton mode={mode} label="Cancel" variant="ghost" disabled={network.busy} onPress={cancelPending} />
+            </>
+          : <PinFlow mode={mode} pin={pin} scope="wallet:unlock" intent="unlock" authenticatorScope="critical"
+              onDone={() => { void finishPending(); }} onCancel={cancelPending} />}
       </ScrollView>}
     </>}
   </SafeAreaView>;

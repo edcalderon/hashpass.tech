@@ -21,6 +21,9 @@ beforeEach(() => {
   jest.clearAllMocks(); process.env.HASHPASS_TOTP_KEY = 'ab'.repeat(32);
   process.env.HASHPASS_PIN_PEPPER = 'p'.repeat(48); process.env.HASHPASS_WALLET_SETUP_ENABLED = 'true';
   mockIdentity.mockResolvedValue({ registryUserId: user, email: 'alice@example.test' });
+  mockRpc.mockImplementation(async (name: string) => name === 'get_user_authenticator'
+    ? { data: { enabled: true }, error: null }
+    : { data: null, error: null });
 });
 afterAll(() => { delete process.env.HASHPASS_TOTP_KEY; delete process.env.HASHPASS_PIN_PEPPER; delete process.env.HASHPASS_WALLET_SETUP_ENABLED; });
 const request = (method: string, auth?: string, body: unknown = {}) => new Request('https://localhost/api/protected', {
@@ -31,7 +34,9 @@ const request = (method: string, auth?: string, body: unknown = {}) => new Reque
 });
 it.each([contactsGet, walletGet, vaultGet])('rejects PIN-only API reads before data access', async handler => {
   expect((await handler(request('GET'))).status).toBe(403);
-  expect(mockRpc).not.toHaveBeenCalled(); expect(mockFrom).not.toHaveBeenCalled();
+  expect(mockRpc).toHaveBeenCalledWith('get_user_authenticator', { p_user_id: user });
+  expect(mockRpc).not.toHaveBeenCalledWith('contact_network', expect.anything());
+  expect(mockFrom).not.toHaveBeenCalled();
 });
 it.each([contactsPost, walletPost, vaultPost, recoveryPost])('rejects API writes with an access proof, expired proof, or another actor', async handler => {
   for (const proof of [undefined, issueAuthenticatorProof(user, 'access').token,
@@ -39,9 +44,23 @@ it.each([contactsPost, walletPost, vaultPost, recoveryPost])('rejects API writes
     issueAuthenticatorProof('someone-else', 'critical').token]) {
     expect((await handler(request('POST', proof))).status).toBe(403);
   }
-  expect(mockRpc).not.toHaveBeenCalled(); expect(mockFrom).not.toHaveBeenCalled();
+  expect(mockRpc).toHaveBeenCalledTimes(4);
+  expect(mockRpc).not.toHaveBeenCalledWith('contact_network', expect.anything());
+  expect(mockFrom).not.toHaveBeenCalled();
+});
+
+it('accepts the existing PIN proof when no authenticator is enrolled', async () => {
+  mockRpc.mockImplementation(async (name: string) => {
+    if (name === 'get_user_authenticator') return { data: { enabled: false }, error: null };
+    if (name === 'contact_network') return { data: { contacts: [] }, error: null };
+    return { data: null, error: null };
+  });
+  const response = await contactsGet(request('GET'));
+  expect(response.status).toBe(200);
+  expect(mockRpc).toHaveBeenCalledWith('get_user_authenticator', { p_user_id: user });
+  expect(mockRpc).toHaveBeenCalledWith('contact_network', expect.objectContaining({ p_action: 'read', p_user_id: user }));
 });
 it('requires critical authenticator verification to change a PIN', async () => {
   expect((await pinPost(request('POST', undefined, { action: 'set', pin: '4321', currentPin: '1234' }))).status).toBe(403);
-  expect(mockRpc).not.toHaveBeenCalled();
+  expect(mockRpc).toHaveBeenCalledWith('get_user_authenticator', { p_user_id: user });
 });

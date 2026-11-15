@@ -407,10 +407,10 @@ describe("dashboard drawer visual controls", () => {
     root
       .findByProps({ accessibilityLabel: "@edward: Profile" })
       .props.onPress();
-    root.findAllByProps({ accessibilityLabel: "Profile" })[0].props.onPress();
+    root.findByProps({ accessibilityLabel: "Profile & Settings" }).props.onPress();
     expect(mockNavigate).toHaveBeenCalledTimes(2);
-    expect(mockNavigate).toHaveBeenNthCalledWith(1, "profile");
-    expect(mockNavigate).toHaveBeenNthCalledWith(2, "profile");
+    expect(mockNavigate).toHaveBeenNthCalledWith(1, "profile-settings");
+    expect(mockNavigate).toHaveBeenNthCalledWith(2, "profile-settings");
     mockNavigate.mockClear();
 
     const accountDetails = root.findByProps({

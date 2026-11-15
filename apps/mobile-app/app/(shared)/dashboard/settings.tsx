@@ -35,8 +35,9 @@ import type {
   PhoneEnrollmentVerifyResponse,
   TrustedPhonesResponse,
 } from '../../../types/auth-screen.types';
+import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ embedded = false }: EmbeddedDashboardPageProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometricAuth, setBiometricAuth] = useState(false);
   const [dataUsage, setDataUsage] = useState(false);
@@ -706,7 +707,7 @@ export default function SettingsScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset, paddingBottom: bottomInset }}
+        contentContainerStyle={{ paddingTop: embedded ? 0 : topInset, paddingBottom: bottomInset }}
       >
         <View style={column}>
         {/* App Settings */}

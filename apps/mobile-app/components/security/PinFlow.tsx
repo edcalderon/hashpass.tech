@@ -29,8 +29,8 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
 /**
  * Create-or-unlock, as one flow. A new PIN is entered twice, saved, and used straight away to
  * mint the proof for `scope`, so the person is never asked for a PIN they just chose.
- * Wallet scopes then require authenticator verification. Digits stay in transient component
- * memory until that verification completes or the flow unmounts; they are never persisted.
+ * Enrolled authenticators add a verification step; otherwise the PIN can be used on its own.
+ * Digits stay in transient component memory until the flow completes or unmounts; they are never persisted.
  */
 export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, authenticatorScope }: PinFlowProps) {
   const { t } = useTranslation('pin');

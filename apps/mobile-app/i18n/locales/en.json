@@ -214,7 +214,10 @@
       "recoveryChecking": "Checking your wallet…",
       "recoveryNoWallet": "This account has no wallet yet, so there is nothing to recover. Your PIN protects your account; contact support if you cannot sign in.",
       "recoveryUnavailable": "We could not reach the PIN recovery service. Check your connection and try again.",
-      "backToPin": "Back to PIN entry"
+      "backToPin": "Back to PIN entry",
+      "unifiedSetupBody": "Choose a 4-digit PIN. Authenticator setup is optional. We recommend an authenticator app for stronger security and wallet PIN recovery.",
+      "unifiedLockedBody": "Enter your PIN to open Wallet & Contacts. If you have not enrolled an authenticator, we recommend one for stronger security and PIN recovery.",
+      "unifiedSetupTitle": "Set up your PIN"
     },
     "vault": {
       "title": "Your wallet",
@@ -1291,13 +1294,17 @@
       "notifications": "Notifications: Check your meeting requests, updates, and important alerts. The badge shows unread count. Tap to continue.",
       "profile": "Profile: View and edit your profile information and account settings. Tap to continue.",
       "settings": "Settings: Customize app preferences, theme, language, and tutorials. Tap to finish sidebar tour.",
-      "admin": "Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only."
+      "admin": "Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only.",
+      "profileSettings": "Profile & Settings: View and edit your profile, account details, and app preferences in one place. Tap to continue."
     },
     "light": "Light",
     "dark": "Dark",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
-    "logout": "Log out"
+    "logout": "Log out",
+    "profileSettings": "Profile & Settings",
+    "profileSettingsTabs": "Profile and settings sections",
+    "walletContacts": "Wallet & Contacts"
   },
   "explore": {
     "noEvent": "No event available",
@@ -2563,7 +2570,15 @@
     "createTitle": "Create a 4-digit PIN",
     "createHint": "This second step protects your wallet and contacts. HASHPASS cannot reset it for you.",
     "mismatch": "The two PINs did not match. Start again.",
-    "cancel": "Not now"
+    "cancel": "Not now",
+    "authenticator": {
+      "optionalTitle": "Authenticator recommended",
+      "optionalBody": "You can continue with your PIN for now. For stronger security and PIN recovery, we recommend setting up an authenticator app.",
+      "setup": "Set up authenticator",
+      "continuePin": "Continue with PIN",
+      "pinRequired": "No authenticator is enrolled. A recent PIN check is required for PIN-only access.",
+      "unavailable": "We could not confirm your authenticator status or prepare setup. Check your connection and try again. PIN-only access is available when no authenticator is enrolled."
+    }
   },
   "setup": {
     "loading": "Getting things ready",

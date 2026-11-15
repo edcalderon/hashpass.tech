@@ -253,6 +253,11 @@
     "exchange": {
       "title": "Échange de tokens",
       "description": "Convertir des points en cryptomonnaie."
+    },
+    "guard": {
+      "unifiedSetupBody": "Choisissez un code PIN à 4 chiffres. La configuration d’une application d’authentification est facultative. Nous la recommandons pour renforcer la sécurité et récupérer le PIN du portefeuille.",
+      "unifiedLockedBody": "Saisissez votre PIN pour ouvrir Wallet & Contacts. Si vous n’avez pas configuré d’application d’authentification, nous la recommandons pour renforcer la sécurité et récupérer votre PIN.",
+      "unifiedSetupTitle": "Configurer votre code PIN"
     }
   },
   "digitalWallet": {
@@ -970,13 +975,17 @@
       "notifications": "Notifications : consultez vos demandes de rendez-vous, mises à jour et alertes importantes. Le badge indique le nombre de notifications non lues. Touchez pour continuer.",
       "profile": "Profil : consultez et modifiez vos informations de profil et les paramètres de votre compte. Touchez pour continuer.",
       "settings": "Paramètres : personnalisez les préférences, le thème, la langue et les tutoriels. Touchez pour terminer le parcours.",
-      "admin": "Panneau d'administration : gérez les passes, scannez les codes QR et créez des correspondances de rendez-vous. Accès administrateur uniquement."
+      "admin": "Panneau d'administration : gérez les passes, scannez les codes QR et créez des correspondances de rendez-vous. Accès administrateur uniquement.",
+      "profileSettings": "Profil et paramètres : consultez et modifiez votre profil, les détails du compte et les préférences de l’application au même endroit. Appuyez pour continuer."
     },
     "light": "Clair",
     "dark": "Sombre",
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "profileSettings": "Profil et paramètres",
+    "profileSettingsTabs": "Sections du profil et des paramètres",
+    "walletContacts": "Portefeuille et contacts"
   },
   "explore": {
     "noEvent": "Aucun événement disponible",
@@ -1548,5 +1557,15 @@
     "navNotifications": "Notifications",
     "navProfile": "Profil",
     "guestDescription": "Vous explorez une version simplifiée de HASHPASS. Inscrivez-vous et téléchargez l’application pour profiter de l’expérience complète, avec vos pass, vos événements enregistrés et les fonctionnalités communautaires."
+  },
+  "pin": {
+    "authenticator": {
+      "optionalTitle": "Application d’authentification recommandée",
+      "optionalBody": "Vous pouvez continuer avec votre code PIN pour le moment. Pour renforcer la sécurité et récupérer votre code PIN, nous vous recommandons de configurer une application d’authentification.",
+      "setup": "Configurer l’application",
+      "continuePin": "Continuer avec le PIN",
+      "pinRequired": "Aucune application d’authentification n’est configurée. Une vérification récente du PIN est nécessaire pour continuer avec le PIN seul.",
+      "unavailable": "Nous n’avons pas pu confirmer le statut de votre application d’authentification ni préparer sa configuration. Vérifiez votre connexion et réessayez. Si aucune application n’est configurée, vous pouvez utiliser uniquement votre code PIN."
+    }
   }
 }

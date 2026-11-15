@@ -67,11 +67,10 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await identity(request);
     if ('response' in auth) return auth.response;
-    if (!hasAuthenticatorAccess(request, auth.ownerId, 'access') &&
-      !hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
+    if (!await hasAuthenticatorAccess(request, auth.ownerId, ['access', 'critical'])) return failure('authenticator_required', 403);
     if (!verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:unlock' }) &&
       !verifyStepUpProof(request.headers.get(STEP_UP_HEADER), { userId: auth.ownerId, scope: 'wallet:recover' }) &&
-      !hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('step_up_required', 403);
+      !await hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('step_up_required', 403);
     const { data, error } = await getSupabaseServerForRequest(request).from('user_wallet')
       .select(FIELDS).eq('user_id', auth.ownerId).maybeSingle();
     if (error) {
@@ -97,7 +96,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const auth = await identity(request, true);
     if ('response' in auth) return auth.response;
-    if (!hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
+    if (!await hasAuthenticatorAccess(request, auth.ownerId, 'critical')) return failure('authenticator_required', 403);
     // Mutations require an authenticated bearer session, not ambient cookies.
     // The shared resolver validates the token. This avoids cross-site cookie CSRF.
     if (!/^Bearer\s+\S+$/i.test(request.headers.get('Authorization') ?? '')) return failure('wallet_bearer_required', 401);

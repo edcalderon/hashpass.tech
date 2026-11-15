@@ -138,13 +138,17 @@
       "notifications": "Teavitused: vaata oma kohtumistaotlusi, uuendusi ja olulisi teateid. Märge näitab lugemata teateid. Jätkamiseks puuduta.",
       "profile": "Profiil: vaata ja muuda oma profiiliandmeid ning konto seadeid. Jätkamiseks puuduta.",
       "settings": "Seaded: kohanda rakenduse eelistusi, teemat, keelt ja õpetusi. Külgmenüü tutvustuse lõpetamiseks puuduta.",
-      "admin": "Adminipaneel: halda pääsmeid, skanni QR-koode ja loo kohtumiste vasteid. Ainult administraatoritele."
+      "admin": "Adminipaneel: halda pääsmeid, skanni QR-koode ja loo kohtumiste vasteid. Ainult administraatoritele.",
+      "profileSettings": "Profiil ja seaded: vaata ja muuda oma profiili, konto andmeid ning rakenduse eelistusi ühes kohas. Jätkamiseks puuduta."
     },
     "light": "Hele",
     "dark": "Tume",
     "lightMode": "Hele režiim",
     "darkMode": "Tume režiim",
-    "logout": "Logi välja"
+    "logout": "Logi välja",
+    "profileSettings": "Profiil ja seaded",
+    "profileSettingsTabs": "Profiili ja seadete jaotised",
+    "walletContacts": "Rahakott ja kontaktid"
   },
   "version": {
     "stable": "Stabiilne"
@@ -303,6 +307,23 @@
     "calendar": {
       "shortLabel": "Kalender",
       "openPicker": "Lisa välisesse kalendrisse"
+    }
+  },
+  "pin": {
+    "authenticator": {
+      "optionalTitle": "Autentimisrakendus on soovitatav",
+      "optionalBody": "Praegu saad jätkata PIN-koodiga. Parema turvalisuse ja PIN-koodi taastamise jaoks soovitame seadistada autentimisrakenduse.",
+      "setup": "Seadista autentimisrakendus",
+      "continuePin": "Jätka PIN-koodiga",
+      "pinRequired": "Autentimisrakendus pole seadistatud. Ainult PIN-koodiga jätkamiseks on vaja hiljutist PIN-koodi kontrolli.",
+      "unavailable": "Autentifikaatori olekut ega seadistuse ettevalmistamist ei õnnestunud kinnitada. Kontrolli ühendust ja proovi uuesti. Kui autentifikaator pole seadistatud, saad kasutada ainult PIN-koodi."
+    }
+  },
+  "wallet": {
+    "guard": {
+      "unifiedSetupBody": "Vali 4-kohaline PIN-kood. Autentimisrakenduse seadistamine on valikuline. Parema turvalisuse ja rahakoti PIN-koodi taastamise jaoks soovitame autentimisrakendust.",
+      "unifiedLockedBody": "Wallet & Contacts avamiseks sisesta PIN-kood. Kui autentimisrakendus pole seadistatud, soovitame seda parema turvalisuse ja PIN-koodi taastamise jaoks.",
+      "unifiedSetupTitle": "Seadista PIN-kood"
     }
   }
 }
