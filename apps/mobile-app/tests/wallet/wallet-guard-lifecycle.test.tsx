@@ -12,9 +12,21 @@ const mockLock = jest.fn(() => { mockUnlocked = false; });
 const mockPin = { isUnlocked: () => mockUnlocked, lock: mockLock };
 jest.mock('../../lib/setup-client', () => ({ fetchSetup: () => mockSetup() }));
 jest.mock('../../hooks/usePin', () => ({ usePin: () => mockPin }));
-jest.mock('react-native', () => ({ Text: 'Text', AppState: {
-  addEventListener: (_: string, handler: (value: string) => void) => { mockBackground = handler; return { remove: jest.fn() }; },
-} }));
+jest.mock('react-native', () => {
+  const actual = jest.requireActual('react-native');
+  Object.defineProperty(actual, 'Text', { configurable: true, value: 'Text' });
+  Object.defineProperty(actual, 'AppState', {
+    configurable: true,
+    value: {
+      currentState: 'active',
+      addEventListener: (_: string, handler: (value: string) => void) => {
+        mockBackground = handler;
+        return { remove: jest.fn() };
+      },
+    },
+  });
+  return actual;
+});
 jest.mock('expo-router', () => ({ useFocusEffect: (callback: () => (() => void) | undefined) => {
   require('react').useEffect(() => { mockFocus = callback; mockBlur = callback(); return mockBlur; }, [callback]);
 } }));

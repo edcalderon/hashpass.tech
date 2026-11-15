@@ -459,12 +459,12 @@ describe("dashboard drawer visual controls", () => {
     expect(root.findAllByProps({ name: "moon-outline" })).toHaveLength(1);
   });
 
-  it('opens the Contacts screen from its accessible dashboard navigation entry', async () => {
+  it('opens Wallet & Contacts from its accessible dashboard navigation entry', async () => {
     const renderer = await renderDrawer();
     await TestRenderer.act(async () => {
-      renderer.root.findByProps({ accessibilityLabel: 'Contacts' }).props.onPress();
+      renderer.root.findByProps({ accessibilityLabel: 'Wallet & Contacts' }).props.onPress();
     });
-    expect(mockNavigate).toHaveBeenCalledWith('contacts');
+    expect(mockNavigate).toHaveBeenCalledWith('wallet');
     expect(mockSetOpen).toHaveBeenCalledWith(false);
     await TestRenderer.act(async () => { renderer.unmount(); });
   });
@@ -558,7 +558,7 @@ describe("dashboard drawer visual controls", () => {
       collectMenuButtons(mockScrollChildren);
 
       expect(menuButtons.length).toBeGreaterThan(1);
-      const walletButton = menuButtons.find(button => button.props.accessibilityLabel === 'Wallet');
+      const walletButton = menuButtons.find(button => button.props.accessibilityLabel === 'Wallet & Contacts');
 
       await TestRenderer.act(async () => {
         walletButton.props.onHoverIn();
@@ -612,12 +612,12 @@ describe("dashboard drawer visual controls", () => {
       collectMenuButtons(mockScrollChildren);
 
       await TestRenderer.act(async () => {
-        menuButtons.find(button => button.props.accessibilityLabel === 'Wallet').props.onPress();
+        menuButtons.find(button => button.props.accessibilityLabel === 'Wallet & Contacts').props.onPress();
         jest.advanceTimersByTime(300);
         await Promise.resolve();
       });
 
-      expect(mockHandleNth).toHaveBeenCalledWith(5);
+      expect(mockHandleNth).toHaveBeenCalledWith(4);
     } finally {
       jest.useRealTimers();
     }
