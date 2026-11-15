@@ -75,7 +75,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   return shell(<View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.unifiedSetupTitle', 'Set up your PIN') : t('guard.unifiedLockedTitle', 'Wallet & Contacts locked')}</Text>
     <Text style={styles.body}>{body}</Text>
-    {recovery === 'authenticator' ? <><AuthenticatorFlow scope="critical" onDone={startRecovery} /><ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('guard.backToPin', 'Back to PIN entry')} onPress={endRecovery} /></> : recovery === 'active' && recoveryRow
+    {recovery === 'authenticator' ? <><AuthenticatorFlow scope="critical" onDone={startRecovery} onUnenrolled={startRecovery} /><ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('guard.backToPin', 'Back to PIN entry')} onPress={endRecovery} /></> : recovery === 'active' && recoveryRow
       ? // Recovery mounted before the unlock: only the email-code flow runs here, never the
         // wallet's home, so a locked-out person still has a way back in (see WalletVaultFlow).
         <WalletVaultFlow enrollment={recoveryRow} recoverOnly onChanged={endRecovery} onExit={endRecovery} />

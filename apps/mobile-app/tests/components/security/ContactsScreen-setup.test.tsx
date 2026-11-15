@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import ContactsScreen from '../../../components/contacts/ContactsScreen';
 
 jest.mock('../../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
+jest.mock('../../../components/security/PinFlow', () => ({ __esModule: true, default: 'PinFlow' }));
 let mockUser: { id: string } | null = { id: 'alice' };
 let mockAuthLoading = false;
 let mockSetup: any;

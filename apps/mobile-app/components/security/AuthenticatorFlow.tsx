@@ -11,7 +11,7 @@ import { beginAuthenticatorChallenge, rememberAuthenticator } from '../../lib/au
 import type { AuthenticatorEnrollment, AuthenticatorFlowProps, AuthenticatorResult, AuthenticatorStatus } from '../../types/authenticator.types';
 
 /** Secrets, codes and recovery material stay in this mounted wizard only. */
-export default function AuthenticatorFlow({ scope, onDone, pinProof }: AuthenticatorFlowProps) {
+export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolled }: AuthenticatorFlowProps) {
   const { dbUserId } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation('pin');
@@ -32,11 +32,12 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof }: Authentic
     void authenticatorStatus().then((status: AuthenticatorStatus) => {
       if (mine !== generation.current) return;
       if (status.enabled) { setPhase('verify'); return; }
+      if (onUnenrolled) { onUnenrolled(); return; }
       if (!pinProof) { setPhase('pinRequired'); return; }
       setPhase('optional');
     }).catch(() => { if (mine === generation.current) setPhase('error'); });
     return () => { generation.current += 1; };
-  }, [dbUserId, pinProof, retry]);
+  }, [dbUserId, onUnenrolled, pinProof, retry]);
   const startEnrollment = async () => {
     if (inFlight.current || !pinProof) return;
     inFlight.current = true; setBusy(true); setError(null);

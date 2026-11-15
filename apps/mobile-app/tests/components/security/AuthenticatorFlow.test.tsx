@@ -15,9 +15,9 @@ jest.mock('../../../lib/authenticator-client', () => ({
 }));
 const proof = () => ({ token: 'verified', expiresAt: new Date(Date.now() + 60000).toISOString() });
 const button = (view: ReactTestRenderer, label: string) => view.root.findAllByType('ActionButton' as never).find(node => node.props.label === label)!;
-async function mount(scope: 'access' | 'critical' = 'access', pinProof: string | null = 'pin') {
+async function mount(scope: 'access' | 'critical' = 'access', pinProof: string | null = 'pin', onUnenrolled?: () => void) {
   let view!: ReactTestRenderer; const onDone = jest.fn();
-  await act(async () => { view = create(<AuthenticatorFlow scope={scope} pinProof={pinProof} onDone={onDone} />); });
+  await act(async () => { view = create(<AuthenticatorFlow scope={scope} pinProof={pinProof} onDone={onDone} onUnenrolled={onUnenrolled} />); });
   return { view, onDone };
 }
 async function submit(view: ReactTestRenderer, code = '123456') {
@@ -80,6 +80,22 @@ it('cannot enroll without a recent PIN proof', async () => {
   expect(JSON.stringify(view.toJSON())).toContain('No authenticator is enrolled');
   expect(view.root.findAllByType('ActionButton' as never).some(node => node.props.label === 'Continue with PIN')).toBe(false);
   act(() => view.unmount());
+});
+it('opens PIN recovery without a PIN proof only after confirming no authenticator is enrolled', async () => {
+  const onUnenrolled = jest.fn();
+  mockStatus.mockResolvedValue({ enabled: false });
+  const unenrolled = await mount('critical', null, onUnenrolled);
+  expect(onUnenrolled).toHaveBeenCalledTimes(1);
+  expect(unenrolled.view.root.findAllByType('FormField' as never)).toHaveLength(0);
+  expect(unenrolled.onDone).not.toHaveBeenCalled();
+  act(() => unenrolled.view.unmount());
+
+  mockStatus.mockResolvedValue({ enabled: true });
+  const enrolled = await mount('critical', null, onUnenrolled);
+  expect(onUnenrolled).toHaveBeenCalledTimes(1);
+  expect(enrolled.view.root.findAllByType('FormField' as never)).toHaveLength(1);
+  expect(JSON.stringify(enrolled.view.toJSON())).toContain('Confirm this sensitive action');
+  act(() => enrolled.view.unmount());
 });
 it('does not publish a verification response after unmount', async () => {
   let resolve!: (value: unknown) => void;

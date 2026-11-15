@@ -1,5 +1,6 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
+import { i18n } from '@lingui/core';
 import ProfileSettingsScreen from '../../app/(shared)/dashboard/profile-settings';
 
 jest.mock('@hashpass/ui/primitives', () => ({ SegmentedTabs: 'SegmentedTabs' }));
@@ -12,6 +13,8 @@ jest.mock('../../app/(shared)/dashboard/profile', () => ({ __esModule: true, def
 jest.mock('../../app/(shared)/dashboard/settings', () => ({ __esModule: true, default: 'SettingsScreen' }));
 
 it('keeps Profile and Settings in one tabbed view and hides inactive content from assistive technology', async () => {
+  i18n.load('en', {});
+  i18n.activate('en');
   let view!: ReturnType<typeof create>;
   await act(async () => { view = create(<ProfileSettingsScreen />); });
 

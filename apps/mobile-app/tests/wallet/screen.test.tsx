@@ -143,6 +143,29 @@ it('offers the email-code recovery from the locked gate, without unlocking the w
   }
 });
 
+it('keeps email-code PIN recovery available when the account has no authenticator', async () => {
+  mockPhase = 'pin_entry';
+  mockEnrollmentLoad.mockResolvedValue({ state: 'registered', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const forgot = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
+    await act(async () => { forgot.props.onPress(); });
+    const flow = view.root.findByType('AuthenticatorFlow' as any);
+    expect(flow.props.onUnenrolled).toEqual(expect.any(Function));
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { flow.props.onUnenrolled(); await Promise.resolve(); });
+    expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
+    expect(view.root.findByType('WalletVaultFlow' as any).props.recoverOnly).toBe(true);
+    expect(view.root.findAllByType('PinFlow' as any)).toHaveLength(0);
+  } finally {
+    mockEnrollmentLoad.mockReset();
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
+});
+
 it('says so when the locked gate has no wallet to recover', async () => {
   mockPhase = 'pin_entry';
   mockEnrollmentLoad.mockResolvedValue({ state: 'enrolled', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });

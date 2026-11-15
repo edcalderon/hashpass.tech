@@ -8,6 +8,8 @@ export interface AuthenticatorFlowProps {
   scope: AuthenticatorScope;
   onDone: (completion: AuthenticatorCompletion) => void;
   pinProof?: string | null;
+  /** Continue a recovery path only after the server confirms no authenticator is enrolled. */
+  onUnenrolled?: () => void;
 }
 
 export type WalletSection = 'contacts' | 'assets' | 'rewards' | 'passes';
