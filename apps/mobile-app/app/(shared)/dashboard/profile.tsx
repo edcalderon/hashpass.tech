@@ -8,7 +8,7 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import { ActionButton } from '@hashpass/ui/primitives';
+import { ActionButton, Surface } from '@hashpass/ui/primitives';
 import { t } from '@lingui/macro';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
@@ -90,6 +90,7 @@ export default function ProfileScreen({ embedded = false, onOpenSettings }: Embe
   const styles = getStyles(isDark, colors);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [quickSettingsExpanded, setQuickSettingsExpanded] = useState(true);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('avataaars');
   const [profileUser, setProfileUser] = useState<AuthUser | null>(user ?? null);
@@ -727,39 +728,76 @@ export default function ProfileScreen({ embedded = false, onOpenSettings }: Embe
             </View>
           ) : null}
 
-          {/* Quick Actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, !activeUser && styles.actionButtonDisabled]}
-              onPress={handleAvatarPress}
-              disabled={!activeUser}
-              activeOpacity={0.7}
-            >
-              <View style={styles.actionIconContainer}>
-                <MaterialIcons name="photo-camera" size={24} color={colors.primary} />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Change Avatar</Text>
-                <Text style={styles.actionSubtitle}>Update your profile picture</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.text?.secondary || '#999'} />
-            </TouchableOpacity>
-          </View>
+            <Surface mode={isDark ? 'dark' : 'light'}>
+              <TouchableOpacity
+                style={styles.quickSettingsHeader}
+                onPress={() => setQuickSettingsExpanded((expanded) => !expanded)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t({ id: 'profile.quickSettings', message: 'Quick settings' })}
+                accessibilityHint={t({ id: 'profile.quickSettingsHint', message: 'Show or hide quick settings' })}
+                accessibilityState={{ expanded: quickSettingsExpanded }}
+              >
+                <View style={styles.quickSettingsHeaderContent}>
+                  <Text style={styles.quickSettingsTitle}>
+                    {t({ id: 'profile.quickSettings', message: 'Quick settings' })}
+                  </Text>
+                  <Text style={styles.quickSettingsDescription}>
+                    {t({ id: 'profile.quickSettingsDescription', message: 'Your most used account options' })}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={quickSettingsExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={uiPalette(isDark ? 'dark' : 'light').muted}
+                />
+              </TouchableOpacity>
 
-          {onOpenSettings && (
-            <View style={styles.section}>
-              <ActionButton
-                mode={isDark ? 'dark' : 'light'}
-                variant="secondary"
-                label={t({ id: 'nav.settings', message: 'Settings' })}
-                leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
-                trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
-                onPress={onOpenSettings}
-              />
-            </View>
-          )}
+              {quickSettingsExpanded ? (
+                <View>
+                  <View style={styles.quickSettingsDivider} />
+                  <TouchableOpacity
+                    style={[styles.quickActionRow, !activeUser && styles.actionButtonDisabled]}
+                    onPress={handleAvatarPress}
+                    disabled={!activeUser}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={t({ id: 'profile.changeAvatar', message: 'Change avatar' })}
+                    accessibilityHint={t({ id: 'profile.changeAvatarHint', message: 'Update your profile picture' })}
+                  >
+                    <View style={styles.quickActionIcon}>
+                      <MaterialIcons name="photo-camera" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.quickActionContent}>
+                      <Text style={styles.quickActionTitle}>
+                        {t({ id: 'profile.changeAvatar', message: 'Change avatar' })}
+                      </Text>
+                      <Text style={styles.quickActionDescription}>
+                        {t({ id: 'profile.changeAvatarDescription', message: 'Update your profile picture' })}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={uiPalette(isDark ? 'dark' : 'light').muted} />
+                  </TouchableOpacity>
+
+                  {onOpenSettings ? (
+                    <>
+                      <View style={styles.quickSettingsDivider} />
+                      <ActionButton
+                        mode={isDark ? 'dark' : 'light'}
+                        variant="ghost"
+                        label={t({ id: 'profile.moreSettings', message: 'More settings' })}
+                        leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
+                        trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
+                        onPress={onOpenSettings}
+                        style={styles.moreSettingsButton}
+                      />
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
+            </Surface>
+          </View>
         </View>
       </ScrollView>
 
@@ -1159,6 +1197,61 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
     marginBottom: 12,
     marginLeft: 4,
+  },
+  quickSettingsHeader: {
+    minHeight: uiTokens.control.minHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: uiTokens.space.md,
+  },
+  quickSettingsHeaderContent: {
+    flex: 1,
+  },
+  quickSettingsTitle: {
+    color: uiPalette(isDark ? 'dark' : 'light').text,
+    fontSize: uiTokens.type.body,
+    fontWeight: '700',
+  },
+  quickSettingsDescription: {
+    color: uiPalette(isDark ? 'dark' : 'light').muted,
+    fontSize: uiTokens.type.label,
+    marginTop: uiTokens.space.xs,
+  },
+  quickSettingsDivider: {
+    height: uiTokens.control.borderWidth,
+    backgroundColor: uiPalette(isDark ? 'dark' : 'light').border,
+    marginVertical: uiTokens.space.md,
+  },
+  quickActionRow: {
+    minHeight: uiTokens.control.minHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+  },
+  quickActionIcon: {
+    width: uiTokens.control.compactHeight,
+    height: uiTokens.control.compactHeight,
+    borderRadius: uiTokens.radius.circle,
+    backgroundColor: uiPalette(isDark ? 'dark' : 'light').accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionContent: {
+    flex: 1,
+  },
+  quickActionTitle: {
+    color: uiPalette(isDark ? 'dark' : 'light').text,
+    fontSize: uiTokens.type.body,
+    fontWeight: '600',
+  },
+  quickActionDescription: {
+    color: uiPalette(isDark ? 'dark' : 'light').muted,
+    fontSize: uiTokens.type.label,
+    marginTop: uiTokens.space.xs,
+  },
+  moreSettingsButton: {
+    width: '100%',
   },
   infoCard: {
     backgroundColor: isDark ? colors.card?.default || '#1a1a1a' : colors.card?.default || '#FFFFFF',
