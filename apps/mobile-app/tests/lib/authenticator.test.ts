@@ -1,6 +1,6 @@
 import { authenticatorCode, matchAuthenticatorCode, newAuthenticatorSecret, sealAuthenticatorSecret,
   openAuthenticatorSecret, issueAuthenticatorProof, verifyAuthenticatorProof } from '../../lib/server/authenticator';
-import { authenticatorProof, rememberAuthenticator, clearAuthenticator } from '../../lib/authenticator-session';
+import { authenticatorProof, rememberAuthenticator, clearAuthenticator, beginAuthenticatorChallenge, hasActiveAuthenticatorChallenge } from '../../lib/authenticator-session';
 
 const secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'; // RFC 6238 SHA-1 test secret
 const env = { NODE_ENV: 'test', HASHPASS_TOTP_KEY: 'ab'.repeat(32) } as NodeJS.ProcessEnv;
@@ -53,5 +53,25 @@ describe('authenticator proof lifecycle', () => {
     clearAuthenticator(); expect(authenticatorProof('bob', 'critical')).toBeNull();
     rememberAuthenticator('bob', 'access', { ...proof, expiresAt: new Date(Date.now()).toISOString() });
     expect(authenticatorProof('bob', 'access')).toBeNull();
+  });
+});
+describe('authenticator challenge lifecycle', () => {
+  it('keeps overlapping app handoffs active until each challenge ends once', () => {
+    expect(hasActiveAuthenticatorChallenge()).toBe(false);
+    const endFirst = beginAuthenticatorChallenge();
+    const endSecond = beginAuthenticatorChallenge();
+
+    try {
+      expect(hasActiveAuthenticatorChallenge()).toBe(true);
+      endFirst();
+      expect(hasActiveAuthenticatorChallenge()).toBe(true);
+      endFirst();
+      expect(hasActiveAuthenticatorChallenge()).toBe(true);
+      endSecond();
+      expect(hasActiveAuthenticatorChallenge()).toBe(false);
+    } finally {
+      endFirst();
+      endSecond();
+    }
   });
 });
