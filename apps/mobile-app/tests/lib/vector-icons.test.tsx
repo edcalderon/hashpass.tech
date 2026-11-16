@@ -22,7 +22,7 @@ jest.mock(
   () => ({ default: "MaterialIcons" }),
 );
 
-import { QrCode, Bell, Headset, User, Briefcase, Archive } from "lucide-react-native";
+import { QrCode, Bell, Headset, User, Briefcase, Archive, FileText } from "lucide-react-native";
 import { NativeSafeIcon, WEB_IONICONS_TO_MATERIAL_ICONS, WEB_MATERIAL_ICONS } from "../../lib/vector-icons";
 
 it('maps the expanded quick-settings chevron to an up arrow on web', () => {
@@ -43,6 +43,10 @@ it('renders the role icon as a briefcase instead of the question-mark fallback',
 
 it('renders notification archive actions and empty states with an archive icon', () => {
   expect(WEB_MATERIAL_ICONS.archive).toBe(Archive);
+});
+
+it('renders pass details with a document icon instead of the question-mark fallback', () => {
+  expect(WEB_MATERIAL_ICONS.description).toBe(FileText);
 });
 
 describe("NativeSafeIcon", () => {

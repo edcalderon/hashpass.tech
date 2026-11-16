@@ -213,20 +213,20 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <SegmentedTabs
           mode={mode}
           scrollable
+          compact
           accessibilityLabel="Scrollable notification categories"
           value="updates"
           onChange={() => undefined}
           tabs={[
             { id: "all", label: "All" },
             { id: "messages", label: "Messages", count: 3 },
-            { id: "updates", label: "Meeting and event updates" },
+            { id: "updates", label: "Updates", count: 1 },
             { id: "archive", label: "Archive" },
-            { id: "requests", label: "Meeting requests" },
           ]}
         />
       </View>
       <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption }}>
-        Scrollable tabs stay on one line and keep their labels readable on phones.
+        Compact tabs retain label size and 44px touch targets, with horizontal scrolling on narrow screens.
       </Text>
       <View style={{ gap: uiTokens.space.sm }}>
         <Text style={{ color: palette.text, fontSize: uiTokens.type.label, fontWeight: "700" }}>

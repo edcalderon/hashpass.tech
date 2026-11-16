@@ -442,6 +442,7 @@ export function SegmentedTabs<T extends string = string>({
   surfaceColor,
   fullWidth = false,
   scrollable = false,
+  compact = false,
   accessibilityLabel,
 }: Themed & {
   tabs: readonly SegmentedTab<T>[];
@@ -455,6 +456,8 @@ export function SegmentedTabs<T extends string = string>({
   fullWidth?: boolean;
   /** Keep every tab on one line and allow horizontal scrolling when needed. */
   scrollable?: boolean;
+  /** Reduce horizontal tab padding for compact toolbars while keeping touch height. */
+  compact?: boolean;
   accessibilityLabel?: string;
 }) {
   const palette = uiPalette(mode);
@@ -482,6 +485,7 @@ export function SegmentedTabs<T extends string = string>({
               styles.segment,
               fullWidth && !scrollable ? styles.segmentFull : null,
               scrollable ? styles.segmentScrollable : null,
+              compact ? styles.segmentCompact : null,
               selected ? { backgroundColor: accent } : null,
               { opacity: pressed ? 0.8 : 1 },
             ]}
@@ -501,6 +505,7 @@ export function SegmentedTabs<T extends string = string>({
               <View
                 style={[
                   styles.segmentCount,
+                  compact ? styles.segmentCountCompact : null,
                   { backgroundColor: selected ? palette.onAccent : "#FF3B30" },
                 ]}
               >
@@ -1081,6 +1086,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: uiTokens.radius.pill,
   },
+  segmentCompact: { paddingHorizontal: 6 },
   segmentFull: { flex: 1, paddingHorizontal: 8 },
   segmentLabel: { fontSize: uiTokens.type.label, fontWeight: "600" },
   segmentLabelScrollable: { flexShrink: 0 },
@@ -1093,6 +1099,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   segmentCountText: { fontSize: 11, fontWeight: "600" },
+  segmentCountCompact: { marginLeft: 4, minWidth: 18, paddingHorizontal: 4 },
   revealIconButton: {
     alignItems: "center",
     flexDirection: "row",

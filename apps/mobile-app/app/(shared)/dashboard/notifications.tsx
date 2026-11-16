@@ -704,6 +704,7 @@ export default function NotificationsScreen() {
           <SegmentedTabs
             mode={mode}
             scrollable
+            compact
             accessibilityLabel={t('center.title')}
             tabs={([
               ['all', t('center.all')],
