@@ -68,6 +68,29 @@ it('continues with the PIN when authenticator setup is skipped', async () => {
   expect(mockVerify).not.toHaveBeenCalled();
   act(() => view.unmount());
 });
+it('shows a compact loading transition then skips the setup prompt for an unenrolled wallet', async () => {
+  let resolveStatus: (status: { enabled: boolean }) => void = () => undefined;
+  mockStatus.mockImplementationOnce(() => new Promise(resolve => {
+    resolveStatus = resolve;
+  }));
+  const onUnenrolled = jest.fn();
+  let view!: ReactTestRenderer;
+  await act(async () => {
+    view = create(<AuthenticatorFlow scope="access" pinProof="pin" onDone={jest.fn()} onUnenrolled={onUnenrolled} />);
+  });
+
+  expect(JSON.stringify(view.toJSON())).toContain('Checking authenticator protection…');
+  expect(JSON.stringify(view.toJSON())).not.toContain('Protect Wallet & Contacts');
+  expect(JSON.stringify(view.toJSON())).not.toContain('Authenticator recommended');
+  expect(view.root.findAllByType('ActionButton' as never)).toHaveLength(0);
+
+  await act(async () => {
+    resolveStatus({ enabled: false });
+    await Promise.resolve();
+  });
+  expect(onUnenrolled).toHaveBeenCalledTimes(1);
+  act(() => view.unmount());
+});
 it('keeps the wallet locked when authenticator status cannot be confirmed', async () => {
   mockStatus.mockRejectedValue(new Error('unavailable'));
   const { view, onDone } = await mount();

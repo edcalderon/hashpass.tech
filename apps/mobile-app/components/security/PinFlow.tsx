@@ -77,10 +77,11 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, on
     setVerifiedPin(null);
     if (pin.proofFor(scope)) { onAuthenticatorComplete?.(completion); onDone(digits); }
   }, [verifiedPin, pin, scope, onAuthenticatorComplete, onDone]);
+  const onUnenrolled = useCallback(() => complete('pin'), [complete]);
 
   if (verifiedPin !== null) return <View style={styles.root}>
     <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
-      onDone={complete} onUnenrolled={() => complete('pin')} />
+      onDone={complete} onUnenrolled={onUnenrolled} />
     <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
   </View>;
 

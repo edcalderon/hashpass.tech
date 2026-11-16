@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { ActionButton, FormField, Surface } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
@@ -109,11 +109,20 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
     } finally { inFlight.current = false; if (mine === generation.current) setBusy(false); }
   };
   const body = { color: palette.text, fontSize: uiTokens.type.body };
+  if (phase === 'checking') return (
+    <View
+      style={styles.checking}
+      accessibilityRole="progressbar"
+      accessibilityLabel={t('authenticator.checking', 'Checking authenticator protection…')}
+    >
+      <ActivityIndicator size="small" color={palette.accent} />
+      <Text style={body}>{t('authenticator.checking', 'Checking authenticator protection…')}</Text>
+    </View>
+  );
   return <Surface mode={mode} style={styles.root}>
     <Text accessibilityRole="header" style={[body, { fontSize: uiTokens.type.title }]}>
       {t('authenticator.title', 'Protect Wallet & Contacts')}
     </Text>
-    {phase === 'checking' && <Text style={body}>{t('authenticator.checking', 'Checking authenticator protection…')}</Text>}
     {phase === 'optional' && <>
       <View style={styles.recommendation}>
         <Text accessibilityRole="header" style={[body, { fontWeight: '700' }]}>
@@ -182,6 +191,12 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
 }
 const styles = StyleSheet.create({
   root: { gap: uiTokens.space.md, width: '100%' },
+  checking: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: uiTokens.space.sm,
+    minHeight: uiTokens.control.minHeight,
+  },
   qr: { alignItems: 'center', padding: uiTokens.space.md },
   recommendation: { gap: uiTokens.space.xs },
   optionalActions: {

@@ -107,6 +107,13 @@ const pressText = (renderer: ReturnType<typeof create>, label: string) => {
   throw new Error(`No pressable control found for ${label}`);
 };
 
+const selectSpeakerTab = async (renderer: ReturnType<typeof create>) => {
+  await act(async () => {
+    pressText(renderer, 'Speaker');
+    await Promise.resolve();
+  });
+};
+
 describe('ProfileScreen speaker information', () => {
   const speaker = {
     id: 'edward-calderon',
@@ -172,7 +179,14 @@ describe('ProfileScreen speaker information', () => {
 
     expect(mockApiGet).toHaveBeenCalledWith('/profile/speaker', { skipEventSegment: true });
     expect(renderer.root.findByProps({ children: 'Super Admin · Event Admin · bsl · Speaker' })).toBeTruthy();
-    expect(renderer.root.findByProps({ children: 'Speaker Information' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Public Account Information' })).toBeTruthy();
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Public account information' })).toBeTruthy();
+    expect(renderer.root.findAllByType('Ionicons' as never).filter((node: any) => node.props.name === 'briefcase-outline')).toHaveLength(1);
+
+    await selectSpeakerTab(renderer);
+
+    expect(renderer.root.findAllByProps({ children: 'Attendee' })).not.toHaveLength(0);
+    expect(renderer.root.findByProps({ children: 'Speaker Name' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Founder & CEO' })).toBeTruthy();
     expect(renderer.root.findByType(ProfileAvatar).props.uri).toBeNull();
     expect(renderer.root.findByType(SpeakerAvatar).props.imageUrl).toBe(speaker.imageUrl);
@@ -181,6 +195,7 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findAllByProps({ children: 'Edit Speaker Photo' })).toHaveLength(0);
     const accountIcons = renderer.root.findAllByType('Ionicons' as never).map((node: any) => node.props.name);
     expect(accountIcons).toEqual(expect.arrayContaining(['briefcase-outline', 'business-outline', 'mic-outline']));
+    expect(accountIcons.filter((name: string) => name === 'briefcase-outline')).toHaveLength(1);
     expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl || node.props?.src === speaker.imageUrl)).not.toHaveLength(0);
   });
 
@@ -216,7 +231,7 @@ describe('ProfileScreen speaker information', () => {
     const renderer = await renderProfile();
 
     expect(mockApiGet).toHaveBeenCalledWith('/profile/attendee', { skipEventSegment: true });
-    expect(renderer.root.findByProps({ children: 'Attendee Information' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Public Account Information' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: attendee.title })).toBeTruthy();
     expect(renderer.root.findByProps({ children: attendee.company })).toBeTruthy();
   });
@@ -281,6 +296,7 @@ describe('ProfileScreen speaker information', () => {
 
   it('updates the linked speaker profile through the self-scoped API', async () => {
     const renderer = await renderProfile();
+    await selectSpeakerTab(renderer);
     await act(async () => {
       pressText(renderer, 'Edit Speaker Information');
       await Promise.resolve();
@@ -306,6 +322,7 @@ describe('ProfileScreen speaker information', () => {
 
   it('lets a claimed speaker switch their profile to inactive', async () => {
     const renderer = await renderProfile();
+    await selectSpeakerTab(renderer);
     await act(async () => {
       pressText(renderer, 'Edit Speaker Information');
       await Promise.resolve();
@@ -331,6 +348,7 @@ describe('ProfileScreen speaker information', () => {
     }));
 
     const renderer = await renderProfile();
+    await selectSpeakerTab(renderer);
     await act(async () => {
       pressText(renderer, 'Edit Speaker Information');
       await Promise.resolve();
@@ -358,6 +376,7 @@ describe('ProfileScreen speaker information', () => {
 
   it('updates the speaker photo without replacing the account profile picture', async () => {
     const renderer = await renderProfile();
+    await selectSpeakerTab(renderer);
     await act(async () => {
       triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Edit speaker photo' }));
       await Promise.resolve();

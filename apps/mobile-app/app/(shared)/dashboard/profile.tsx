@@ -8,7 +8,7 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import { ActionButton, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
@@ -17,7 +17,7 @@ import { resolveAvatarUrl } from '../../../lib/auth/avatar';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
-import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
+import type { EmbeddedDashboardPageProps, PublicProfileTab } from '../../../types/profile-settings.types';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -102,6 +102,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
   const [adminAccess, setAdminAccess] = useState<AdminAccess | null>(null);
   const [speakerProfile, setSpeakerProfile] = useState<SpeakerProfile | null>(null);
   const [attendeeProfile, setAttendeeProfile] = useState<AttendeeProfile | null>(null);
+  const [publicProfileTab, setPublicProfileTab] = useState<PublicProfileTab>('attendee');
   const [rolesLoading, setRolesLoading] = useState(true);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [savingSpeaker, setSavingSpeaker] = useState(false);
@@ -696,107 +697,122 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Attendee Information</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Role or Title</Text>
-                  <Text style={styles.infoValue}>{attendeeProfile?.title || 'Not set'}</Text>
-                </View>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="business-outline" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Company</Text>
-                  <Text style={styles.infoValue}>{attendeeProfile?.company || 'Not set'}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.speakerEditButton}
-                onPress={openAttendeeEditor}
-                accessibilityLabel="Edit attendee information"
-              >
-                <MaterialIcons name="edit" size={18} color={colors.primary} />
-                <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Attendee Information</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {speakerProfile ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Speaker Information</Text>
-              <View style={styles.infoCard}>
-                <View style={styles.speakerAvatarRow}>
-                  <TouchableOpacity
-                    style={styles.speakerAvatarButton}
-                    onPress={handleSpeakerAvatarPress}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Edit speaker photo"
-                  >
-                    <SpeakerAvatar
-                      name={speakerProfile.name}
-                      imageUrl={speakerProfile.imageUrl || undefined}
-                      fallbackImageUrl={eventPhotoUrl || undefined}
-                      size={72}
-                      showBorder
-                    />
-                    <View style={styles.speakerAvatarEditBadge}>
-                      <MaterialIcons name="camera-alt" size={15} color="#FFFFFF" />
+            <Text style={styles.sectionTitle}>Public Account Information</Text>
+            <Surface mode={isDark ? 'dark' : 'light'} style={styles.publicProfileCard}>
+              {speakerProfile ? (
+                <SegmentedTabs<PublicProfileTab>
+                  mode={isDark ? 'dark' : 'light'}
+                  fullWidth
+                  value={publicProfileTab}
+                  onChange={setPublicProfileTab}
+                  accessibilityLabel="Public account information"
+                  accentColor={colors.primary}
+                  surfaceColor={colors.background.paper}
+                  tabs={[
+                    { id: 'attendee', label: 'Attendee' },
+                    { id: 'speaker', label: 'Speaker' },
+                  ]}
+                />
+              ) : null}
+              {publicProfileTab === 'attendee' || !speakerProfile ? (
+                <>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
                     </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Role or Title</Text>
+                      <Text style={styles.infoValue}>{attendeeProfile?.title || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="business-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Company</Text>
+                      <Text style={styles.infoValue}>{attendeeProfile?.company || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.speakerEditButton}
+                    onPress={openAttendeeEditor}
+                    accessibilityLabel="Edit attendee information"
+                  >
+                    <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Attendee Information</Text>
                   </TouchableOpacity>
-                  <View style={styles.speakerAvatarCopy}>
-                    <Text style={styles.infoLabel}>Speaker profile photo</Text>
-                    <Text style={styles.speakerAvatarDescription}>Shown to attendees on your speaker profile</Text>
+                </>
+              ) : null}
+              {speakerProfile && publicProfileTab === 'speaker' ? (
+                <>
+                  <View style={styles.speakerAvatarRow}>
+                    <TouchableOpacity
+                      style={styles.speakerAvatarButton}
+                      onPress={handleSpeakerAvatarPress}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit speaker photo"
+                    >
+                      <SpeakerAvatar
+                        name={speakerProfile.name}
+                        imageUrl={speakerProfile.imageUrl || undefined}
+                        fallbackImageUrl={eventPhotoUrl || undefined}
+                        size={72}
+                        showBorder
+                      />
+                      <View style={styles.speakerAvatarEditBadge}>
+                        <MaterialIcons name="camera-alt" size={15} color="#FFFFFF" />
+                      </View>
+                    </TouchableOpacity>
+                    <View style={styles.speakerAvatarCopy}>
+                      <Text style={styles.infoLabel}>Speaker profile photo</Text>
+                      <Text style={styles.speakerAvatarDescription}>Shown to attendees on your speaker profile</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="mic-outline" size={22} color={colors.primary} />
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="mic-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Speaker Name</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.name}</Text>
+                    </View>
                   </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Speaker Name</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.name}</Text>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Display Role</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.title || 'Not set'}</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="business-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Company</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.company || 'Not set'}</Text>
+                    </View>
                   </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Display Role</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.title || 'Not set'}</Text>
-                  </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="business-outline" size={22} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Company</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.company || 'Not set'}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.speakerEditButton}
-                  onPress={openSpeakerEditor}
-                  accessibilityLabel="Edit speaker information"
-                >
-                  <MaterialIcons name="edit" size={18} color={colors.primary} />
-                  <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Speaker Information</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
+                  <TouchableOpacity
+                    style={styles.speakerEditButton}
+                    onPress={openSpeakerEditor}
+                    accessibilityLabel="Edit speaker information"
+                  >
+                    <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Speaker Information</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+            </Surface>
+          </View>
 
           <View style={styles.section}>
             <Surface mode={isDark ? 'dark' : 'light'}>
@@ -1331,6 +1347,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     elevation: 3,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? '#333333' : 'transparent',
+  },
+  publicProfileCard: {
+    gap: uiTokens.space.md,
   },
   infoRow: {
     flexDirection: 'row',
