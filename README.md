@@ -20,28 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.224)
+## 📋 Latest Changes (v1.9.225)
 
 ### Bug Fixes
 
-* **security:** preserve authenticator handoffs and contact drafts ([8ebda46](https://github.com/hashpass-tech/hashpass.tech/commit/8ebda4678202ab618fdcd4acf3bbd70fbfd6f254))
-
-
-### Features
-
-* make authenticator optional and merge profile settings ([9cb2a70](https://github.com/hashpass-tech/hashpass.tech/commit/9cb2a706b4ef8b55a2c3e8e01cb0233bd17b146c))
-* **security:** protect Wallet and Contacts with authenticator verification ([bd75621](https://github.com/hashpass-tech/hashpass.tech/commit/bd75621229081343a6eb123ba1590a2146992252)), closes [#616](https://github.com/hashpass-tech/hashpass.tech/issues/616)
+* **mobile:** polish wallet and PIN mobile layout ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([a7dc4cb](https://github.com/hashpass-tech/hashpass.tech/commit/a7dc4cbaeaf2d9bf6edba111ec67cac54d70efee))
 ### Release Highlights
-- make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts
+- polish wallet and PIN mobile layout (#622)
 
 ### Release scope
-- Compared with: `v1.9.223` (the previous global release tag)
+- Compared with: `v1.9.224` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Database migrations
-- Infrastructure
-- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

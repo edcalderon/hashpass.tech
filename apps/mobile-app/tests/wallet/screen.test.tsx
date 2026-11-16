@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Pressable } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 
 jest.mock('../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
 jest.mock('../../components/contacts/ContactsScreen', () => ({ __esModule: true, default: 'ContactsScreen' }));
@@ -53,7 +53,9 @@ jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 import Wallet from '../../app/(shared)/dashboard/wallet';
 
 beforeEach(() => {
+  mockPhase = 'unlocked';
   mockRouterPush.mockReset();
+  mockPinDone.mockClear();
   mockEnrollmentLoad.mockClear();
   mockAuthenticatorStatus.mockResolvedValue({ enabled: false });
   mockEnrollmentLoad.mockResolvedValue({ state: 'registered', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
@@ -65,10 +67,14 @@ it('explains setup availability, expands security, and navigates to genuine pass
   await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
   const pinFlow = view.root.findByType('PinFlow' as any);
   expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(view.toJSON())).toContain('YOUR HASHPASS');
+  expect(JSON.stringify(view.toJSON())).not.toContain('Your contacts, assets, rewards and event passes.');
   act(() => { pinFlow.props.onAuthenticatorComplete('pin'); pinFlow.props.onDone('1234'); });
   mockPhase = 'unlocked';
   await act(async () => { view.update(<Wallet />); });
   expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(1);
+  expect(view.root.findAll(node => node.props.style?.maxWidth === 720 && node.props.style?.alignSelf === 'center'))
+    .not.toHaveLength(0);
   expect(mockWalletEnrollmentProps?.initialState).toMatchObject({ status: 'ready' });
   expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
   expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.');
@@ -100,7 +106,7 @@ it('shows a dismissible security reminder after PIN-only unlock and hides it aft
     mockPhase = 'unlocked';
     await act(async () => { view.update(<Wallet />); await Promise.resolve(); });
     expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active.');
-    expect(JSON.stringify(view.toJSON())).toContain('A PIN protects wallet access; an authenticator adds another step when enabled.');
+    expect(JSON.stringify(view.toJSON())).not.toContain('A PIN protects wallet access; an authenticator adds another step when enabled.');
     view.root.findByProps({ testID: 'authenticator-reminder' });
     const setupLink = view.root.findByProps({ accessibilityLabel: 'Set up two-step verification' });
     act(() => setupLink.props.onPress());
@@ -131,6 +137,7 @@ it('renders the shared segmented tabs in dark mode', () => {
     const tabs = view.root.findAllByType(Pressable).filter(node => node.props.accessibilityRole === 'tab');
     expect(tabs.length).toBeGreaterThan(1);
     expect(view.root.findAll(node => node.props.accessibilityRole === 'tablist')).not.toHaveLength(0);
+    expect(view.root.findAllByType(ScrollView).some(node => node.props.horizontal)).toBe(true);
   } finally {
     mockDark = false;
     act(() => view.unmount());
@@ -169,6 +176,27 @@ it('hides content while the guard is still checking or unavailable', () => {
     act(() => view.unmount());
   }
   mockPhase = 'unlocked';
+});
+
+it('keeps the PIN pad in place while the wallet guard confirms a submitted PIN', () => {
+  mockPhase = 'locked';
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    act(() => { view.root.findByType('PinFlow' as any).props.onDone('1234'); });
+    expect(mockPinDone).toHaveBeenCalled();
+
+    mockPhase = 'checking';
+    act(() => { view.update(<Wallet />); });
+
+    const pinFlow = view.root.findByType('PinFlow' as any);
+    expect(pinFlow.props.pending).toBe(true);
+    expect(pinFlow.props.pendingTitle).toBe('Opening wallet…');
+    expect(JSON.stringify(view.toJSON())).not.toContain('Checking wallet…');
+  } finally {
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
 });
 
 it('offers the email-code recovery from the locked gate, without unlocking the wallet', async () => {
