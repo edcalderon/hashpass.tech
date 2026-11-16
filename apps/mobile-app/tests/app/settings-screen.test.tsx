@@ -145,6 +145,26 @@ describe('Settings screen', () => {
     act(() => view.unmount());
   });
 
+  it('opens quick Settings shortcuts in the existing security, delete and about flows', async () => {
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings embedded initialSettingsShortcut="about" />); });
+    expect(view.root.findByType('VersionDetailsModal' as never).props.visible).toBe(true);
+    act(() => view.unmount());
+
+    await act(async () => { view = create(<Settings embedded initialSettingsShortcut="delete-account" />); });
+    expect(JSON.stringify(view.toJSON())).toContain('This action is permanent and cannot be undone');
+    act(() => view.unmount());
+
+    await act(async () => {
+      view = create(<Settings embedded initialSettingsShortcut="authenticator" />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(view.root.findByType('PinFlow' as never).props.scope).toBe('wallet:unlock');
+    expect(view.root.findAllByType(Modal).some((node) => node.props.visible)).toBe(true);
+    act(() => view.unmount());
+  });
+
   it('loads and updates the independent HASHPASS and partner email preferences', async () => {
     let view!: ReactTestRenderer;
     await act(async () => { view = create(<Settings />); });

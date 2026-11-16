@@ -15,6 +15,7 @@ import { getProfileRoleLabels } from '../../../lib/profile-roles';
 import { apiClient } from '../../../lib/api-client';
 import { resolveAvatarUrl } from '../../../lib/auth/avatar';
 import ProfileAvatar from '../../../components/ProfileAvatar';
+import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
 import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
 
@@ -88,6 +89,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
   const styles = getStyles(isDark, colors);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarTarget, setAvatarTarget] = useState<'profile' | 'speaker'>('profile');
   const [quickSettingsExpanded, setQuickSettingsExpanded] = useState(true);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('avataaars');
@@ -257,12 +259,8 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
   };
 
   const getCurrentAvatarUrl = (): string | null => {
-    // A claimed speaker profile is the public identity attendees see. Prefer
-    // the photo it currently shows (event photo or the personal one).
-    if (speakerProfile?.imageUrl) return speakerProfile.imageUrl;
-
-    // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
-    // Raw Supabase session is the most reliable source across all auth paths
+    // The profile header is the account identity. Speaker photos belong to the
+    // separate attendee-facing speaker profile below.
     const existingPhoto = resolveAvatarUrl(rawSupabaseUser, activeUser);
     if (existingPhoto) return existingPhoto;
 
@@ -298,10 +296,6 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
     });
     if (metaError) throw metaError;
 
-    if (speakerProfile) {
-      await updateLinkedSpeaker({ imageUrl: avatarUrl });
-    }
-
     const { error: dbError } = await (supabase as any)
       .from('user_profiles')
       .upsert({ user_id: activeUser.id, avatar_url: avatarUrl }, { onConflict: 'user_id' });
@@ -320,7 +314,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
         },
       } : prev);
     }
-  }, [activeUser, speakerProfile, updateLinkedSpeaker]);
+  }, [activeUser]);
 
   const personalAvatarUrl = resolveAvatarUrl(rawSupabaseUser, activeUser);
   const eventPhotoUrl = speakerProfile?.eventImageUrl ?? null;
@@ -349,6 +343,12 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
   };
 
   const handleAvatarPress = () => {
+    setAvatarTarget('profile');
+    setShowAvatarModal(true);
+  };
+
+  const handleSpeakerAvatarPress = () => {
+    setAvatarTarget('speaker');
     setShowAvatarModal(true);
   };
 
@@ -407,6 +407,28 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
       setUpdatingAvatar(false);
     }
   }, [persistAvatarUrl, showError, showSuccess]);
+
+  const handleUploadedSpeakerAvatar = useCallback(async (result: unknown) => {
+    const uploadedUrl =
+      result && typeof result === 'object' && 'secure_url' in result
+        ? (result as { secure_url?: unknown }).secure_url
+        : null;
+    if (typeof uploadedUrl !== 'string' || !/^https?:\/\//i.test(uploadedUrl)) {
+      showError('Upload Failed', 'The image upload did not return a usable URL');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      await updateLinkedSpeaker({ imageUrl: uploadedUrl });
+      showSuccess('Speaker photo updated', 'Attendees now see your new speaker profile photo.');
+      setShowAvatarModal(false);
+    } catch (error: any) {
+      showError('Update Failed', error?.message || 'Failed to save speaker photo');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  }, [showError, showSuccess, updateLinkedSpeaker]);
 
   const openSpeakerEditor = () => {
     if (!speakerProfile) return;
@@ -475,6 +497,29 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
   const userNameDisplay = userName || 'Not available';
   const userEmailDisplay = userEmail || 'Not available';
   const profileRoleLabels = getProfileRoleLabels(adminAccess, Boolean(speakerProfile));
+  const quickSettingsShortcuts = onOpenSettings ? [
+    {
+      key: 'authenticator',
+      title: 'Two-step verification',
+      description: 'Set up or manage your authenticator app',
+      icon: 'shield-checkmark-outline',
+      onPress: () => onOpenSettings('authenticator'),
+    },
+    {
+      key: 'delete-account',
+      title: 'Delete Account',
+      description: 'Permanently remove your account and data',
+      icon: 'trash-outline',
+      onPress: () => onOpenSettings('delete-account'),
+    },
+    {
+      key: 'about',
+      title: 'About App',
+      description: 'View app version and information',
+      icon: 'information-circle-outline',
+      onPress: () => onOpenSettings('about'),
+    },
+  ] as const : [];
   
   // Member since — try multiple sources in priority order:
   // rawSupabaseUser.created_at is always set by Supabase regardless of auth provider
@@ -535,6 +580,8 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
             style={styles.avatarContainer}
             onPress={handleAvatarPress}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile picture"
           >
             <View style={styles.avatar}>
               <ProfileAvatar
@@ -685,6 +732,31 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Speaker Information</Text>
               <View style={styles.infoCard}>
+                <View style={styles.speakerAvatarRow}>
+                  <TouchableOpacity
+                    style={styles.speakerAvatarButton}
+                    onPress={handleSpeakerAvatarPress}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit speaker photo"
+                  >
+                    <SpeakerAvatar
+                      name={speakerProfile.name}
+                      imageUrl={speakerProfile.imageUrl || undefined}
+                      fallbackImageUrl={eventPhotoUrl || undefined}
+                      size={72}
+                      showBorder
+                    />
+                    <View style={styles.speakerAvatarEditBadge}>
+                      <MaterialIcons name="camera-alt" size={15} color="#FFFFFF" />
+                    </View>
+                  </TouchableOpacity>
+                  <View style={styles.speakerAvatarCopy}>
+                    <Text style={styles.infoLabel}>Speaker profile photo</Text>
+                    <Text style={styles.speakerAvatarDescription}>Shown to attendees on your speaker profile</Text>
+                  </View>
+                </View>
+                <View style={styles.divider} />
                 <View style={styles.infoRow}>
                   <View style={styles.infoIconContainer}>
                     <Ionicons name="mic-outline" size={22} color={colors.primary} />
@@ -754,29 +826,28 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
 
               {quickSettingsExpanded ? (
                 <View>
-                  <View style={styles.quickSettingsDivider} />
-                  <TouchableOpacity
-                    style={[styles.quickActionRow, !activeUser && styles.actionButtonDisabled]}
-                    onPress={handleAvatarPress}
-                    disabled={!activeUser}
-                    activeOpacity={0.75}
-                    accessibilityRole="button"
-                    accessibilityLabel="Change Avatar"
-                    accessibilityHint="Update your profile picture"
-                  >
-                    <View style={styles.quickActionIcon}>
-                      <MaterialIcons name="photo-camera" size={22} color={colors.primary} />
-                    </View>
-                    <View style={styles.quickActionContent}>
-                      <Text style={styles.quickActionTitle}>
-                        Change Avatar
-                      </Text>
-                      <Text style={styles.quickActionDescription}>
-                        Update your profile picture
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={uiPalette(isDark ? 'dark' : 'light').muted} />
-                  </TouchableOpacity>
+                  {quickSettingsShortcuts.map((shortcut) => (
+                    <React.Fragment key={shortcut.key}>
+                      <View style={styles.quickSettingsDivider} />
+                      <TouchableOpacity
+                        style={styles.quickActionRow}
+                        onPress={shortcut.onPress}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={shortcut.title}
+                        accessibilityHint={shortcut.description}
+                      >
+                        <View style={styles.quickActionIcon}>
+                          <Ionicons name={shortcut.icon} size={22} color={colors.primary} />
+                        </View>
+                        <View style={styles.quickActionContent}>
+                          <Text style={styles.quickActionTitle}>{shortcut.title}</Text>
+                          <Text style={styles.quickActionDescription}>{shortcut.description}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={uiPalette(isDark ? 'dark' : 'light').muted} />
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
 
                   {onOpenSettings ? (
                     <>
@@ -787,7 +858,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
                         label="More settings"
                         leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
                         trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
-                        onPress={onOpenSettings}
+                        onPress={() => onOpenSettings()}
                         style={styles.moreSettingsButton}
                       />
                     </>
@@ -809,7 +880,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choose Avatar Style</Text>
+              <Text style={styles.modalTitle}>{avatarTarget === 'speaker' ? 'Speaker Profile Photo' : 'Choose Profile Picture'}</Text>
               <TouchableOpacity
                 onPress={() => setShowAvatarModal(false)}
                 style={styles.modalCloseButton}
@@ -818,7 +889,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
               </TouchableOpacity>
             </View>
 
-            {speakerProfile && (
+            {avatarTarget === 'speaker' && speakerProfile && (
               <View style={styles.photoSourceRow} testID="speaker-photo-source">
                 {([
                   { key: 'event', label: 'Event photo', uri: eventPhotoUrl },
@@ -830,7 +901,7 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
                       key={option.key}
                       style={[styles.photoSourceOption, selected && styles.avatarOptionSelected]}
                       onPress={() => handleSpeakerPhotoSource(option.key)}
-                      disabled={updatingAvatar || selected}
+                      disabled={updatingAvatar || selected || (option.key === 'event' && !eventPhotoUrl)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       accessibilityLabel={`Use ${option.label.toLowerCase()} on speaker profile`}
@@ -851,12 +922,12 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
             )}
 
             <CloudinaryImageUpload
-              placeholder="Upload photo"
-              onUploadSuccess={handleUploadedAvatar}
+              placeholder={avatarTarget === 'speaker' ? 'Upload speaker photo' : 'Upload profile photo'}
+              onUploadSuccess={avatarTarget === 'speaker' ? handleUploadedSpeakerAvatar : handleUploadedAvatar}
               onUploadError={(error: Error) => showError('Upload Failed', error.message)}
             />
 
-            <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
+            {avatarTarget === 'profile' ? <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
               {AVATAR_STYLES.filter((style) => {
                 if (style.key === 'google-photo') {
                   return !!resolveAvatarUrl(rawSupabaseUser, activeUser);
@@ -905,13 +976,11 @@ export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageP
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </ScrollView> : null}
 
-            <View style={styles.modalFooter}>
-              <Text style={styles.modalFooterText}>
-                Select an avatar style to update your profile picture
-              </Text>
-            </View>
+            {avatarTarget === 'profile' ? <View style={styles.modalFooter}>
+              <Text style={styles.modalFooterText}>Select an avatar style to update your profile picture</Text>
+            </View> : null}
           </View>
         </View>
       </Modal>
@@ -1266,6 +1335,37 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  speakerAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+  },
+  speakerAvatarButton: {
+    width: 72,
+    height: 72,
+    position: 'relative',
+  },
+  speakerAvatarEditBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: uiTokens.radius.circle,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.background.paper,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speakerAvatarCopy: {
+    flex: 1,
+  },
+  speakerAvatarDescription: {
+    color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
+    fontSize: uiTokens.type.label,
+    lineHeight: 20,
   },
   infoIconContainer: {
     width: 44,

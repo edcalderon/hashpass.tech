@@ -3,6 +3,9 @@
 import React from 'react';
 import ProfileScreen from '../../app/(shared)/dashboard/profile';
 import CloudinaryImageUpload from '../../components/CloudinaryImageUpload';
+import ProfileAvatar from '../../components/ProfileAvatar';
+import SpeakerAvatar from '../../components/SpeakerAvatar';
+import type { SettingsShortcut } from '../../types/profile-settings.types';
 
 const mockGetCurrentAdminAccess = jest.fn();
 const mockApiGet = jest.fn();
@@ -153,10 +156,10 @@ describe('ProfileScreen speaker information', () => {
     mountedRenderer = null;
   });
 
-  const renderProfile = async () => {
+  const renderProfile = async (onOpenSettings?: (shortcut?: SettingsShortcut) => void) => {
     let renderer: ReturnType<typeof create>;
     await act(async () => {
-      renderer = create(<ProfileScreen />);
+      renderer = create(<ProfileScreen onOpenSettings={onOpenSettings} />);
       await Promise.resolve();
     });
     await flush();
@@ -171,7 +174,42 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findByProps({ children: 'Super Admin · Event Admin · bsl · Speaker' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Speaker Information' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Founder & CEO' })).toBeTruthy();
+    expect(renderer.root.findByType(ProfileAvatar).props.uri).toBeNull();
+    expect(renderer.root.findByType(SpeakerAvatar).props.imageUrl).toBe(speaker.imageUrl);
+    const speakerPhotoEdit = renderer.root.findByProps({ accessibilityLabel: 'Edit speaker photo' });
+    expect(speakerPhotoEdit.props.style).toMatchObject({ width: 72, height: 72, position: 'relative' });
+    expect(renderer.root.findAllByProps({ children: 'Edit Speaker Photo' })).toHaveLength(0);
+    const accountIcons = renderer.root.findAllByType('Ionicons' as never).map((node: any) => node.props.name);
+    expect(accountIcons).toEqual(expect.arrayContaining(['briefcase-outline', 'business-outline', 'mic-outline']));
     expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl || node.props?.src === speaker.imageUrl)).not.toHaveLength(0);
+  });
+
+  it('shows profile, security, account and about shortcuts with working accordion arrows', async () => {
+    const onOpenSettings = jest.fn();
+    const renderer = await renderProfile(onOpenSettings);
+    const header = renderer.root.findByProps({ accessibilityLabel: 'Quick settings' });
+
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Change Avatar' })).toHaveLength(0);
+    expect(renderer.root.findAllByType('Ionicons' as never).some((node: any) => node.props.name === 'chevron-up')).toBe(true);
+    for (const [label, shortcut] of [
+      ['Two-step verification', 'authenticator'],
+      ['Delete Account', 'delete-account'],
+      ['About App', 'about'],
+    ] as const) {
+      const action = renderer.root.findByProps({ accessibilityLabel: label });
+      expect(action.props.accessibilityRole).toBe('button');
+      await act(async () => {
+        triggerPress(action);
+        await Promise.resolve();
+      });
+      expect(onOpenSettings).toHaveBeenLastCalledWith(shortcut);
+    }
+
+    await act(async () => {
+      triggerPress(header);
+      await Promise.resolve();
+    });
+    expect(renderer.root.findAllByType('Ionicons' as never).some((node: any) => node.props.name === 'chevron-down')).toBe(true);
   });
 
   it('shows editable attendee information for every signed-in user', async () => {
@@ -302,10 +340,10 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findByProps({ children: 'Inactive — attendees cannot request meetings.' })).toBeTruthy();
   });
 
-  it('keeps the public speaker avatar in sync with a selected profile photo', async () => {
+  it('keeps the profile picture separate from the public speaker photo', async () => {
     const renderer = await renderProfile();
     await act(async () => {
-      pressText(renderer, 'Change Avatar');
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Change profile picture' }));
       await Promise.resolve();
     });
     await act(async () => {
@@ -315,16 +353,32 @@ describe('ProfileScreen speaker information', () => {
 
     expect(mockUpdateUser).toHaveBeenCalled();
     expect(mockUpsert).toHaveBeenCalledWith(expect.objectContaining({ user_id: profileUser.id }), { onConflict: 'user_id' });
+    expect(mockApiRequest).not.toHaveBeenCalledWith('/profile/speaker', expect.anything());
+  });
+
+  it('updates the speaker photo without replacing the account profile picture', async () => {
+    const renderer = await renderProfile();
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Edit speaker photo' }));
+      await Promise.resolve();
+    });
+
+    const uploader = renderer.root.findByType(CloudinaryImageUpload);
+    await act(async () => {
+      await uploader.props.onUploadSuccess({ secure_url: 'https://cdn.hashpass.tech/uploads/speaker.png' });
+    });
+
     expect(mockApiRequest).toHaveBeenCalledWith('/profile/speaker', expect.objectContaining({
       method: 'PATCH',
-      body: expect.objectContaining({ imageUrl: expect.stringContaining('ui-avatars.com') }),
+      body: { imageUrl: 'https://cdn.hashpass.tech/uploads/speaker.png' },
     }));
+    expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
   it('persists an uploaded profile photo for every avatar consumer', async () => {
     const renderer = await renderProfile();
     await act(async () => {
-      pressText(renderer, 'Change Avatar');
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Change profile picture' }));
       await Promise.resolve();
     });
 

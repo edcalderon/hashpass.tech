@@ -38,9 +38,9 @@ import type {
   PhoneEnrollmentVerifyResponse,
   TrustedPhonesResponse,
 } from '../../../types/auth-screen.types';
-import type { EmbeddedDashboardPageProps } from '../../../types/profile-settings.types';
+import type { EmbeddedDashboardPageProps, SettingsShortcut } from '../../../types/profile-settings.types';
 
-export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDashboardPageProps) {
+export default function SettingsScreen({ embedded = false, onBack, initialSettingsShortcut }: EmbeddedDashboardPageProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometricAuth, setBiometricAuth] = useState(false);
   const [dataUsage, setDataUsage] = useState(false);
@@ -70,6 +70,9 @@ export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDas
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const handledInitialShortcut = useRef<SettingsShortcut | null>(null);
+  const settingsScrollRef = useRef<ScrollView>(null);
+  const securitySettingsOffset = useRef(0);
   // Explicit understanding gate on top of the existing OTP-based deletion
   // flow: a destructive, irreversible action should require more than one
   // tap to confirm. Both must be satisfied before "I Understand, Continue"
@@ -128,6 +131,41 @@ export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDas
     securityPin.clearProblem();
     setShowAuthenticatorSetup(true);
   };
+
+  useEffect(() => {
+    if (!embedded || !initialSettingsShortcut || handledInitialShortcut.current === initialSettingsShortcut) return;
+
+    if (initialSettingsShortcut === 'authenticator') {
+      if (authenticatorStatusLoading) return;
+      handledInitialShortcut.current = initialSettingsShortcut;
+      if (!authenticatorStatusUnavailable && !authenticatorEnabled) {
+        openAuthenticatorSetup();
+      } else {
+        setTimeout(() => {
+          settingsScrollRef.current?.scrollTo({ y: securitySettingsOffset.current, animated: true });
+        }, 0);
+      }
+      return;
+    }
+
+    handledInitialShortcut.current = initialSettingsShortcut;
+    if (initialSettingsShortcut === 'delete-account') {
+      setOtpCode('');
+      setOtpSent(false);
+      setDeleteUnderstoodChecked(false);
+      setDeleteConfirmationInput('');
+      setShowDisclaimerModal(true);
+    } else if (initialSettingsShortcut === 'about') {
+      setShowVersionModal(true);
+    }
+  }, [
+    embedded,
+    initialSettingsShortcut,
+    authenticatorStatusLoading,
+    authenticatorStatusUnavailable,
+    authenticatorEnabled,
+    openAuthenticatorSetup,
+  ]);
   
   // Focus the OTP input when it becomes visible
   useEffect(() => {
@@ -749,7 +787,8 @@ export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDas
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
+        ref={settingsScrollRef}
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: embedded ? 0 : topInset, paddingBottom: bottomInset }}
@@ -959,7 +998,10 @@ export default function SettingsScreen({ embedded = false, onBack }: EmbeddedDas
         </View>
 
         {/* Security Settings */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={(event) => { securitySettingsOffset.current = event.nativeEvent.layout.y; }}
+        >
           <Text style={styles.sectionTitle}>{tSettings('security', 'Security')}</Text>
           {renderGroup(<>
 

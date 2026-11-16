@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { ActionButton, SegmentedTabs } from '@hashpass/ui/primitives';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
 import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
@@ -20,6 +20,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useWalletGuard, WALLET_UNLOCK_SCOPE } from '../../../hooks/useWalletGuard';
 import type { ThemeColors } from '../../../lib/theme';
 import { uiTokens } from '@hashpass/ui/tokens';
+import { Ionicons } from '../../../lib/vector-icons';
+import { authenticatorStatus } from '../../../lib/authenticator-client';
 
 import type { WalletSection as Section } from '../../../types/authenticator.types';
 
@@ -38,9 +40,17 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
-  const [authenticatorEnabled, setAuthenticatorEnabled] = useState(false);
+  const [authenticatorEnabled, setAuthenticatorEnabled] = useState<boolean | null>(null);
   useEffect(() => {
-    if (guard.phase !== 'unlocked') setAuthenticatorEnabled(false);
+    if (guard.phase !== 'unlocked') {
+      setAuthenticatorEnabled(null);
+      return undefined;
+    }
+    let current = true;
+    void authenticatorStatus()
+      .then((status: { enabled: boolean }) => { if (current) setAuthenticatorEnabled(status.enabled); })
+      .catch(() => undefined);
+    return () => { current = false; };
   }, [guard.phase]);
   // The email-code recovery must be reachable from the locked gate: both in-flow recovery
   // entry points sit inside WalletContent, which mounts only after a successful unlock.
@@ -115,14 +125,16 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
 
 function WalletContent({ pin, authenticatorEnabled }: {
   pin: ReturnType<typeof useWalletGuard>['pin'];
-  authenticatorEnabled: boolean;
+  authenticatorEnabled: boolean | null;
 }) {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors, isDark } = useTheme();
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
+  const router = useRouter();
   const [section, setSection] = useState<Section>(params.section === 'contacts' ? 'contacts' : 'assets');
   const [showSecurity, setShowSecurity] = useState(false);
+  const [showAuthenticatorReminder, setShowAuthenticatorReminder] = useState(true);
   const [helpOpen, setHelpOpen] = useState(false);
   const styles = getStyles(colors);
   const tabs: { id: Section; label: string }[] = [
@@ -146,10 +158,6 @@ function WalletContent({ pin, authenticatorEnabled }: {
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
       <Text style={styles.body}>{t('overview.unifiedSubtitle', 'Your contacts, assets, rewards and event passes. A PIN protects wallet access; an authenticator adds another step when enabled.')}</Text>
     </View>
-    {!authenticatorEnabled && <View style={styles.panel}>
-      <Text accessibilityRole="header" style={styles.sectionTitle}>{t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}</Text>
-      <Text style={styles.body}>{t('guard.authenticatorRecommendedBody', 'PIN-only access is active. For stronger security, set up an authenticator in Profile & Settings. Email confirms setup only; authenticator app codes protect wallet access.')}</Text>
-    </View>}
     <SegmentedTabs
       mode={isDark ? 'dark' : 'light'}
       tabs={tabs}
@@ -204,6 +212,39 @@ function WalletContent({ pin, authenticatorEnabled }: {
       <BlockchainTicketsView businessInviteCode={inviteCode} />
     </View>}
     </ScrollView>
+    {authenticatorEnabled === false && showAuthenticatorReminder ? (
+      <Surface mode={isDark ? 'dark' : 'light'} style={[styles.authenticatorReminder, { bottom: bottomInset + 16 }]} testID="authenticator-reminder">
+        <View style={styles.reminderIcon}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+        </View>
+        <View style={styles.reminderCopy}>
+          <Text accessibilityRole="header" style={styles.reminderTitle}>
+            {t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}
+          </Text>
+          <Text style={styles.reminderBody}>
+            {t('guard.authenticatorRecommendedBody', 'PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.')}
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('guard.authenticatorSetupCta', 'Set up two-step verification')}
+            onPress={() => router.push('/dashboard/profile-settings?shortcut=authenticator' as any)}
+            style={styles.reminderLink}
+          >
+            <Text style={styles.reminderLinkText}>{t('guard.authenticatorSetupCta', 'Set up two-step verification')}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </Pressable>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('guard.dismissAuthenticatorReminder', 'Dismiss authenticator reminder')}
+          onPress={() => setShowAuthenticatorReminder(false)}
+          hitSlop={8}
+          style={styles.reminderClose}
+        >
+          <Ionicons name="close" size={20} color={colors.text.secondary} />
+        </Pressable>
+      </Surface>
+    ) : null}
     {section === 'contacts' && <ContactsScreen />}
     <WalletHelpButton onPress={() => setHelpOpen(true)} />
     <WalletHelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
@@ -211,7 +252,7 @@ function WalletContent({ pin, authenticatorEnabled }: {
 }
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.background.default },
+  page: { flex: 1, backgroundColor: colors.background.default, position: 'relative' },
   content: { width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 24 },
   heading: { gap: 8 },
   eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
@@ -229,6 +270,36 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   security: { gap: 20, paddingTop: 8 },
   securityStep: { gap: 5 },
   panel: { padding: 24, borderWidth: 1, borderColor: colors.divider, borderRadius: 20, gap: 12 },
+  authenticatorReminder: {
+    position: 'absolute',
+    left: DASHBOARD_PAGE_SIDE_PADDING,
+    right: DASHBOARD_PAGE_SIDE_PADDING,
+    alignSelf: 'center',
+    maxWidth: 520,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: 16,
+    elevation: 8,
+    zIndex: 20,
+  },
+  reminderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: uiTokens.radius.circle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.default,
+  },
+  reminderCopy: { flex: 1, gap: 4 },
+  reminderTitle: { color: colors.text.primary, fontSize: 14, fontWeight: '700' },
+  reminderBody: { color: colors.text.secondary, fontSize: 13, lineHeight: 19 },
+  reminderLink: { minHeight: 40, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4 },
+  reminderLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  reminderClose: { minWidth: 36, minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { color: colors.text.primary, fontSize: 16, fontWeight: '600' },
   transactionEmpty: { gap: 12, alignItems: 'center', paddingVertical: 18, borderTopWidth: 1, borderColor: colors.divider, marginTop: 4 },
   transactionIcon: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },

@@ -107,5 +107,7 @@ it('rejects unrecognized scopes and malformed codes before database access', asy
 });
 it('fails closed without a server key', async () => {
   delete process.env.HASHPASS_TOTP_KEY;
-  expect((await call({ action: 'begin' }, pin())).status).toBe(503);
+  const response = await call({ action: 'begin' }, pin());
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({ success: false, error: 'authenticator_key_unavailable' });
 });

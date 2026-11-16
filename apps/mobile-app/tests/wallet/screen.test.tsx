@@ -4,7 +4,11 @@ import { Pressable } from 'react-native';
 
 jest.mock('../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
 jest.mock('../../components/contacts/ContactsScreen', () => ({ __esModule: true, default: 'ContactsScreen' }));
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
+jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons' }));
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), useRouter: () => ({ push: (path: string) => mockRouterPush(path) }) }));
+const mockAuthenticatorStatus = jest.fn((_request?: unknown) => Promise.resolve({ enabled: false }));
+jest.mock('../../lib/authenticator-client', () => ({ authenticatorStatus: () => mockAuthenticatorStatus() }));
 let mockDark = false;
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: mockDark, colors: {
   primary: '#a00', primaryContrastText: '#fff', divider: '#ddd',
@@ -48,11 +52,16 @@ jest.mock('../../hooks/useWalletGuard', () => ({
 jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 import Wallet from '../../app/(shared)/dashboard/wallet';
 
-it('explains setup availability, expands security, and navigates to genuine pass/reward surfaces', () => {
+beforeEach(() => {
+  mockRouterPush.mockReset();
+  mockAuthenticatorStatus.mockResolvedValue({ enabled: false });
+});
+
+it('explains setup availability, expands security, and navigates to genuine pass/reward surfaces', async () => {
   let view!: ReactTestRenderer;
-  act(() => { view = create(<Wallet />); });
+  await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
   expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(1);
-  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active. For stronger security, set up an authenticator in Profile & Settings.');
+  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.');
   expect(JSON.stringify(view.toJSON())).not.toContain('BSL2025-VIP-001');
   // The security accordion is the only button whose state carries `expanded`; the balance
   // card's Send/Receive action buttons come first in the tree.
@@ -71,24 +80,32 @@ it('explains setup availability, expands security, and navigates to genuine pass
   act(() => view.unmount());
 });
 
-it('shows the security recommendation after PIN-only unlock and clears it after authenticator unlock', () => {
+it('shows a dismissible security reminder after PIN-only unlock and hides it after authenticator unlock', async () => {
   mockPhase = 'pin_entry';
   let view!: ReactTestRenderer;
   try {
-    act(() => { view = create(<Wallet />); });
+    await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
     const pinFlow = view.root.findByType('PinFlow' as any);
     act(() => { pinFlow.props.onAuthenticatorComplete('pin'); });
     mockPhase = 'unlocked';
-    act(() => { view.update(<Wallet />); });
+    await act(async () => { view.update(<Wallet />); await Promise.resolve(); });
     expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active.');
     expect(JSON.stringify(view.toJSON())).toContain('A PIN protects wallet access; an authenticator adds another step when enabled.');
+    view.root.findByProps({ testID: 'authenticator-reminder' });
+    const setupLink = view.root.findByProps({ accessibilityLabel: 'Set up two-step verification' });
+    act(() => setupLink.props.onPress());
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/profile-settings?shortcut=authenticator');
+    const dismiss = view.root.findByProps({ accessibilityLabel: 'Dismiss authenticator reminder' });
+    act(() => dismiss.props.onPress());
+    expect(view.root.findAllByProps({ testID: 'authenticator-reminder' })).toHaveLength(0);
 
     mockPhase = 'pin_entry';
     act(() => { view.update(<Wallet />); });
     const authenticatorFlow = view.root.findByType('PinFlow' as any);
+    mockAuthenticatorStatus.mockResolvedValue({ enabled: true });
     act(() => { authenticatorFlow.props.onAuthenticatorComplete('authenticator'); });
     mockPhase = 'unlocked';
-    act(() => { view.update(<Wallet />); });
+    await act(async () => { view.update(<Wallet />); await Promise.resolve(); });
     expect(JSON.stringify(view.toJSON())).not.toContain('PIN-only access is active.');
   } finally {
     mockPhase = 'unlocked';

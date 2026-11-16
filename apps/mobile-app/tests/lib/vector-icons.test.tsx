@@ -22,8 +22,24 @@ jest.mock(
   () => ({ default: "MaterialIcons" }),
 );
 
-import { QrCode, Bell, Headset, User } from "lucide-react-native";
-import { NativeSafeIcon } from "../../lib/vector-icons";
+import { QrCode, Bell, Headset, User, Briefcase } from "lucide-react-native";
+import { NativeSafeIcon, WEB_IONICONS_TO_MATERIAL_ICONS, WEB_MATERIAL_ICONS } from "../../lib/vector-icons";
+
+it('maps the expanded quick-settings chevron to an up arrow on web', () => {
+  expect(WEB_IONICONS_TO_MATERIAL_ICONS['chevron-up']).toBe('keyboard-arrow-up');
+});
+
+it.each([
+  ['briefcase-outline', 'work-outline'],
+  ['business-outline', 'business'],
+  ['mic-outline', 'mic'],
+] as const)('maps the %s account detail icon to a real web glyph', (icon, glyph) => {
+  expect(WEB_IONICONS_TO_MATERIAL_ICONS[icon]).toBe(glyph);
+});
+
+it('renders the role icon as a briefcase instead of the question-mark fallback', () => {
+  expect(WEB_MATERIAL_ICONS['work-outline']).toBe(Briefcase);
+});
 
 describe("NativeSafeIcon", () => {
   it("renders the Explorer filter icon from the SVG baseline", () => {

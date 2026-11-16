@@ -132,5 +132,12 @@ export async function authenticatorRequest(request: Request, write = false): Pro
     if (consumed.error) return reply('unavailable', 503);
     if (consumed.data !== true) return reply('invalid_expired_or_used_code', 403);
     return reply({ proof: issueAuthenticatorProof(userId, body.scope), ...(recoveryCodes ? { recoveryCodes } : {}) });
-  } catch { return reply('unavailable', 503); }
+  } catch (failure) {
+    // Keep secrets out of API responses while making local setup failures
+    // diagnosable from the Network panel.
+    const reason = failure instanceof Error && failure.message === 'authenticator_unavailable'
+      ? 'authenticator_key_unavailable'
+      : 'unavailable';
+    return reply(reason, 503);
+  }
 }

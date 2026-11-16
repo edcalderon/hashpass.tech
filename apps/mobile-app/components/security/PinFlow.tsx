@@ -5,6 +5,7 @@ import { uiTokens } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
 import type { PinProblem, UsePin } from '../../hooks/usePin';
 import type { StepUpScope } from '../../lib/step-up-session';
+import type { AuthenticatorCompletion } from '../../types/authenticator.types';
 import PinPad from './PinPad';
 import AuthenticatorFlow from './AuthenticatorFlow';
 import type { PinFlowProps, Translate } from './types/PinFlow.types';
@@ -70,13 +71,16 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, on
     });
   }, [creating, first, pin, scope, completed, clearProblem]);
 
+  const complete = useCallback((completion: AuthenticatorCompletion) => {
+    if (verifiedPin === null) return;
+    const digits = verifiedPin;
+    setVerifiedPin(null);
+    if (pin.proofFor(scope)) { onAuthenticatorComplete?.(completion); onDone(digits); }
+  }, [verifiedPin, pin, scope, onAuthenticatorComplete, onDone]);
+
   if (verifiedPin !== null) return <View style={styles.root}>
     <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
-      onDone={(completion) => {
-        const digits = verifiedPin;
-        setVerifiedPin(null);
-        if (pin.proofFor(scope)) { onAuthenticatorComplete?.(completion); onDone(digits); }
-      }} />
+      onDone={complete} onUnenrolled={() => complete('pin')} />
     <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
   </View>;
 
