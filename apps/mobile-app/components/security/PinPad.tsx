@@ -77,7 +77,7 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
         ))}
       </View>
       <View style={styles.status} accessibilityLiveRegion="polite">
-        {busy ? <ActivityIndicator size="small" color={palette.accent} />
+        {busy ? <ActivityIndicator size="small" color={palette.accent} accessibilityRole="progressbar" accessibilityLabel={t('checking', 'Checking PIN…')} />
           : !!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       </View>
       <View accessibilityLabel={t('keypad', 'PIN keypad')} style={styles.grid}>
@@ -99,17 +99,17 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
 const makeStyles = (mode: ColorMode) => {
   const p = uiPalette(mode);
   return StyleSheet.create({
-    root: { alignItems: 'center', gap: uiTokens.space.lg, width: '100%', maxWidth: 360, alignSelf: 'center', minWidth: 0 },
+    root: { alignItems: 'center', gap: uiTokens.space.sm, width: '100%', maxWidth: 360, alignSelf: 'center', minWidth: 0 },
     title: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '700', textAlign: 'center' },
     hint: { color: p.muted, fontSize: uiTokens.type.label, lineHeight: 22, textAlign: 'center' },
-    dots: { flexDirection: 'row', gap: uiTokens.space.lg, paddingVertical: uiTokens.space.sm },
+    dots: { flexDirection: 'row', gap: uiTokens.space.md, paddingVertical: uiTokens.space.xs },
     dot: { width: 16, height: 16, borderRadius: uiTokens.radius.circle, borderWidth: 2, borderColor: p.border },
-    status: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+    status: { minHeight: 28, justifyContent: 'center', alignItems: 'center' },
     error: { color: p.danger, fontSize: uiTokens.type.label, textAlign: 'center' },
-    grid: { width: '100%', gap: uiTokens.space.sm, minWidth: 0 },
-    keyRow: { flexDirection: 'row', gap: uiTokens.space.sm, width: '100%', minWidth: 0 },
-    key: { flex: 1, minWidth: 0, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.card, backgroundColor: p.raised, borderWidth: uiTokens.control.borderWidth, borderColor: p.border },
-    keyPlaceholder: { flex: 1, minWidth: 0, minHeight: 56 },
+    grid: { width: '100%', gap: uiTokens.space.xs, minWidth: 0 },
+    keyRow: { flexDirection: 'row', gap: uiTokens.space.xs, width: '100%', minWidth: 0 },
+    key: { flex: 1, minWidth: 0, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.card, backgroundColor: p.raised, borderWidth: uiTokens.control.borderWidth, borderColor: p.border },
+    keyPlaceholder: { flex: 1, minWidth: 0, minHeight: 48 },
     keyLabel: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '600' },
   });
 };

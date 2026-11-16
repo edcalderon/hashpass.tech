@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActionButton, SegmentedTabs } from '@hashpass/ui/primitives';
+import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
 import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
@@ -43,6 +43,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const styles = getStyles(colors);
   const [authenticatorEnabled, setAuthenticatorEnabled] = useState<boolean | null>(null);
   const [enrollmentState, setEnrollmentState] = useState<WalletEnrollmentState>({ status: 'loading' });
+  const [pinVerificationPending, setPinVerificationPending] = useState(false);
   const preflightGeneration = useRef(0);
   useEffect(() => {
     if (guard.phase === 'checking') {
@@ -61,6 +62,9 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
           reason: failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'not_enrolled' : 'unavailable' });
       });
   }, [guard.phase, signedIn]);
+  useEffect(() => {
+    if (guard.phase !== 'checking') setPinVerificationPending(false);
+  }, [guard.phase]);
   // The email-code recovery must be reachable from the locked gate: both in-flow recovery
   // entry points sit inside WalletContent, which mounts only after a successful unlock.
   const [recovery, setRecovery] = useState<'idle' | 'authenticator' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
@@ -74,21 +78,29 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
   }, []);
   const endRecovery = useCallback(() => setRecovery('idle'), []);
+  const onPinComplete = () => {
+    setPinVerificationPending(true);
+    guard.onPinDone();
+  };
   if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} enrollmentState={enrollmentState} />;
-  const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
-    styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
+  const shell = (children: React.ReactNode, centered = false) => <ScrollView style={styles.page} contentContainerStyle={[
+    styles.content, centered && styles.centeredContent, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
     <View style={styles.heading}>
-      <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
     </View>
     {children}
   </ScrollView>;
   if (!signedIn) return shell(<Text style={styles.body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>);
   if (guard.phase === 'checking') {
+    if (pinVerificationPending) return shell(<Surface mode={isDark ? 'dark' : 'light'} style={styles.pinPanel}>
+      <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
+        authenticatorScope="access" intent="unlock" pending pendingTitle={t('guard.openingWallet', 'Opening wallet…')}
+        onDone={guard.onPinDone} />
+    </Surface>, true);
     return shell(<View accessibilityRole="progressbar" accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.transition}>
       <ActivityIndicator color={colors.primary} />
-      <Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>
+      <Text style={styles.body}>{t('guard.unlocking', 'Checking wallet…')}</Text>
     </View>);
   }
   if (guard.phase === 'unavailable') return shell(<View style={styles.panel}>
@@ -97,12 +109,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       <Text style={styles.buttonText}>{t('guard.retry', 'Try again')}</Text></Pressable>
   </View>);
   const settingUp = guard.phase === 'pin_setup';
-  const body = settingUp
-    ? t('guard.unifiedSetupBody', 'Choose a 4-digit PIN. Authenticator setup is optional. We recommend an authenticator app for stronger security and wallet PIN recovery.')
-    : t('guard.unifiedLockedBody', 'Enter your PIN to open Wallet & Contacts. If you have not enrolled an authenticator, we recommend one for stronger security and PIN recovery.');
-  return shell(<View style={styles.panel}>
-    <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.unifiedSetupTitle', 'Set up your PIN') : t('guard.unifiedLockedTitle', 'Wallet & Contacts locked')}</Text>
-    <Text style={styles.body}>{body}</Text>
+  return shell(<Surface mode={isDark ? 'dark' : 'light'} style={styles.pinPanel}>
     {recovery === 'authenticator' ? <><AuthenticatorFlow scope="critical" onDone={startRecovery} onUnenrolled={startRecovery} /><ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('guard.backToPin', 'Back to PIN entry')} onPress={endRecovery} /></> : recovery === 'active' && recoveryRow
       ? // Recovery mounted before the unlock: only the email-code flow runs here, never the
         // wallet's home, so a locked-out person still has a way back in (see WalletVaultFlow).
@@ -125,16 +132,17 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
                   authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
                   onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
-                  onDone={guard.onPinDone} />
+                  pending={pinVerificationPending} pendingTitle={t('guard.openingWallet', 'Opening wallet…')}
+                  onDone={onPinComplete} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
                     person who cannot enter a PIN they never knew or no longer remember. */}
-                {!settingUp && <Pressable accessibilityRole="button" accessibilityLabel={t('guard.forgotPin', 'I forgot my PIN')}
+                {!settingUp && !pinVerificationPending && <Pressable accessibilityRole="button" accessibilityLabel={t('guard.forgotPin', 'I forgot my PIN')}
                   onPress={() => setRecovery('authenticator')} style={styles.outlineButton}>
                   <Text style={styles.buttonText}>{t('guard.forgotPin', 'I forgot my PIN')}</Text>
                 </Pressable>}
               </>
           }
-  </View>);
+  </Surface>, true);
 }
 
 function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
@@ -169,15 +177,16 @@ function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
       styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
     ]}>
     <View style={styles.heading}>
-      <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
-      <Text style={styles.body}>{t('overview.unifiedSubtitle', 'Your contacts, assets, rewards and event passes. A PIN protects wallet access; an authenticator adds another step when enabled.')}</Text>
     </View>
     <SegmentedTabs
       mode={isDark ? 'dark' : 'light'}
       tabs={tabs}
       value={section}
       onChange={setSection}
+      scrollable
+      compact
+      accessibilityLabel={t('overview.unifiedTitle', 'Wallet & Contacts')}
       accentColor={colors.primary}
       surfaceColor={colors.background.paper}
     />
@@ -267,13 +276,14 @@ function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background.default, position: 'relative' },
-  content: { width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 24 },
+  content: { flexGrow: 1, width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 20 },
+  centeredContent: { justifyContent: 'center' },
   heading: { gap: 8 },
-  eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
-  title: { color: colors.text.primary, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
+  title: { color: colors.text.primary, fontSize: uiTokens.type.heading, fontWeight: '800', letterSpacing: -0.5 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
   transition: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 44 },
-  stack: { gap: 20 },
+  stack: { gap: 20, width: '100%', maxWidth: 720, alignSelf: 'center' },
+  pinPanel: { width: '100%', maxWidth: 480, alignSelf: 'center', alignItems: 'center' },
   securityHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   securityHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   securityIcon: { width: 36, height: 36, borderRadius: uiTokens.radius.input, borderWidth: 1, borderColor: colors.divider, alignItems: 'center', justifyContent: 'center' },

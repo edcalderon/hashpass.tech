@@ -141,7 +141,8 @@ it('keeps the wallet overflow menu floating over the card', async () => {
   expect(flattened).toEqual(expect.arrayContaining([expect.objectContaining({ position: 'absolute' })]));
   await act(async () => { view.root.findByProps({ accessibilityLabel: 'Network' }).props.onPress(); });
   expect(content()).toContain('Mainnet');
-  expect(content()).toContain('Your wallet. Your control.');
+  expect(content()).not.toContain('Your wallet. Your control.');
+  expect(content()).toContain('Total balance');
 });
 
 it('switches from USD to Peso and opens the LATAM peso selector', async () => {

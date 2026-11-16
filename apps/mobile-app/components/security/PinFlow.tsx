@@ -32,7 +32,7 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
  * Enrolled authenticators add a verification step; otherwise the PIN can be used on its own.
  * Digits stay in transient component memory until the flow completes or unmounts; they are never persisted.
  */
-export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope }: PinFlowProps) {
+export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope, pending = false, pendingTitle }: PinFlowProps) {
   const { t } = useTranslation('pin');
   const [verifiedPin, setVerifiedPin] = useState<string | null>(null);
   const completed = useCallback((entered: string) => {
@@ -85,16 +85,16 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, on
   </View>;
 
   const confirming = creating && first !== null;
-  const title = !creating ? t('enterTitle', 'Enter your PIN')
-    : confirming ? t('confirmTitle', 'Confirm your PIN') : t('createTitle', 'Create a 4-digit PIN');
-  const hint = !creating ? t('enterHint', 'Your PIN confirms it is really you.')
-    : confirming ? t('confirmHint', 'Enter the same four digits again.')
-      : t('createHint', 'This second step protects your wallet and contacts. HASHPASS cannot reset it for you.');
+  const title = pending ? pendingTitle ?? t('enterTitle', 'Enter your PIN')
+    : !creating ? t('enterTitle', 'Enter your PIN')
+      : confirming ? t('confirmTitle', 'Confirm your PIN') : t('createTitle', 'Create a 4-digit PIN');
+  const hint = pending || !creating || confirming ? undefined
+    : t('createHint', 'Choose a 4-digit PIN. HASHPASS cannot reset it for you.');
   const error = mismatch ? t('mismatch', 'The two PINs did not match. Start again.') : describePinProblem(problem, t);
 
   return (
     <View style={styles.root}>
-      <PinPad mode={mode} title={title} hint={hint} error={error} busy={pin.busy} disabled={locked} onComplete={submit} />
+      <PinPad mode={mode} title={title} hint={hint} error={error} busy={pin.busy || pending} disabled={locked || pending} onComplete={submit} />
       {onCancel && <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Not now')} disabled={pin.busy} onPress={onCancel} />}
     </View>
   );
