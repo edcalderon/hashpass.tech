@@ -9,7 +9,6 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { ActionButton, Surface } from '@hashpass/ui/primitives';
-import { t } from '@lingui/macro';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
@@ -735,16 +734,16 @@ export default function ProfileScreen({ embedded = false, onOpenSettings }: Embe
                 onPress={() => setQuickSettingsExpanded((expanded) => !expanded)}
                 activeOpacity={0.75}
                 accessibilityRole="button"
-                accessibilityLabel={t({ id: 'profile.quickSettings', message: 'Quick settings' })}
-                accessibilityHint={t({ id: 'profile.quickSettingsHint', message: 'Show or hide quick settings' })}
+                accessibilityLabel="Quick settings"
+                accessibilityHint="Show or hide quick settings"
                 accessibilityState={{ expanded: quickSettingsExpanded }}
               >
                 <View style={styles.quickSettingsHeaderContent}>
                   <Text style={styles.quickSettingsTitle}>
-                    {t({ id: 'profile.quickSettings', message: 'Quick settings' })}
+                    Quick settings
                   </Text>
                   <Text style={styles.quickSettingsDescription}>
-                    {t({ id: 'profile.quickSettingsDescription', message: 'Your most used account options' })}
+                    Your most used account options
                   </Text>
                 </View>
                 <Ionicons
@@ -763,18 +762,18 @@ export default function ProfileScreen({ embedded = false, onOpenSettings }: Embe
                     disabled={!activeUser}
                     activeOpacity={0.75}
                     accessibilityRole="button"
-                    accessibilityLabel={t({ id: 'profile.changeAvatar', message: 'Change avatar' })}
-                    accessibilityHint={t({ id: 'profile.changeAvatarHint', message: 'Update your profile picture' })}
+                    accessibilityLabel="Change Avatar"
+                    accessibilityHint="Update your profile picture"
                   >
                     <View style={styles.quickActionIcon}>
                       <MaterialIcons name="photo-camera" size={22} color={colors.primary} />
                     </View>
                     <View style={styles.quickActionContent}>
                       <Text style={styles.quickActionTitle}>
-                        {t({ id: 'profile.changeAvatar', message: 'Change avatar' })}
+                        Change Avatar
                       </Text>
                       <Text style={styles.quickActionDescription}>
-                        {t({ id: 'profile.changeAvatarDescription', message: 'Update your profile picture' })}
+                        Update your profile picture
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={uiPalette(isDark ? 'dark' : 'light').muted} />
@@ -786,7 +785,7 @@ export default function ProfileScreen({ embedded = false, onOpenSettings }: Embe
                       <ActionButton
                         mode={isDark ? 'dark' : 'light'}
                         variant="ghost"
-                        label={t({ id: 'profile.moreSettings', message: 'More settings' })}
+                        label="More settings"
                         leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
                         trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
                         onPress={onOpenSettings}
