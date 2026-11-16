@@ -1,3 +1,5 @@
+import { ContactMessagingProvider } from '../providers/ContactMessagingProvider';
+import GlobalMessages from '../components/messages/GlobalMessages';
 import DesignSystemStyles from '../components/DesignSystemStyles';
 import MarketingActivityObserver from '../components/MarketingActivityObserver';
 import MarketingConsentObserver from '../components/MarketingConsentObserver';
@@ -119,7 +121,10 @@ function RootLayout() {
                         <ToastProvider>
                           <ScrollProvider>
                             <CopilotProvider overlay="view">
-                              <ThemedContent />
+                              <ContactMessagingProvider>
+                                <ThemedContent />
+                                <GlobalMessages />
+                              </ContactMessagingProvider>
                               <MarketingActivityObserver />
                               <MarketingConsentObserver />
                             </CopilotProvider>

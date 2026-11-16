@@ -404,7 +404,7 @@ export function ActionButton({
       ]}
     >
       {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} style={{ pointerEvents: "none" }}>{leadingIcon}</View>}
-      <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+      <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, labelNumberOfLines ? { flexShrink: 1 } : null, { color: foreground }]}>{label}</Text>
       {!loading && trailingIcon ? <View accessible={false} style={{ pointerEvents: "none" }}>{trailingIcon}</View> : null}
     </Pressable>
   );
