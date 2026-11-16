@@ -32,17 +32,13 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
  * Enrolled authenticators add a verification step; otherwise the PIN can be used on its own.
  * Digits stay in transient component memory until the flow completes or unmounts; they are never persisted.
  */
-export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope, authenticatorEnabled }: PinFlowProps) {
+export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope }: PinFlowProps) {
   const { t } = useTranslation('pin');
   const [verifiedPin, setVerifiedPin] = useState<string | null>(null);
   const completed = useCallback((entered: string) => {
-    if (scope === 'wallet:unlock' && authenticatorEnabled === false) {
-      onAuthenticatorComplete?.('pin');
-      onDone(entered);
-    }
-    else if (scope === 'wallet:unlock' || scope === 'wallet:sign') setVerifiedPin(entered);
+    if (scope === 'wallet:unlock' || scope === 'wallet:sign') setVerifiedPin(entered);
     else onDone(entered);
-  }, [scope, onDone, authenticatorEnabled, onAuthenticatorComplete]);
+  }, [scope, onDone]);
   const [creating, setCreating] = useState(intent === 'create');
   const [first, setFirst] = useState<string | null>(null);
   const [mismatch, setMismatch] = useState(false);
@@ -83,7 +79,7 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, on
   const onUnenrolled = useCallback(() => complete('pin'), [complete]);
 
   if (verifiedPin !== null) return <View style={styles.root}>
-    <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)} initialEnabled={authenticatorEnabled ?? undefined}
+    <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
       onDone={complete} onUnenrolled={onUnenrolled} />
     <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
   </View>;

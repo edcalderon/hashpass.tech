@@ -64,7 +64,6 @@ it('explains setup availability, expands security, and navigates to genuine pass
   let view!: ReactTestRenderer;
   await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
   const pinFlow = view.root.findByType('PinFlow' as any);
-  expect(pinFlow.props.authenticatorEnabled).toBe(false);
   expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
   act(() => { pinFlow.props.onAuthenticatorComplete('pin'); pinFlow.props.onDone('1234'); });
   mockPhase = 'unlocked';
@@ -155,7 +154,6 @@ it.each([['pin_setup', 'create'], ['pin_entry', 'unlock'], ['locked', 'unlock']]
       const flow = view.root.findByType('PinFlow' as any);
       expect(flow.props.intent).toBe(intent);
       expect(flow.props.scope).toBe('wallet:unlock');
-      expect(flow.props.authenticatorEnabled).toBe(phase === 'pin_entry' ? null : false);
       expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(0);
       expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
     } finally { mockPhase = 'unlocked'; act(() => view.unmount()); }

@@ -57,46 +57,6 @@ describe('PinFlow', () => {
     act(() => view.unmount());
   });
 
-  it('skips the intermediate authenticator screen when wallet preflight confirms PIN-only access', async () => {
-    mockAuthenticator = null;
-    const pin = makePin();
-    const onDone = jest.fn();
-    const onAuthenticatorComplete = jest.fn();
-    let view!: ReactTestRenderer;
-    await act(async () => {
-      view = create(<PinFlow mode="light" pin={pin} scope="wallet:unlock" intent="unlock"
-        authenticatorEnabled={false} onDone={onDone} onAuthenticatorComplete={onAuthenticatorComplete} />);
-    });
-
-    await enter('1234');
-
-    expect(onAuthenticatorComplete).toHaveBeenCalledWith('pin');
-    expect(onDone).toHaveBeenCalledWith('1234');
-    expect(mockAuthenticator).toBeNull();
-    act(() => view.unmount());
-  });
-
-  it('uses the preflight authenticator status directly when wallet access requires a code', async () => {
-    mockAuthenticator = null;
-    const pin = makePin();
-    const onDone = jest.fn();
-    const onAuthenticatorComplete = jest.fn();
-    let view!: ReactTestRenderer;
-    await act(async () => {
-      view = create(<PinFlow mode="light" pin={pin} scope="wallet:unlock" intent="unlock"
-        authenticatorEnabled onDone={onDone} onAuthenticatorComplete={onAuthenticatorComplete} />);
-    });
-
-    await enter('1234');
-
-    expect(mockAuthenticator.initialEnabled).toBe(true);
-    expect(onDone).not.toHaveBeenCalled();
-    await act(async () => mockAuthenticator.onDone('authenticator'));
-    expect(onAuthenticatorComplete).toHaveBeenCalledWith('authenticator');
-    expect(onDone).toHaveBeenCalledWith('1234');
-    act(() => view.unmount());
-  });
-
   it('asks twice when creating, then saves and unlocks with the same PIN', async () => {
     const pin = makePin();
     const { view, onDone } = await mount(pin, 'create');

@@ -16,8 +16,6 @@ export interface AuthenticatorFlowProps {
   pinProof?: string | null;
   /** Continue a recovery path only after the server confirms no authenticator is enrolled. */
   onUnenrolled?: () => void;
-  /** A status check completed by the parent before showing the PIN prompt. */
-  initialEnabled?: boolean;
 }
 
 export type WalletSection = 'contacts' | 'assets' | 'rewards' | 'passes';

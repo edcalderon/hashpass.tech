@@ -23,7 +23,6 @@ import type { ThemeColors } from '../../../lib/theme';
 import { uiTokens } from '@hashpass/ui/tokens';
 import DashboardNoticeCard from '../../../components/dashboard/DashboardNoticeCard';
 import { Ionicons } from '../../../lib/vector-icons';
-import { authenticatorStatus } from '../../../lib/authenticator-client';
 
 import type { WalletSection as Section } from '../../../types/authenticator.types';
 
@@ -43,25 +42,18 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
   const [authenticatorEnabled, setAuthenticatorEnabled] = useState<boolean | null>(null);
-  const [authenticatorUnavailable, setAuthenticatorUnavailable] = useState(false);
   const [enrollmentState, setEnrollmentState] = useState<WalletEnrollmentState>({ status: 'loading' });
   const preflightGeneration = useRef(0);
   useEffect(() => {
     if (guard.phase === 'checking') {
       preflightGeneration.current += 1;
       setAuthenticatorEnabled(null);
-      setAuthenticatorUnavailable(false);
       setEnrollmentState({ status: 'loading' });
       return;
     }
     if ((guard.phase !== 'locked' && guard.phase !== 'pin_setup') || !signedIn) return;
     const current = ++preflightGeneration.current;
-    setAuthenticatorEnabled(null);
-    setAuthenticatorUnavailable(false);
     setEnrollmentState({ status: 'loading' });
-    void authenticatorStatus()
-      .then((status: { enabled: boolean }) => { if (current === preflightGeneration.current) setAuthenticatorEnabled(status.enabled); })
-      .catch(() => { if (current === preflightGeneration.current) setAuthenticatorUnavailable(true); });
     void walletEnrollmentClient.load()
       .then((row: WalletEnrollment) => { if (current === preflightGeneration.current) setEnrollmentState({ status: 'ready', row }); })
       .catch((failure: unknown) => {
@@ -93,18 +85,12 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
     {children}
   </ScrollView>;
   if (!signedIn) return shell(<Text style={styles.body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>);
-  if (guard.phase === 'checking'
-    || ((guard.phase === 'locked' || guard.phase === 'pin_setup') && authenticatorEnabled === null && !authenticatorUnavailable)) {
+  if (guard.phase === 'checking') {
     return shell(<View accessibilityRole="progressbar" accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.transition}>
       <ActivityIndicator color={colors.primary} />
       <Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>
     </View>);
   }
-  if ((guard.phase === 'locked' || guard.phase === 'pin_setup') && authenticatorUnavailable) return shell(<View style={styles.panel}>
-    <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
-    <Pressable accessibilityRole="button" onPress={guard.retry} style={styles.outlineButton}>
-      <Text style={styles.buttonText}>{t('guard.retry', 'Try again')}</Text></Pressable>
-  </View>);
   if (guard.phase === 'unavailable') return shell(<View style={styles.panel}>
     <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
     <Pressable accessibilityRole="button" onPress={guard.retry} style={styles.outlineButton}>
@@ -137,7 +123,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
               </View>
             : <>
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
-                  authenticatorScope="access" authenticatorEnabled={authenticatorEnabled} intent={settingUp ? 'create' : 'unlock'}
+                  authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
                   onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
                   onDone={guard.onPinDone} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
