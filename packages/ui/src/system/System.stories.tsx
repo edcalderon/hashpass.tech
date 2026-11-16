@@ -420,6 +420,8 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <SearchField
           mode={mode}
           leadingIcon={<Text style={{ color: palette.muted, fontSize: 20 }}>⌕</Text>}
+          onLeadingIconPress={() => setSearchValue("Search suggestions opened")}
+          leadingIconAccessibilityLabel="Open search suggestions"
           value={searchValue}
           onChangeText={setSearchValue}
           placeholder="Search events, passes, cities"

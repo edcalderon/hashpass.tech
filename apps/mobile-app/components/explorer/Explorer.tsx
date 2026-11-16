@@ -619,7 +619,6 @@ export default function Explorer({
 
   const handleSearch = (value: string) => {
     setQuery(value);
-    setSearchOpen(true);
   };
 
   const clearFilters = () => {
@@ -924,35 +923,33 @@ export default function Explorer({
   const renderSearchBar = () => (
     <View style={styles.toolbar}>
       <View style={styles.toolbarRow}>
-        <TouchableOpacity
-          style={styles.searchFieldPressTarget}
-          onPress={() => setSearchOpen(true)}
-          accessibilityRole="search"
-        >
-          <SearchField
-            mode={isDark ? "dark" : "light"}
-            leadingIcon={<NativeSafeIcon name="search" color={colors.text.secondary} size={21} />}
-            value={query}
-            onChangeText={handleSearch}
-            onFocus={() => setSearchOpen(true)}
-            placeholder={translate(
-              "explore.rework.searchDiscovery",
-              "Search events, passes, cities, series",
-            )}
-            placeholderTextColor={colors.text.secondary}
-            accessibilityLabel={translate(
-              "explore.rework.searchEvents",
-              "Search events and passes",
-            )}
-            returnKeyType="search"
-            clearIcon={<NativeSafeIcon name="close" color={colors.text.secondary} size={18} />}
-            clearAccessibilityLabel={translate(
-              "explore.rework.clearSearch",
-              "Clear search",
-            )}
-            onClear={() => setQuery("")}
-          />
-        </TouchableOpacity>
+        <SearchField
+          mode={isDark ? "dark" : "light"}
+          leadingIcon={<NativeSafeIcon name="search" color={colors.text.secondary} size={21} />}
+          onLeadingIconPress={() => setSearchOpen(true)}
+          leadingIconAccessibilityLabel={translate(
+            "explore.rework.openSearch",
+            "Open search suggestions",
+          )}
+          value={query}
+          onChangeText={handleSearch}
+          placeholder={translate(
+            "explore.rework.searchDiscovery",
+            "Search events, passes, cities, series",
+          )}
+          placeholderTextColor={colors.text.secondary}
+          accessibilityLabel={translate(
+            "explore.rework.searchEvents",
+            "Search events and passes",
+          )}
+          returnKeyType="search"
+          clearIcon={<NativeSafeIcon name="close" color={colors.text.secondary} size={18} />}
+          clearAccessibilityLabel={translate(
+            "explore.rework.clearSearch",
+            "Clear search",
+          )}
+          onClear={() => setQuery("")}
+        />
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setFilterSheetOpen(true)}
@@ -1812,15 +1809,15 @@ export default function Explorer({
                   setSearchOpen(false);
                 }}
               >
-                <Icon name="event" color={colors.primary} size={20} />
+                <NativeSafeIcon name="event" color={colors.primary} size={20} />
                 <View style={styles.suggestionCopy}>
                   <Text style={styles.suggestionTitle}>{event.title}</Text>
                   <Text style={styles.suggestionMeta}>{event.subtitle}</Text>
                 </View>
-                <Icon
-                  name="north-east"
+                <NativeSafeIcon
+                  name="info"
                   color={colors.text.secondary}
-                  size={18}
+                  size={20}
                 />
               </TouchableOpacity>
             ))}
@@ -2315,10 +2312,7 @@ const getStyles = (isDark: boolean, colors: any, viewportWidth: number) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.divider,
     },
-    toolbarRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-    searchFieldPressTarget: {
-      flex: 1,
-    },
+    toolbarRow: { flexDirection: "row", alignItems: "center", gap: 12 },
     filterButton: {
       width: 46,
       height: 46,

@@ -76,6 +76,7 @@ const requiredKeys = [
   "explore.rework.allCaughtUp",
   "explore.rework.yourPasses",
   "explore.rework.closeSearch",
+  "explore.rework.openSearch",
   "explore.rework.recent",
   "explore.rework.suggestions",
   "explore.rework.filters",

@@ -913,6 +913,8 @@ export function SearchField({
   value,
   onChangeText,
   leadingIcon,
+  onLeadingIconPress,
+  leadingIconAccessibilityLabel,
   clearIcon,
   onClear,
   clearAccessibilityLabel = "Clear search",
@@ -930,9 +932,21 @@ export function SearchField({
         containerStyle,
       ]}
     >
-      <View pointerEvents="none" style={styles.searchLeadingIcon}>
-        {leadingIcon}
-      </View>
+      {onLeadingIconPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={leadingIconAccessibilityLabel || "Open search"}
+          onPress={onLeadingIconPress}
+          hitSlop={8}
+          style={styles.searchLeadingIconButton}
+        >
+          {leadingIcon}
+        </Pressable>
+      ) : (
+        <View pointerEvents="none" style={styles.searchLeadingIcon}>
+          {leadingIcon}
+        </View>
+      )}
       <TextInput
         {...inputProps}
         accessibilityLabel={accessibilityLabel || placeholder || "Search"}
@@ -1139,6 +1153,12 @@ const styles = StyleSheet.create({
     borderWidth: uiTokens.control.borderWidth,
   },
   searchLeadingIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchLeadingIconButton: {
+    width: 22,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
   },

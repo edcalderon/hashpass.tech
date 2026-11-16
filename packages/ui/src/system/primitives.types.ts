@@ -29,6 +29,9 @@ export type SearchFieldProps = Omit<TextInputProps, 'style' | 'value' | 'onChang
   value: string;
   onChangeText: (value: string) => void;
   leadingIcon: ReactNode;
+  /** Optional action for the leading glyph, such as opening search suggestions. */
+  onLeadingIconPress?: () => void;
+  leadingIconAccessibilityLabel?: string;
   clearIcon?: ReactNode;
   onClear?: () => void;
   clearAccessibilityLabel?: string;
