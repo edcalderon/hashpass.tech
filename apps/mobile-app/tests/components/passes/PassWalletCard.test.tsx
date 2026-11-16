@@ -113,6 +113,8 @@ const pass: WalletPass = {
   eventName: 'BSL Chile 2026',
   eventDateLabel: 'August 2026',
   eventLocation: 'Santiago, Chile',
+  walletPassStyle: 'event',
+  walletPassColor: '#00A9E0',
   accentColor: '#FF9500',
   timeline: 'upcoming',
   startsAt: null,
@@ -182,6 +184,21 @@ describe('PassWalletCard', () => {
     });
   });
 
+  it('uses the event blue wash for branded pass art and keeps it off regular passes', () => {
+    const eventCard = render(<PassWalletCard pass={pass} />);
+    const overlay = eventCard.root.findByProps({ testID: 'pass-event-blue-overlay' });
+
+    expect(overlay.props.pointerEvents).toBe('none');
+    expect(overlay.props.style.backgroundColor).toBe('#00A9E05a');
+    expect(eventCard.root.findAllByType('Text').some((node: any) => node.props.children === 'PASS')).toBe(true);
+
+    const regularCard = render(
+      <PassWalletCard pass={{ ...pass, walletPassStyle: undefined, walletPassColor: undefined }} />,
+    );
+    expect(regularCard.root.findAllByProps({ testID: 'pass-event-blue-overlay' })).toHaveLength(0);
+    expect(regularCard.root.findAllByType('Text').some((node: any) => node.props.children === 'ACTIVE')).toBe(true);
+  });
+
   it('offers the next-tier purchase and routes the existing-ticket claim to its page', () => {
     const generalPass = { ...pass, pass_type: 'general' as const };
     const renderer = render(<PassWalletCard pass={generalPass} />);
@@ -222,7 +239,7 @@ describe('PassWalletCard', () => {
   it('keeps long event text untruncated in the fixed-size back face', () => {
     const longEventName = 'Blockchain Summit LATAM Colombia — Main Stage and Community Track';
     const renderer = render(
-      <PassWalletCard pass={{ ...pass, eventName: longEventName, eventDateLabel: null }} />,
+      <PassWalletCard pass={{ ...pass, eventName: longEventName, eventDateLabel: '' }} />,
     );
 
     act(() => {
@@ -248,7 +265,7 @@ describe('PassWalletCard', () => {
     const originalPlatform = Platform.OS;
     Platform.OS = 'android';
     try {
-      const generalPass = { ...pass, pass_type: 'general' as const, eventDateLabel: null };
+      const generalPass = { ...pass, pass_type: 'general' as const, eventDateLabel: '' };
       const renderer = render(<PassWalletCard pass={generalPass} />);
 
       act(() => {

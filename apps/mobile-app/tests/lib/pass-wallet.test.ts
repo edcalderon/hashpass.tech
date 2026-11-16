@@ -11,12 +11,47 @@ import {
 } from "../../lib/pass-wallet";
 import type { PassInfo } from "../../lib/pass-system";
 
-// Real event ids from packages/config/src/events.ts, so the date-derived
-// timeline classification is exercised against the same config the app reads.
-// chile2026 ends 2026-08-07, colombia2026 ends 2026-11-06, bsl2025 ended
-// 2025-11-14.
+// Backend event-catalog values exercise the date-derived timeline and branded
+// pass treatment without relying on a frontend event catalog.
 const AUGUST_1_2026 = Date.parse("2026-08-01T12:00:00Z");
 const AUGUST_6_2026 = Date.parse("2026-08-06T12:00:00Z");
+
+const eventMetadata: Record<string, Partial<PassInfo>> = {
+  bsl: {
+    event_name: "BSL On Tour",
+    wallet_pass_style: "event",
+    wallet_pass_color: "#00A9E0",
+  },
+  peru2026: {
+    event_name: "Blockchain Summit Latam Perú 2026",
+    event_location: "Lima, Perú",
+    event_starts_at: "2026-05-13T09:00:00-05:00",
+    event_ends_at: "2026-05-15T23:59:59-05:00",
+    wallet_pass_style: "event",
+    wallet_pass_color: "#00A9E0",
+  },
+  chile2026: {
+    event_name: "BSL Chile 2026",
+    event_location: "Santiago, Chile",
+    event_starts_at: "2026-08-05T09:00:00-04:00",
+    event_ends_at: "2026-08-07T23:59:59-04:00",
+    wallet_pass_style: "event",
+    wallet_pass_color: "#00A9E0",
+  },
+  colombia2026: {
+    event_name: "Blockchain Summit Latam Colombia 2026",
+    event_location: "Bogotá, Colombia",
+    event_starts_at: "2026-11-05T09:00:00-05:00",
+    event_ends_at: "2026-11-06T23:59:59-05:00",
+    wallet_pass_style: "event",
+    wallet_pass_color: "#00A9E0",
+  },
+  bsl2025: {
+    event_name: "BSL Colombia 2025",
+    event_starts_at: "2025-11-12T09:00:00-05:00",
+    event_ends_at: "2025-11-14T23:59:59-05:00",
+  },
+};
 
 const makePass = (overrides: Partial<PassInfo> = {}): PassInfo => ({
   pass_id: "pass-1",
@@ -31,10 +66,33 @@ const makePass = (overrides: Partial<PassInfo> = {}): PassInfo => ({
   remaining_boost: 100,
   access_features: [],
   special_perks: [],
+  ...(overrides.event_id ? eventMetadata[overrides.event_id] : {}),
   ...overrides,
 });
 
 describe("buildWalletPasses", () => {
+  it("uses backend metadata to mark the BSL On Tour hub and 2026 stops as event passes", () => {
+    const eventIds = ["bsl", "peru2026", "chile2026", "colombia2026"];
+    const passes = buildWalletPasses(
+      eventIds.map((eventId) => makePass({ pass_id: eventId, event_id: eventId })),
+      AUGUST_1_2026,
+    );
+
+    expect(passes).toHaveLength(eventIds.length);
+    expect(passes.every((pass) => pass.walletPassStyle === "event")).toBe(true);
+    expect(passes.every((pass) => pass.walletPassColor === "#00A9E0")).toBe(true);
+  });
+
+  it("leaves non-tour events on the regular pass treatment", () => {
+    const [archive] = buildWalletPasses(
+      [makePass({ pass_id: "archive", event_id: "bsl2025" })],
+      AUGUST_1_2026,
+    );
+
+    expect(archive.walletPassStyle).toBeUndefined();
+    expect(archive.walletPassColor).toBeUndefined();
+  });
+
   it("classifies passes against the event calendar, not the pass status", () => {
     const [chile] = buildWalletPasses(
       [makePass({ pass_id: "a", event_id: "chile2026" })],

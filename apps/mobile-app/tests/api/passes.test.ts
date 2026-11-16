@@ -146,6 +146,9 @@ describe("/api/passes self-service provisioning", () => {
 
 describe("/api/passes event wallet", () => {
   let query: Record<string, jest.Mock>;
+  let eventQuery: Record<string, jest.Mock>;
+  let passRows: Record<string, unknown>[];
+  let eventRows: Record<string, unknown>[];
   const get = async (params: string) => {
     /* eslint-disable-next-line @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/passes+api");
@@ -155,10 +158,21 @@ describe("/api/passes event wallet", () => {
   beforeEach(() => {
     mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: "account-id" });
     mockRpc.mockReset().mockResolvedValue({ data: null, error: null });
-    query = {};
-    for (const method of ["select", "eq", "in", "order"]) query[method] = jest.fn().mockReturnValue(query);
-    query.then = jest.fn((resolve) => resolve({ data: [], error: null }));
-    mockFrom.mockReset().mockReturnValue(query);
+    passRows = [];
+    eventRows = [];
+    const makeQuery = (getRows: () => Record<string, unknown>[]) => {
+      const builder: Record<string, jest.Mock> = {};
+      for (const method of ["select", "eq", "in", "order"]) {
+        builder[method] = jest.fn().mockReturnValue(builder);
+      }
+      builder.then = jest.fn((resolve) => resolve({ data: getRows(), error: null }));
+      return builder;
+    };
+    query = makeQuery(() => passRows);
+    eventQuery = makeQuery(() => eventRows);
+    mockFrom.mockReset().mockImplementation((table: string) =>
+      table === "passes" ? query : eventQuery,
+    );
   });
 
   it("selects BSL development for an unscoped pass wallet by API host", async () => {
@@ -172,6 +186,16 @@ describe("/api/passes event wallet", () => {
 
     expect(mockResolveNotificationIdentity).toHaveBeenCalledWith(request, "bsl-development");
     expect(mockGetSupabaseServerForRequest).toHaveBeenCalledWith(request, "bsl-development");
+  });
+
+  it("fails closed while PostgREST is missing the required expiry function", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST202", message: "Function is missing from the schema cache" },
+    });
+
+    expect((await get("")).status).toBe(503);
+    expect(query.then).not.toHaveBeenCalled();
   });
 
   it.each(["?eventId=cbweek2026", "?eventIds=cbweek2026,colombia2026"])("loads CBWeek with %s", async (params) => {
@@ -188,11 +212,11 @@ describe("/api/passes event wallet", () => {
   });
 
   it.each(["business", "vip"])("selects an active %s over a newer general pass", async (passType) => {
-    query.then.mockImplementation((resolve) => resolve({ data: [
+    passRows = [
       { id: "new-general", event_id: "cbweek2026", pass_type: "general", status: "active" },
       { id: "paid-pass", event_id: "cbweek2026", pass_type: passType, status: "active", pass_number: 42 },
       { id: "inactive-vip", event_id: "cbweek2026", pass_type: "vip", status: "cancelled" },
-    ], error: null }));
+    ];
     const response = await get("?eventId=cbweek2026");
     expect((await response.json()).data).toEqual([
       expect.objectContaining({ pass_id: "paid-pass", pass_type: passType, pass_number: "42" }),
@@ -206,13 +230,46 @@ describe("/api/passes event wallet", () => {
     ["vip", "general", "cancelled", "active", "second"],
     ["business", "vip", "active", "active", "second"],
   ])("compares %s and %s passes (%s, %s)", async (firstType, secondType, firstStatus, secondStatus, expectedId) => {
-    query.then.mockImplementation((resolve) => resolve({ data: [
+    passRows = [
       { id: "first", event_id: "cbweek2026", pass_type: firstType, status: firstStatus },
       { id: "second", event_id: "cbweek2026", pass_type: secondType, status: secondStatus },
-    ], error: null }));
+    ];
     const response = await get("");
     expect((await response.json()).data).toEqual([
       expect.objectContaining({ pass_id: expectedId }),
+    ]);
+  });
+
+  it("returns backend event styling and runs the expiry transition before listing passes", async () => {
+    passRows = [
+      { id: "chile-pass", event_id: "chile2026", pass_type: "general", status: "active" },
+    ];
+    eventRows = [
+      {
+        id: "chile2026",
+        name: "Blockchain Summit Latam Chile 2026",
+        starts_at: "2026-08-05T09:00:00-04:00",
+        ends_at: "2026-08-07T23:59:59-04:00",
+        timezone: "America/Santiago",
+        city: "Santiago",
+        country: "Chile",
+        metadata: { walletPassStyle: "event", walletPassColor: "#00A9E0" },
+      },
+    ];
+
+    const response = await get("");
+    expect(mockRpc).toHaveBeenCalledWith("expire_ended_event_passes");
+    expect(eventQuery.in).toHaveBeenCalledWith("id", ["chile2026"]);
+    expect((await response.json()).data).toEqual([
+      expect.objectContaining({
+        event_name: "Blockchain Summit Latam Chile 2026",
+        event_starts_at: "2026-08-05T09:00:00-04:00",
+        event_ends_at: "2026-08-07T23:59:59-04:00",
+        event_time_zone: "America/Santiago",
+        event_location: "Santiago, Chile",
+        wallet_pass_style: "event",
+        wallet_pass_color: "#00A9E0",
+      }),
     ]);
   });
 });

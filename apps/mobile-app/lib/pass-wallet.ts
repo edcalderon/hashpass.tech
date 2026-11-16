@@ -1,4 +1,4 @@
-import { EVENTS } from "../config/events";
+import type { WalletPassStyle } from "@hashpass/types";
 import type { PassInfo, PassType } from "./pass-system";
 
 // Where a pass sits relative to today. Derived from the event's own configured
@@ -20,6 +20,8 @@ export interface WalletPass extends PassInfo {
   eventName: string;
   eventDateLabel: string;
   eventLocation: string;
+  walletPassStyle?: WalletPassStyle;
+  walletPassColor?: string;
   accentColor: string;
   timeline: PassTimeline;
   startsAt: number | null;
@@ -57,6 +59,39 @@ const parseDate = (value: unknown): number | null => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+const formatEventDateLabel = (
+  startsAt: string | null | undefined,
+  endsAt: string | null | undefined,
+  timeZone: string | null | undefined,
+): string => {
+  const start = startsAt ? new Date(startsAt) : null;
+  const end = endsAt ? new Date(endsAt) : null;
+  const validStart = start && !Number.isNaN(start.getTime()) ? start : null;
+  const validEnd = end && !Number.isNaN(end.getTime()) ? end : null;
+  if (!validStart && !validEnd) return "";
+
+  const format = (date: Date) => {
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        ...(timeZone ? { timeZone } : {}),
+      }).format(date);
+    } catch {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(date);
+    }
+  };
+
+  if (!validStart) return format(validEnd!);
+  if (!validEnd || validStart.getTime() === validEnd.getTime()) return format(validStart);
+  return `${format(validStart)} – ${format(validEnd)}`;
+};
+
 export const getPassTypeAccent = (passType?: string | null): string =>
   PASS_TYPE_ACCENTS[passType ?? ""] ?? "#8E8E93";
 
@@ -74,29 +109,21 @@ const classifyTimeline = (
   return "upcoming";
 };
 
-const resolveEventMeta = (eventId?: string) => {
-  const config = eventId ? (EVENTS as Record<string, any>)[eventId] : undefined;
-  if (!config) {
-    return {
-      name: eventId ?? "Event",
-      dateLabel: "",
-      location: "",
-      startsAt: null as number | null,
-      endsAt: null as number | null,
-    };
-  }
-
-  const city = config.tour?.city as string | undefined;
-  const country = config.tour?.country as string | undefined;
-  const location =
-    city && country ? `${city}, ${country}` : city || country || "";
-
+const resolveEventMeta = (pass: PassInfo) => {
+  const startsAtValue = pass.event_starts_at;
+  const endsAtValue = pass.event_ends_at;
   return {
-    name: (config.name || config.title || eventId) as string,
-    dateLabel: (config.eventDateString || config.subtitle || "") as string,
-    location: location || ((config.subtitle || "") as string),
-    startsAt: parseDate(config.eventStartDate),
-    endsAt: parseDate(config.eventEndDate),
+    name: pass.event_name || pass.event_id || "Event",
+    dateLabel: pass.event_date_label || formatEventDateLabel(
+      startsAtValue,
+      endsAtValue,
+      pass.event_time_zone,
+    ),
+    location: pass.event_location || "",
+    startsAt: parseDate(startsAtValue),
+    endsAt: parseDate(endsAtValue),
+    walletPassStyle: pass.wallet_pass_style,
+    walletPassColor: pass.wallet_pass_color,
   };
 };
 
@@ -110,7 +137,7 @@ export const buildWalletPasses = (
   now: number = Date.now(),
 ): WalletPass[] => {
   const decorated = passes.map((pass) => {
-    const meta = resolveEventMeta(pass.event_id);
+    const meta = resolveEventMeta(pass);
     const timeline = classifyTimeline(meta.startsAt, meta.endsAt, now);
     const typeLabel = pass.pass_type ?? "";
 
@@ -124,6 +151,8 @@ export const buildWalletPasses = (
       eventName: meta.name,
       eventDateLabel: meta.dateLabel,
       eventLocation: meta.location,
+      walletPassStyle: meta.walletPassStyle,
+      walletPassColor: meta.walletPassColor,
       accentColor: getPassTypeAccent(pass.pass_type),
       timeline,
       startsAt: meta.startsAt,
