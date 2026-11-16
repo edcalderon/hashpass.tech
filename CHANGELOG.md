@@ -1,3 +1,20 @@
+## [1.9.226](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.225...v1.9.226) (2026-11-16)
+
+
+### Features
+
+* **wallet:** polish native PIN keypad ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([0115444](https://github.com/hashpass-tech/hashpass.tech/commit/0115444f79296d0bd0353aeca626bb8382e5acae))
+### Release Highlights
+- polish native PIN keypad (#622)
+
+### Release scope
+- Compared with: `v1.9.225` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Shared UI
+- Documentation
+
 ## [1.9.225](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.224...v1.9.225) (2026-11-16)
 
 

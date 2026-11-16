@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.225)
+## 📋 Latest Changes (v1.9.226)
 
-### Bug Fixes
+### Features
 
-* **mobile:** polish wallet and PIN mobile layout ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([a7dc4cb](https://github.com/hashpass-tech/hashpass.tech/commit/a7dc4cbaeaf2d9bf6edba111ec67cac54d70efee))
+* **wallet:** polish native PIN keypad ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([0115444](https://github.com/hashpass-tech/hashpass.tech/commit/0115444f79296d0bd0353aeca626bb8382e5acae))
 ### Release Highlights
-- polish wallet and PIN mobile layout (#622)
+- polish native PIN keypad (#622)
 
 ### Release scope
-- Compared with: `v1.9.224` (the previous global release tag)
+- Compared with: `v1.9.225` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Shared UI
+- Documentation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
