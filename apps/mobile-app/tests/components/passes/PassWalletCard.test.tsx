@@ -157,6 +157,10 @@ describe('PassWalletCard', () => {
   it('opens the QR modal, flips to the details side, and routes to full details', () => {
     const renderer = render(<PassWalletCard pass={pass} />);
 
+    const detailsLabel = renderer.root.findAllByType('Text')
+      .find((node: any) => node.props.children === 'Details');
+    expect(detailsLabel?.parent.findByType('MaterialIcons').props.name).toBe('flip');
+
     act(() => {
       pressText(renderer, 'QR Code');
     });

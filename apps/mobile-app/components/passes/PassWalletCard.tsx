@@ -501,7 +501,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleFlip}
         >
-          <MaterialIcons name="info" size={16} color={colors.primary} />
+          <MaterialIcons name="flip" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',

@@ -581,7 +581,7 @@ export default function NotificationsScreen() {
                 label={t('center.archive')}
                 labelNumberOfLines={1}
                 variant="ghost"
-                leadingIcon={<MaterialIcons name="archive" size={18} color={palette.muted} />}
+                leadingIcon={<MaterialIcons name="archive" size={18} color={palette.accent} />}
                 onPress={() => handleArchiveNotification(notification)}
                 style={styles.cardAction}
               />
