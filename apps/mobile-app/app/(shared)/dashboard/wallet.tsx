@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { SegmentedTabs } from '@hashpass/ui/primitives';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ActionButton, SegmentedTabs } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
 import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
@@ -9,17 +9,22 @@ import BlockchainTokensView from '../../../components/BlockchainTokensView';
 import HashPointsView from '../../../components/HashPointsView';
 import BlockchainTicketsView from '../../../components/BlockchainTicketsView';
 import WalletEnrollmentView from '../../../components/wallet/WalletEnrollmentView';
+import type { State as WalletEnrollmentState } from '../../../components/wallet/WalletEnrollmentView.types';
 import WalletVaultFlow from '../../../components/wallet/WalletVaultFlow';
 import { walletEnrollmentClient } from '../../../lib/wallet/enrollment-client';
 import type { WalletEnrollment } from '../../../lib/wallet/enrollment-types';
 import WalletHelpDrawer, { WalletHelpButton } from '../../../components/wallet/WalletHelpDrawer';
+import ContactsScreen from '../../../components/contacts/ContactsScreen';
+import AuthenticatorFlow from '../../../components/security/AuthenticatorFlow';
 import PinFlow from '../../../components/security/PinFlow';
 import { useAuth } from '../../../hooks/useAuth';
 import { useWalletGuard, WALLET_UNLOCK_SCOPE } from '../../../hooks/useWalletGuard';
 import type { ThemeColors } from '../../../lib/theme';
 import { uiTokens } from '@hashpass/ui/tokens';
+import DashboardNoticeCard from '../../../components/dashboard/DashboardNoticeCard';
+import { Ionicons } from '../../../lib/vector-icons';
 
-type Section = 'assets' | 'rewards' | 'passes';
+import type { WalletSection as Section } from '../../../types/authenticator.types';
 
 export default function WalletScreen() {
   // The guard must key on the registry id (dbUserId), the same identity the enrollment row's
@@ -28,7 +33,7 @@ export default function WalletScreen() {
   // registry id (rememberProof drops everything when the owner changes).
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const guard = useWalletGuard(authLoading ? null : dbUserId ?? null);
-  return <WalletGate guard={guard} signedIn={!!user} />;
+  return <WalletGate key={dbUserId ?? 'signed-out'} guard={guard} signedIn={!!user} />;
 }
 
 function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGuard>; signedIn: boolean }) {
@@ -36,9 +41,29 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
+  const [authenticatorEnabled, setAuthenticatorEnabled] = useState<boolean | null>(null);
+  const [enrollmentState, setEnrollmentState] = useState<WalletEnrollmentState>({ status: 'loading' });
+  const preflightGeneration = useRef(0);
+  useEffect(() => {
+    if (guard.phase === 'checking') {
+      preflightGeneration.current += 1;
+      setAuthenticatorEnabled(null);
+      setEnrollmentState({ status: 'loading' });
+      return;
+    }
+    if ((guard.phase !== 'locked' && guard.phase !== 'pin_setup') || !signedIn) return;
+    const current = ++preflightGeneration.current;
+    setEnrollmentState({ status: 'loading' });
+    void walletEnrollmentClient.load()
+      .then((row: WalletEnrollment) => { if (current === preflightGeneration.current) setEnrollmentState({ status: 'ready', row }); })
+      .catch((failure: unknown) => {
+        if (current === preflightGeneration.current) setEnrollmentState({ status: 'error',
+          reason: failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'not_enrolled' : 'unavailable' });
+      });
+  }, [guard.phase, signedIn]);
   // The email-code recovery must be reachable from the locked gate: both in-flow recovery
   // entry points sit inside WalletContent, which mounts only after a successful unlock.
-  const [recovery, setRecovery] = useState<'idle' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
+  const [recovery, setRecovery] = useState<'idle' | 'authenticator' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
   const [recoveryRow, setRecoveryRow] = useState<WalletEnrollment | null>(null);
   const startRecovery = useCallback(() => {
     setRecovery('loading');
@@ -49,18 +74,23 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
   }, []);
   const endRecovery = useCallback(() => setRecovery('idle'), []);
-  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} />;
+  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} enrollmentState={enrollmentState} />;
   const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
-      <Text accessibilityRole="header" style={styles.title}>{t('overview.title', 'Wallet')}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
     </View>
     {children}
   </ScrollView>;
   if (!signedIn) return shell(<Text style={styles.body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>);
-  if (guard.phase === 'checking') return shell(<Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>);
+  if (guard.phase === 'checking') {
+    return shell(<View accessibilityRole="progressbar" accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.transition}>
+      <ActivityIndicator color={colors.primary} />
+      <Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>
+    </View>);
+  }
   if (guard.phase === 'unavailable') return shell(<View style={styles.panel}>
     <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
     <Pressable accessibilityRole="button" onPress={guard.retry} style={styles.outlineButton}>
@@ -68,12 +98,12 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
   const settingUp = guard.phase === 'pin_setup';
   const body = settingUp
-    ? t('guard.pinSetupBody', 'Choose a 4-digit PIN. It is asked every time you open your wallet and before every sensitive action. HASHPASS cannot recover it for you.')
-    : t('guard.lockedBody', 'Enter your PIN to open your wallet.');
+    ? t('guard.unifiedSetupBody', 'Choose a 4-digit PIN. Authenticator setup is optional. We recommend an authenticator app for stronger security and wallet PIN recovery.')
+    : t('guard.unifiedLockedBody', 'Enter your PIN to open Wallet & Contacts. If you have not enrolled an authenticator, we recommend one for stronger security and PIN recovery.');
   return shell(<View style={styles.panel}>
-    <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.pinSetupTitle', 'Protect your wallet with a PIN') : t('guard.lockedTitle', 'Wallet locked')}</Text>
+    <Text accessibilityRole="header" style={styles.sectionTitle}>{settingUp ? t('guard.unifiedSetupTitle', 'Set up your PIN') : t('guard.unifiedLockedTitle', 'Wallet & Contacts locked')}</Text>
     <Text style={styles.body}>{body}</Text>
-    {recovery === 'active' && recoveryRow
+    {recovery === 'authenticator' ? <><AuthenticatorFlow scope="critical" onDone={startRecovery} onUnenrolled={startRecovery} /><ActionButton mode={isDark ? 'dark' : 'light'} variant="ghost" label={t('guard.backToPin', 'Back to PIN entry')} onPress={endRecovery} /></> : recovery === 'active' && recoveryRow
       ? // Recovery mounted before the unlock: only the email-code flow runs here, never the
         // wallet's home, so a locked-out person still has a way back in (see WalletVaultFlow).
         <WalletVaultFlow enrollment={recoveryRow} recoverOnly onChanged={endRecovery} onExit={endRecovery} />
@@ -93,11 +123,13 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
               </View>
             : <>
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
-                  intent={settingUp ? 'create' : 'unlock'} onDone={guard.onPinDone} />
+                  authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
+                  onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
+                  onDone={guard.onPinDone} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
                     person who cannot enter a PIN they never knew or no longer remember. */}
                 {!settingUp && <Pressable accessibilityRole="button" accessibilityLabel={t('guard.forgotPin', 'I forgot my PIN')}
-                  onPress={startRecovery} style={styles.outlineButton}>
+                  onPress={() => setRecovery('authenticator')} style={styles.outlineButton}>
                   <Text style={styles.buttonText}>{t('guard.forgotPin', 'I forgot my PIN')}</Text>
                 </Pressable>}
               </>
@@ -105,16 +137,23 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
 }
 
-function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] }) {
+function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
+  pin: ReturnType<typeof useWalletGuard>['pin'];
+  authenticatorEnabled: boolean | null;
+  enrollmentState: WalletEnrollmentState;
+}) {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors, isDark } = useTheme();
   const { topInset, bottomInset } = useDashboardPageLayout();
   const { t } = useTranslation('wallet');
-  const [section, setSection] = useState<Section>('assets');
+  const router = useRouter();
+  const [section, setSection] = useState<Section>(params.section === 'contacts' ? 'contacts' : 'assets');
   const [showSecurity, setShowSecurity] = useState(false);
+  const [showAuthenticatorReminder, setShowAuthenticatorReminder] = useState(true);
   const [helpOpen, setHelpOpen] = useState(false);
   const styles = getStyles(colors);
   const tabs: { id: Section; label: string }[] = [
+    { id: 'contacts', label: t('overview.contacts', 'Contacts') },
     { id: 'assets', label: t('overview.assets', 'Assets') },
     { id: 'rewards', label: t('overview.rewards', 'Rewards') },
     { id: 'passes', label: t('overview.passes', 'Event passes') },
@@ -122,17 +161,17 @@ function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] 
   const inviteCode = typeof params.inviteCode === 'string' ? params.inviteCode : undefined;
 
   useEffect(() => {
-    if (params.section === 'passes') setSection('passes');
+    if (params.section === 'passes' || params.section === 'contacts') setSection(params.section);
   }, [params.section]);
 
   return <View style={styles.page}>
-    <ScrollView contentContainerStyle={[
+    <ScrollView style={section === 'contacts' ? { flexGrow: 0, flexShrink: 0 } : undefined} contentContainerStyle={[
       styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
     ]}>
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
-      <Text accessibilityRole="header" style={styles.title}>{t('overview.title', 'Wallet')}</Text>
-      <Text style={styles.body}>{t('overview.subtitle', 'Your assets, rewards and event passes. One place, clear ownership.')}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
+      <Text style={styles.body}>{t('overview.unifiedSubtitle', 'Your contacts, assets, rewards and event passes. A PIN protects wallet access; an authenticator adds another step when enabled.')}</Text>
     </View>
     <SegmentedTabs
       mode={isDark ? 'dark' : 'light'}
@@ -146,7 +185,7 @@ function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] 
     {section === 'assets' && <View style={styles.stack}>
       {/* Balance, send/receive, status and the PIN-protected vault flow all live in this
           one card (WalletEnrollmentView) — one unified section, not two stacked panels. */}
-      <WalletEnrollmentView pin={pin} />
+      <WalletEnrollmentView key={enrollmentState.status} pin={pin} initialState={enrollmentState} />
       <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>{t('overview.activity', 'Recent activity')}</Text>
         <View style={styles.transactionEmpty}>
@@ -188,18 +227,52 @@ function WalletContent({ pin }: { pin: ReturnType<typeof useWalletGuard>['pin'] 
       <BlockchainTicketsView businessInviteCode={inviteCode} />
     </View>}
     </ScrollView>
+    {authenticatorEnabled === false && showAuthenticatorReminder ? (
+      <DashboardNoticeCard
+        mode={isDark ? 'dark' : 'light'}
+        style={[styles.authenticatorReminder, { bottom: bottomInset + 16 }]}
+        onDismiss={() => setShowAuthenticatorReminder(false)}
+        dismissLabel={t('guard.dismissAuthenticatorReminder', 'Dismiss authenticator reminder')}
+        testID="authenticator-reminder"
+      >
+        <View style={styles.reminderContent}>
+          <View style={styles.reminderIcon}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text accessibilityRole="header" style={styles.reminderTitle}>
+              {t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}
+            </Text>
+            <Text style={styles.reminderBody}>
+              {t('guard.authenticatorRecommendedBody', 'PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.')}
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t('guard.authenticatorSetupCta', 'Set up two-step verification')}
+              onPress={() => router.push('/dashboard/profile-settings?shortcut=authenticator' as any)}
+              style={styles.reminderLink}
+            >
+              <Text style={styles.reminderLinkText}>{t('guard.authenticatorSetupCta', 'Set up two-step verification')}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
+        </View>
+      </DashboardNoticeCard>
+    ) : null}
+    {section === 'contacts' && <ContactsScreen />}
     <WalletHelpButton onPress={() => setHelpOpen(true)} />
     <WalletHelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
   </View>;
 }
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.background.default },
+  page: { flex: 1, backgroundColor: colors.background.default, position: 'relative' },
   content: { width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 24 },
   heading: { gap: 8 },
   eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
   title: { color: colors.text.primary, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
+  transition: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 44 },
   stack: { gap: 20 },
   securityHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   securityHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
@@ -212,6 +285,29 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   security: { gap: 20, paddingTop: 8 },
   securityStep: { gap: 5 },
   panel: { padding: 24, borderWidth: 1, borderColor: colors.divider, borderRadius: 20, gap: 12 },
+  authenticatorReminder: {
+    position: 'absolute',
+    left: DASHBOARD_PAGE_SIDE_PADDING,
+    right: DASHBOARD_PAGE_SIDE_PADDING,
+    alignSelf: 'center',
+    maxWidth: 520,
+    elevation: 8,
+    zIndex: 20,
+  },
+  reminderContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  reminderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: uiTokens.radius.circle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.default,
+  },
+  reminderCopy: { flex: 1, gap: 4 },
+  reminderTitle: { color: colors.text.primary, fontSize: 14, fontWeight: '700' },
+  reminderBody: { color: colors.text.secondary, fontSize: 13, lineHeight: 19 },
+  reminderLink: { minHeight: 40, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4 },
+  reminderLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   sectionTitle: { color: colors.text.primary, fontSize: 16, fontWeight: '600' },
   transactionEmpty: { gap: 12, alignItems: 'center', paddingVertical: 18, borderTopWidth: 1, borderColor: colors.divider, marginTop: 4 },
   transactionIcon: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },

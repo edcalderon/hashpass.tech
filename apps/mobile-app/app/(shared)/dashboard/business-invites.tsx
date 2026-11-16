@@ -10,7 +10,7 @@ import {
 import { ActionButton, ModalBackdrop, Surface } from "@hashpass/ui/primitives";
 import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import { apiClient } from "../../../lib/api-client";
-import { DASHBOARD_PAGE_MAX_WIDTH, useDashboardPageLayout } from "../../../hooks/useDashboardPageLayout";
+import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from "../../../hooks/useDashboardPageLayout";
 import { useTheme } from "../../../hooks/useTheme";
 import { useTranslation } from "../../../i18n/i18n";
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: DASHBOARD_PAGE_MAX_WIDTH,
     alignSelf: "center",
-    paddingHorizontal: uiTokens.space.lg,
+    paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
     gap: uiTokens.space.xl,
   },
   heading: { gap: uiTokens.space.sm },

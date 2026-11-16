@@ -2,7 +2,7 @@ import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { Pressable, ScrollView, Text, TextInput } from 'react-native';
 import { ActionButton, Badge, FilterChip, FormField, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
-import { uiPalette } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 it('exposes loading and selected states while preserving accessible names', () => {
   let view: ReturnType<typeof create>;
   act(() => { view = create(<><ActionButton label="Save" loading /><FilterChip label="Upcoming" selected /><Badge>Featured</Badge></>); });
@@ -46,6 +46,28 @@ it('keeps scrollable tabs on one line and exposes horizontal scrolling', () => {
     const style = Array.isArray(tabStyle) ? tabStyle.flat(Infinity) : [tabStyle];
     return style.some((entry: { flexShrink?: number }) => entry?.flexShrink === 0);
   })).toBe(true);
+  act(() => view!.unmount());
+});
+it('keeps compact tabs at the shared touch height while reducing horizontal padding', () => {
+  let view: ReturnType<typeof create>;
+  act(() => {
+    view = create(
+      <SegmentedTabs
+        scrollable
+        compact
+        value="all"
+        onChange={() => undefined}
+        tabs={[{ id: 'all', label: 'All' }, { id: 'messages', label: 'Messages' }]}
+      />,
+    );
+  });
+  const tab = view!.root.findAll(node => node.props.accessibilityRole === 'tab')[0];
+  const tabStyle = typeof tab.props.style === 'function'
+    ? tab.props.style({ pressed: false })
+    : tab.props.style;
+  const styles = Array.isArray(tabStyle) ? tabStyle.flat(Infinity) : [tabStyle];
+  expect(styles).toContainEqual(expect.objectContaining({ minHeight: uiTokens.control.compactHeight }));
+  expect(styles).toContainEqual(expect.objectContaining({ paddingHorizontal: 6 }));
   act(() => view!.unmount());
 });
 it('supports a trailing action icon without changing the button name', () => {

@@ -10,6 +10,7 @@ import {
   ArrowUp,
   ArrowUpRight,
   ArrowDownLeft,
+  Archive,
   Diamond,
   Download,
   EllipsisVertical,
@@ -21,6 +22,7 @@ import {
   Bot,
   Bitcoin,
   BookOpen,
+  Briefcase,
   Building2,
   Cog,
   CalendarDays,
@@ -52,6 +54,7 @@ import {
   ExternalLink,
   FilterX,
   Fingerprint,
+  FileText,
   Globe,
   Grid3x3,
   History,
@@ -162,6 +165,7 @@ export type NativeSafeIconName =
   | "arrow-left"
   | "arrow-right"
   | "refresh"
+  | "close"
   | "event"
   | "map-pin"
   | "mic"
@@ -194,6 +198,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "arrow-left": ArrowLeft,
   "arrow-right": ArrowRight,
   refresh: RefreshCw,
+  close: X,
   event: CalendarDays,
   "map-pin": MapPin,
   mic: Mic,
@@ -262,11 +267,13 @@ function GoogleIcon({
   );
 }
 
-const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
+export const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   // Keep every Material icon used by web/native shared screens mapped here;
   // unmapped names intentionally fall back to CircleHelp, so add new names
   // before using them in UI copy or controls.
   add: Plus,
+  archive: Archive,
+  "archive-outline": Archive,
   "add-circle-outline": CirclePlus,
   "remove-circle-outline": CircleMinus,
   "more-vert": EllipsisVertical,
@@ -325,6 +332,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   "content-copy": Copy,
   "confirmation-number": Ticket,
   dashboard: LayoutDashboard,
+  description: FileText,
   delete: Trash2,
   diamond: Diamond,
   "delete-outline": Trash2,
@@ -340,6 +348,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   view_carousel: LayoutDashboard,
   explore: Compass,
   favorite: Star,
+  "work-outline": Briefcase,
   "filter-list": SlidersHorizontal,
   "flash-on": Zap,
   flip: RotateCw,
@@ -483,12 +492,14 @@ function WebIonicons({ name, ...props }: IconProps) {
 }
 
 // Keep web rendering off the Expo font path so the browser never requests TTF assets.
-const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
+export const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   "alert-circle": "error-outline",
   "alert-circle-outline": "error-outline",
   "arrow-back": "arrow-back",
   "arrow-up": "arrow-upward",
   "book-outline": "book",
+  "briefcase-outline": "work-outline",
+  "business-outline": "business",
   "calendar-outline": "calendar-today",
   "call-outline": "call",
   "camera-outline": "camera-alt",
@@ -496,6 +507,7 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   checkbox: "check-box",
   "checkbox-outline": "check-box-outline-blank",
   "chevron-down": "keyboard-arrow-down",
+  "chevron-up": "keyboard-arrow-up",
   "chevron-forward": "chevron-right",
   close: "close",
   "close-circle": "cancel",
@@ -512,6 +524,7 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   "log-out-outline": "logout",
   "mail-open-outline": "drafts",
   "mail-outline": "email",
+  "mic-outline": "mic",
   menu: "menu",
   moon: "moon",
   "moon-outline": "moon",

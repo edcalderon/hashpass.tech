@@ -1,3 +1,4 @@
+import { securityRequest } from '../security-request';
 const mockIdentity = jest.fn();
 const mockRpc = jest.fn();
 const mockFrom = jest.fn();
@@ -52,7 +53,7 @@ afterAll(() => {
 
 describe('vault route proof scopes', () => {
   it('reads with an unlock proof and hands back the deterministic server share', async () => {
-    const response = await GET(new Request('https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:unlock') } }));
+    const response = await GET(securityRequest(owner, 'https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:unlock') } }));
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.walletId).toBe(walletId);
@@ -61,17 +62,17 @@ describe('vault route proof scopes', () => {
     expect(response.headers.get('Cache-Control')).toContain('no-store');
   });
   it('reads with a recovery proof so a reset flow can re-wrap the vault', async () => {
-    const response = await GET(new Request('https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:recover') } }));
+    const response = await GET(securityRequest(owner, 'https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:recover') } }));
     expect(response.status).toBe(200);
   });
   it('rejects reads with no proof, a signing proof, or another user proof', async () => {
     for (const header of [undefined, proof('wallet:sign'), proof('wallet:unlock', '00000000-0000-4000-8000-000000000002')]) {
-      const response = await GET(new Request('https://localhost/api/wallet/vault', header ? { headers: { [STEP_UP_HEADER]: header } } : undefined));
+      const response = await GET(securityRequest(owner, 'https://localhost/api/wallet/vault', header ? { headers: { [STEP_UP_HEADER]: header } } : undefined));
       expect(response.status).toBe(403);
     }
   });
   it('creates only with an unlock proof, never with a recovery proof', async () => {
-    const request = (p: string) => new Request('https://localhost/api/wallet/vault', {
+    const request = (p: string) => securityRequest(owner, 'https://localhost/api/wallet/vault', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...bearer, [STEP_UP_HEADER]: p }, body: JSON.stringify({ walletId, envelope, expectedVersion: 0 }),
     });
     expect((await POST(request(proof('wallet:unlock')))).status).toBe(200);
@@ -79,7 +80,7 @@ describe('vault route proof scopes', () => {
     expect((await POST(request(proof('wallet:sign')))).status).toBe(403);
   });
   it('replaces with a sign proof or a recovery proof, but not an unlock proof', async () => {
-    const request = (p: string) => new Request('https://localhost/api/wallet/vault', {
+    const request = (p: string) => securityRequest(owner, 'https://localhost/api/wallet/vault', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...bearer, [STEP_UP_HEADER]: p }, body: JSON.stringify({ walletId, envelope, expectedVersion: 1 }),
     });
     expect((await POST(request(proof('wallet:sign')))).status).toBe(200);
@@ -87,7 +88,7 @@ describe('vault route proof scopes', () => {
     expect((await POST(request(proof('wallet:unlock')))).status).toBe(403);
   });
   it('requires a bearer token for writes, ignoring ambient cookies', async () => {
-    const response = await POST(new Request('https://localhost/api/wallet/vault', {
+    const response = await POST(securityRequest(owner, 'https://localhost/api/wallet/vault', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: 'session=abc', [STEP_UP_HEADER]: proof('wallet:unlock') },
       body: JSON.stringify({ walletId, envelope, expectedVersion: 0 }),
     }));
@@ -96,10 +97,10 @@ describe('vault route proof scopes', () => {
   });
   it('maps a save conflict to 409 and stays development-only', async () => {
     mockEnvironment = 'production';
-    expect((await GET(new Request('https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:unlock') } }))).status).toBe(503);
+    expect((await GET(securityRequest(owner, 'https://localhost/api/wallet/vault', { headers: { [STEP_UP_HEADER]: proof('wallet:unlock') } }))).status).toBe(503);
     mockEnvironment = 'development';
     mockRpc.mockResolvedValue({ data: null, error: { code: '23514' } });
-    const response = await POST(new Request('https://localhost/api/wallet/vault', {
+    const response = await POST(securityRequest(owner, 'https://localhost/api/wallet/vault', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...bearer, [STEP_UP_HEADER]: proof('wallet:sign') },
       body: JSON.stringify({ walletId, envelope, expectedVersion: 1 }),
     }));

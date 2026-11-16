@@ -1,12 +1,15 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Switch, Text, TouchableOpacity } from 'react-native';
+import { Modal, Switch, Text, TouchableOpacity } from 'react-native';
 
 const mockPush = jest.fn();
 const mockToggleTheme = jest.fn();
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
-const mockAuth = { user: null as null | { id: string; email?: string }, signOut: jest.fn() };
+const mockAuth = { user: null as null | { id: string; email?: string }, dbUserId: 'db-u1' as string | null, signOut: jest.fn() };
+const mockAuthenticatorStatus = jest.fn();
+const mockPinLock = jest.fn();
+const mockClearPinProblem = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }) }));
 jest.mock('expo-haptics', () => ({
@@ -55,6 +58,12 @@ jest.mock('../../hooks/useTutorialPreferences', () => ({
 jest.mock('../../hooks/useAuth', () => {
   return { useAuth: () => mockAuth };
 });
+jest.mock('../../hooks/usePin', () => ({
+  usePin: () => ({ lock: mockPinLock, clearProblem: mockClearPinProblem }),
+}));
+jest.mock('../../lib/authenticator-client', () => ({
+  authenticatorStatus: () => mockAuthenticatorStatus(),
+}));
 jest.mock('../../lib/api-client', () => ({
   apiClient: {
     get: (...args: unknown[]) => mockApiGet(...args),
@@ -65,6 +74,7 @@ jest.mock('../../lib/api-client', () => ({
 jest.mock('../../lib/hashpass-web-url', () => ({ getHashpassWebOrigin: () => 'https://hashpass.test' }));
 jest.mock('../../lib/event-path', () => ({ buildEventPath: () => '/events/x' }));
 jest.mock('../../components/VersionDetailsModal', () => 'VersionDetailsModal');
+jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 jest.mock('../../lib/native-google-signin', () => ({ clearNativeGoogleAccount: jest.fn() }));
 jest.mock('../../lib/native-google-signin-config', () => ({ shouldUseNativeGoogleSignin: () => false }));
 jest.mock('../../lib/auth/oauth/google-credentials', () => ({ resolveGoogleOAuthClientId: () => undefined }));
@@ -78,6 +88,10 @@ import Settings from '../../app/(shared)/dashboard/settings';
 describe('Settings screen', () => {
   beforeEach(() => {
     mockAuth.user = { id: 'u1', email: 'a@b.c' };
+    mockAuth.dbUserId = 'db-u1';
+    mockAuthenticatorStatus.mockReset().mockResolvedValue({ enabled: false });
+    mockPinLock.mockReset();
+    mockClearPinProblem.mockReset();
     mockApiGet.mockReset().mockImplementation(async (path: string) => path === '/marketing/preferences'
       ? { success: true, data: { success: true, subscribed: false, partnerSubscribed: false } }
       : { success: true, data: { success: true, data: { phones: [] } } });
@@ -104,6 +118,50 @@ describe('Settings screen', () => {
     expect(mockToggleTheme).toHaveBeenCalled();
     const rows = view.root.findAllByType(TouchableOpacity);
     expect(rows.length).toBeGreaterThan(5);
+    act(() => view.unmount());
+  });
+
+  it('offers optional authenticator setup from Settings without gating the Settings view', async () => {
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings embedded />); });
+
+    const securityRow = view.root.findAllByType(TouchableOpacity).find((row) =>
+      row.findAllByType(Text).some((node) => [node.props.children].flat().join('') === 'Two-step verification'),
+    );
+    expect(securityRow).toBeTruthy();
+    expect(securityRow!.findAllByType(Text).map((node) => [node.props.children].flat().join('')))
+      .toContain('Optional · PIN-only access works. Set up an authenticator app for stronger security; email confirms setup.');
+
+    await act(async () => { securityRow!.props.onPress(); });
+    const setupModal = view.root.findAllByType(Modal).find((node) => node.props.visible);
+    expect(setupModal).toBeTruthy();
+    const pinFlow = view.root.findByType('PinFlow' as never);
+    expect(pinFlow.props.scope).toBe('wallet:unlock');
+    expect(pinFlow.props.intent).toBe('unlock');
+
+    await act(async () => { pinFlow.props.onCancel(); });
+    expect(mockPinLock).toHaveBeenCalledWith('wallet:unlock');
+    expect(mockAuthenticatorStatus).toHaveBeenCalledTimes(2);
+    act(() => view.unmount());
+  });
+
+  it('opens quick Settings shortcuts in the existing security, delete and about flows', async () => {
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<Settings embedded initialSettingsShortcut="about" />); });
+    expect(view.root.findByType('VersionDetailsModal' as never).props.visible).toBe(true);
+    act(() => view.unmount());
+
+    await act(async () => { view = create(<Settings embedded initialSettingsShortcut="delete-account" />); });
+    expect(JSON.stringify(view.toJSON())).toContain('This action is permanent and cannot be undone');
+    act(() => view.unmount());
+
+    await act(async () => {
+      view = create(<Settings embedded initialSettingsShortcut="authenticator" />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(view.root.findByType('PinFlow' as never).props.scope).toBe('wallet:unlock');
+    expect(view.root.findAllByType(Modal).some((node) => node.props.visible)).toBe(true);
     act(() => view.unmount());
   });
 

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
-import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import { DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useAuth } from '../../../hooks/useAuth';
 import { passSystemService, PassInfo } from '../../../lib/pass-system';
 import { EVENTS } from '../../../config/events';
@@ -368,7 +368,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: colors.background.default,
     },
     content: {
-      padding: 20,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
+      paddingTop: 20,
       paddingBottom: 40,
     },
     loadingContainer: {

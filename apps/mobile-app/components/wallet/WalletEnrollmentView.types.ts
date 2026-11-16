@@ -1,4 +1,5 @@
 import type { WalletEnrollment } from '../../lib/wallet/enrollment-types';
+import type { UsePin } from '../../hooks/usePin';
 
 export type WalletChain = 'ethereum' | 'bitcoin' | 'solana';
 export type WalletNetwork = 'mainnet' | 'testnet';
@@ -7,11 +8,11 @@ export type PesoCurrency = 'ARS' | 'CLP' | 'COP' | 'CUP' | 'DOP' | 'MXN' | 'UYU'
 export type BalanceCurrency = 'USD' | PesoCurrency;
 export type BalanceDisplayMode = 'USD' | 'PESO';
 
-export const PESO_CURRENCY_OPTIONS: ReadonlyArray<{
+export const PESO_CURRENCY_OPTIONS: readonly {
   code: PesoCurrency;
   label: string;
   symbol: string;
-}> = [
+}[] = [
   { code: 'LKS', label: '$LKS · LatAm index', symbol: '$LKS' },
   { code: 'ARS', label: 'Argentine peso', symbol: 'ARS' },
   { code: 'CLP', label: 'Chilean peso', symbol: 'CLP' },
@@ -36,3 +37,9 @@ export type State =
   | { status: 'loading' }
   | { status: 'error'; reason: 'unavailable' | 'not_enrolled' }
   | { status: 'ready'; row: WalletEnrollment };
+
+export interface WalletEnrollmentViewProps {
+  pin?: UsePin;
+  /** A wallet status already fetched by the unlock gate, so opening the wallet does not show a second loading state. */
+  initialState?: State;
+}

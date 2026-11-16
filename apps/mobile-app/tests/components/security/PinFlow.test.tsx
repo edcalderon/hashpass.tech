@@ -6,12 +6,14 @@ import type { UsePin } from '../../../hooks/usePin';
 
 jest.mock('../../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 let mockPad: any;
+let mockAuthenticator: any;
+jest.mock('../../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: (props: any) => { mockAuthenticator = props; return null; } }));
 jest.mock('../../../components/security/PinPad', () => ({ __esModule: true, default: (props: any) => { mockPad = props; return null; } }));
 
 const makePin = (overrides: Partial<UsePin> = {}): UsePin => ({
   busy: false, problem: null, isUnlocked: jest.fn(() => false), setPin: jest.fn(async () => true),
   setPinDetailed: jest.fn(async () => 'changed' as const), unlock: jest.fn(async () => true),
-  proofFor: jest.fn(() => null), lock: jest.fn(), clearProblem: jest.fn(), ...overrides,
+  proofFor: jest.fn(() => 'pin-proof'), lock: jest.fn(), clearProblem: jest.fn(), ...overrides,
 });
 async function mount(pin: UsePin, intent: 'create' | 'unlock', onDone = jest.fn(), onCancel?: () => void) {
   let view!: ReactTestRenderer;
@@ -29,7 +31,29 @@ describe('PinFlow', () => {
     expect(pin.unlock).toHaveBeenCalledWith('1234', 'wallet:sign');
     expect(onDone).not.toHaveBeenCalled();
     await enter('1234');
+    expect(onDone).not.toHaveBeenCalled();
+    expect(mockAuthenticator.scope).toBe('critical');
+    await act(async () => mockAuthenticator.onDone());
     expect(onDone).toHaveBeenCalledTimes(1);
+    act(() => view.unmount());
+  });
+
+  it('continues straight to wallet access when the server confirms no authenticator is enrolled', async () => {
+    const pin = makePin();
+    const onDone = jest.fn();
+    const onAuthenticatorComplete = jest.fn();
+    let view!: ReactTestRenderer;
+    await act(async () => {
+      view = create(<PinFlow mode="light" pin={pin} scope="wallet:unlock" intent="unlock"
+        onDone={onDone} onAuthenticatorComplete={onAuthenticatorComplete} />);
+    });
+    await enter('1234');
+
+    expect(mockAuthenticator.onUnenrolled).toEqual(expect.any(Function));
+    await act(async () => { mockAuthenticator.onUnenrolled(); });
+
+    expect(onAuthenticatorComplete).toHaveBeenCalledWith('pin');
+    expect(onDone).toHaveBeenCalledWith('1234');
     act(() => view.unmount());
   });
 
@@ -43,6 +67,9 @@ describe('PinFlow', () => {
     await enter('4321');
     expect(pin.setPin).toHaveBeenCalledWith('4321');
     expect(pin.unlock).toHaveBeenCalledWith('4321', 'wallet:sign');
+    expect(onDone).not.toHaveBeenCalled();
+    expect(mockAuthenticator.scope).toBe('critical');
+    await act(async () => mockAuthenticator.onDone());
     expect(onDone).toHaveBeenCalledTimes(1);
     act(() => view.unmount());
   });

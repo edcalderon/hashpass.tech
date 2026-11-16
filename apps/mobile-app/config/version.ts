@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611130246, // Updated to current timestamp
-  releaseDate: '2026-11-13',
+  buildNumber: 202611152148, // Updated to current timestamp
+  releaseDate: '2026-11-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'make authenticator optional and merge profile settings',
+    'protect Wallet and Contacts with authenticator verification'
   ],
   bugfixes: [
-    'run core dumps every 3 hours and add a daily all-clear email'
+    'preserve authenticator handoffs and contact drafts'
   ],
   breakingChanges: [],
-  notes: 'run core dumps every 3 hours and add a daily all-clear email'
+  notes: 'make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.224': {
+    version: '1.9.224',
+    buildNumber: 202611152148,
+    releaseDate: '2026-11-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'make authenticator optional and merge profile settings',
+      'protect Wallet and Contacts with authenticator verification'
+    ],
+    bugfixes: [
+      'preserve authenticator handoffs and contact drafts'
+    ],
+    breakingChanges: [],
+    notes: 'make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts'
+  },
   '1.9.223': {
     version: '1.9.223',
     buildNumber: 202611130246,

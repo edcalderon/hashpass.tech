@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import { resolveActiveEventId } from "./event-path";
 import { apiClient } from "./api-client";
+import type { WalletPassStyle } from "@hashpass/types";
 
 type PassApiResponse<T> =
   | { success: true; data: T }
@@ -141,6 +142,15 @@ export interface PassInfo {
   // known (getUserPassInfo, getUserPassesForEvents); the counts-only fallback
   // keeps the caller's resolved event scope even without a pass row.
   event_id?: string;
+  /** Event catalog fields returned by the authenticated pass API. */
+  event_name?: string;
+  event_date_label?: string;
+  event_location?: string;
+  event_starts_at?: string | null;
+  event_ends_at?: string | null;
+  event_time_zone?: string | null;
+  wallet_pass_style?: WalletPassStyle;
+  wallet_pass_color?: string;
 }
 
 export interface EventPassInfo extends PassInfo {

@@ -19,6 +19,7 @@ import {
   resolveExplorerIconName,
   sortExplorerEvents,
   type ExplorerEvent,
+  type ExplorerHeroSlide,
 } from "../../components/explorer/explorer";
 import { getEventQuickAccessItems } from "../../lib/event-detector";
 
@@ -147,7 +148,7 @@ describe("explorer rework behavior", () => {
         { id: "colombia2026", title: "BSL Colombia", tourHubEventId: "bsl" },
         { id: "hash-poker", title: "Hash Poker" },
         { id: "cbweek2026", title: "CBWeek" },
-      ]).map((slide) => slide.id),
+      ]).map((slide: ExplorerHeroSlide) => slide.id),
     ).toEqual([
       "hashpass-partners-discovery",
       "bsl-default",
@@ -176,7 +177,7 @@ describe("explorer rework behavior", () => {
       Date.parse("2026-09-29T12:00:00Z"),
     );
 
-    expect(slides.map((slide) => slide.eventId)).toEqual([
+    expect(slides.map((slide: ExplorerHeroSlide) => slide.eventId)).toEqual([
       undefined,
       "colombia2026",
       undefined,
@@ -308,15 +309,21 @@ describe("explorer rework behavior", () => {
     ).toBe("#121212");
   });
 
+  it("resolves the drawer calendar and information icons to platform-safe glyphs", () => {
+    expect(resolveExplorerIconName("event")).toBe("event");
+    expect(resolveExplorerIconName("info")).toBe("info");
+    expect(resolveExplorerIconName("arrow-back")).toBe("arrow-left");
+  });
+
   it("searches across event titles, locations, and dates without mutating the source list", () => {
     const result = filterExplorerEvents(events, { query: "santiago" });
 
-    expect(result.map((event) => event.id)).toEqual(["chile2026"]);
+    expect(result.map((event: ExplorerEvent) => event.id)).toEqual(["chile2026"]);
     expect(events).toHaveLength(3);
   });
 
   it("can hide archived events while keeping the default catalog complete", () => {
-    expect(filterExplorerEvents(events, {}).map((event) => event.id)).toEqual([
+    expect(filterExplorerEvents(events, {}).map((event: ExplorerEvent) => event.id)).toEqual([
       "peru2026",
       "chile2026",
       "bsl2025",
@@ -326,7 +333,7 @@ describe("explorer rework behavior", () => {
         events,
         { includePast: false },
         Date.parse("2026-08-12T12:00:00Z"),
-      ).map((event) => event.id),
+      ).map((event: ExplorerEvent) => event.id),
     ).toEqual([]);
   });
 
@@ -371,12 +378,12 @@ describe("explorer rework behavior", () => {
     }));
 
     expect(getExplorerPageCount(catalog.length)).toBe(4);
-    expect(getExplorerPageEvents(catalog, 1).map((event) => event.id)).toEqual([
+    expect(getExplorerPageEvents(catalog, 1).map((event: { id: string }) => event.id)).toEqual([
       "3",
       "4",
       "5",
     ]);
-    expect(getExplorerPageEvents(catalog, 99).map((event) => event.id)).toEqual(
+    expect(getExplorerPageEvents(catalog, 99).map((event: { id: string }) => event.id)).toEqual(
       ["9", "10"],
     );
   });
@@ -397,7 +404,7 @@ describe("explorer rework behavior", () => {
         ["bsl2025"],
         "date",
         Date.parse("2026-01-01T12:00:00Z"),
-      ).map((event) => event.id),
+      ).map((event: ExplorerEvent) => event.id),
     ).toEqual(["peru2026", "chile2026", "bsl2025"]);
   });
 

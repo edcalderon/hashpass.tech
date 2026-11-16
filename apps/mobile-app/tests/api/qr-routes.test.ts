@@ -283,6 +283,72 @@ describe("POST /api/qr/validate", () => {
       expect((await preview({ status: "active", expires_at: null, usage_count: 0, max_uses: 1 })).body.data.valid).toBe(true);
     });
 
+    it("rejects an active pass QR after its backend event has ended", async () => {
+      mockFrom
+        .mockReturnValueOnce(chain({
+          data: {
+            qr_type: "pass", pass_id: "pass-1", status: "active", expires_at: future,
+            usage_count: 0, max_uses: 1,
+          },
+        }))
+        .mockReturnValueOnce(chain({ data: { status: "active", event_id: "event-1" } }))
+        .mockReturnValueOnce(chain({ data: { ends_at: past } }));
+
+      const res = await POST({ token: "t", consume: false });
+      expect(await res.json()).toMatchObject({
+        data: { valid: false, status: "expired", message: "Pass event has ended" },
+      });
+      expect(mockFrom).toHaveBeenNthCalledWith(2, "passes");
+      expect(mockFrom).toHaveBeenNthCalledWith(3, "events");
+    });
+
+    it("rejects an active pass QR when its pass is no longer active", async () => {
+      mockFrom
+        .mockReturnValueOnce(chain({
+          data: {
+            qr_type: "pass", pass_id: "pass-1", status: "active", expires_at: future,
+            usage_count: 0, max_uses: 1,
+          },
+        }))
+        .mockReturnValueOnce(chain({ data: { status: "expired", event_id: "event-1" } }));
+
+      const res = await POST({ token: "t", consume: false });
+      expect(await res.json()).toMatchObject({
+        data: { valid: false, status: "expired", message: "Pass is expired" },
+      });
+      expect(mockFrom).toHaveBeenNthCalledWith(2, "passes");
+    });
+
+    it("rejects an active pass QR when its event record is missing", async () => {
+      mockFrom
+        .mockReturnValueOnce(chain({
+          data: {
+            qr_type: "pass", pass_id: "pass-1", status: "active", expires_at: future,
+            usage_count: 0, max_uses: 1,
+          },
+        }))
+        .mockReturnValueOnce(chain({ data: { status: "active", event_id: "missing-event" } }))
+        .mockReturnValueOnce(chain({ data: null }));
+
+      const res = await POST({ token: "t", consume: false });
+      expect(await res.json()).toMatchObject({
+        data: { valid: false, status: "invalid", message: "Pass event not found" },
+      });
+    });
+
+    it("fails closed if pass validity cannot be confirmed", async () => {
+      mockFrom
+        .mockReturnValueOnce(chain({
+          data: {
+            qr_type: "pass", pass_id: "pass-1", status: "active", expires_at: future,
+            usage_count: 0, max_uses: 1,
+          },
+        }))
+        .mockReturnValueOnce(chain({ data: null, error: { message: "pass lookup failed" } }));
+
+      expect((await POST({ token: "t", consume: false })).status).toBe(503);
+    });
+
     it("classifies expired, exhausted, used and other statuses", async () => {
       expect((await preview({ status: "active", expires_at: past, usage_count: 0, max_uses: 1 })).body.data)
         .toMatchObject({ valid: false, status: "expired" });

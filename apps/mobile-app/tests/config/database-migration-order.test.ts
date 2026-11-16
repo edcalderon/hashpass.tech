@@ -30,6 +30,26 @@ describe("CBWeek migration plans", () => {
     },
   );
 
+  it.each(["core-development", "core-production"])(
+    "includes wallet authenticator and email setup migrations in %s",
+    (profile) => {
+      const groupNames = [
+        ...migrationConfig.defaultGroups,
+        ...(migrationConfig.profileGroups[profile] ?? []),
+      ];
+      const migrations = groupNames.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+
+      expect(migrations).toContain("db/migrations/V175__authenticator_security.sql");
+      expect(migrations).toContain("db/migrations/V176__wallet_email_two_factor.sql");
+    },
+  );
+
+  it("keeps the companion email confirmation purpose when extending OTP purposes", () => {
+    const migration = readFileSync(path.join(root, "db/migrations/V176__wallet_email_two_factor.sql"), "utf8");
+    expect(migration).toContain("'companion-email-confirm'");
+    expect(migration).toContain("'wallet-authenticator-setup'");
+  });
+
   it("ships the support schema through every default tenant migration plan", () => {
     for (const profile of ["core-development", "core-production", "bsl-development"]) {
       const plan = execFileSync(process.execPath, [

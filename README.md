@@ -20,22 +20,28 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.223)
+## 📋 Latest Changes (v1.9.224)
 
 ### Bug Fixes
 
-* **backup:** run core dumps every 3 hours and add a daily all-clear email ([3c64bf2](https://github.com/hashpass-tech/hashpass.tech/commit/3c64bf20ce1e116472c37f5256d01fa686f75844))
+* **security:** preserve authenticator handoffs and contact drafts ([8ebda46](https://github.com/hashpass-tech/hashpass.tech/commit/8ebda4678202ab618fdcd4acf3bbd70fbfd6f254))
+
+
+### Features
+
+* make authenticator optional and merge profile settings ([9cb2a70](https://github.com/hashpass-tech/hashpass.tech/commit/9cb2a706b4ef8b55a2c3e8e01cb0233bd17b146c))
+* **security:** protect Wallet and Contacts with authenticator verification ([bd75621](https://github.com/hashpass-tech/hashpass.tech/commit/bd75621229081343a6eb123ba1590a2146992252)), closes [#616](https://github.com/hashpass-tech/hashpass.tech/issues/616)
 ### Release Highlights
-- run core dumps every 3 hours and add a daily all-clear email
+- make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts
 
 ### Release scope
-- Compared with: `v1.9.222` (the previous global release tag)
+- Compared with: `v1.9.223` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
+- Database migrations
 - Infrastructure
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

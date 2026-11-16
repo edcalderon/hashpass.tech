@@ -1,4 +1,4 @@
-import { uiTokens } from "@hashpass/ui/tokens";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
 import React, {
   useCallback,
   useEffect,
@@ -27,8 +27,14 @@ import {
   Badge,
   HoverText,
   IconButton,
+  SearchField,
   SegmentedTabs,
 } from "@hashpass/ui/primitives";
+import {
+  DASHBOARD_PAGE_MAX_WIDTH,
+  DASHBOARD_PAGE_SIDE_PADDING,
+  DASHBOARD_PAGE_TOP_GAP,
+} from "../../hooks/useDashboardPageLayout";
 import { useAutoAdvanceProgress } from "../../lib/hooks/useAutoAdvanceProgress";
 import { SliderProgressBar } from "../banner/SliderProgressBar";
 import { useTheme } from "../../hooks/useTheme";
@@ -183,9 +189,9 @@ export default function Explorer({
   const { isDark, colors } = useTheme();
   const { retryDatabaseSession } = useAuth();
   const router = useRouter();
-  const styles = getStyles(isDark, colors);
   const { t: translate } = useTranslation();
   const { width: viewportWidth } = useWindowDimensions();
+  const styles = getStyles(isDark, colors, viewportWidth);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -613,7 +619,6 @@ export default function Explorer({
 
   const handleSearch = (value: string) => {
     setQuery(value);
-    setSearchOpen(true);
   };
 
   const clearFilters = () => {
@@ -918,40 +923,33 @@ export default function Explorer({
   const renderSearchBar = () => (
     <View style={styles.toolbar}>
       <View style={styles.toolbarRow}>
-        <TouchableOpacity
-          style={styles.searchField}
-          onPress={() => setSearchOpen(true)}
-          accessibilityRole="search"
-        >
-          <Icon name="search" color={colors.text.secondary} size={21} />
-          <TextInput
-            value={query}
-            onChangeText={handleSearch}
-            onFocus={() => setSearchOpen(true)}
-            placeholder={translate(
-              "explore.rework.searchDiscovery",
-              "Search events, passes, cities, series",
-            )}
-            placeholderTextColor={colors.text.secondary}
-            style={styles.searchInput}
-            returnKeyType="search"
-            accessibilityLabel={translate(
-              "explore.rework.searchEvents",
-              "Search events and passes",
-            )}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setQuery("")}
-              accessibilityLabel={translate(
-                "explore.rework.clearSearch",
-                "Clear search",
-              )}
-            >
-              <Text style={styles.clearSearch}>×</Text>
-            </TouchableOpacity>
+        <SearchField
+          mode={isDark ? "dark" : "light"}
+          leadingIcon={<NativeSafeIcon name="search" color={colors.text.secondary} size={21} />}
+          onLeadingIconPress={() => setSearchOpen(true)}
+          leadingIconAccessibilityLabel={translate(
+            "explore.rework.openSearch",
+            "Open search suggestions",
           )}
-        </TouchableOpacity>
+          value={query}
+          onChangeText={handleSearch}
+          placeholder={translate(
+            "explore.rework.searchDiscovery",
+            "Search events, passes, cities, series",
+          )}
+          placeholderTextColor={colors.text.secondary}
+          accessibilityLabel={translate(
+            "explore.rework.searchEvents",
+            "Search events and passes",
+          )}
+          returnKeyType="search"
+          clearIcon={<NativeSafeIcon name="close" color={colors.text.secondary} size={18} />}
+          clearAccessibilityLabel={translate(
+            "explore.rework.clearSearch",
+            "Clear search",
+          )}
+          onClear={() => setQuery("")}
+        />
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setFilterSheetOpen(true)}
@@ -961,7 +959,7 @@ export default function Explorer({
             "Open filters",
           )}
         >
-          <Icon name="tune" color={colors.primary} size={22} />
+          <NativeSafeIcon name="filter" color={colors.primary} size={22} />
           {activeFilterCount > 0 && (
             <Text style={styles.filterBadge}>{activeFilterCount}</Text>
           )}
@@ -1811,15 +1809,15 @@ export default function Explorer({
                   setSearchOpen(false);
                 }}
               >
-                <Icon name="event" color={colors.primary} size={20} />
+                <NativeSafeIcon name="event" color={colors.primary} size={20} />
                 <View style={styles.suggestionCopy}>
                   <Text style={styles.suggestionTitle}>{event.title}</Text>
                   <Text style={styles.suggestionMeta}>{event.subtitle}</Text>
                 </View>
-                <Icon
-                  name="north-east"
+                <NativeSafeIcon
+                  name="info"
                   color={colors.text.secondary}
-                  size={18}
+                  size={20}
                 />
               </TouchableOpacity>
             ))}
@@ -2214,11 +2212,17 @@ export default function Explorer({
   );
 }
 
-const getStyles = (isDark: boolean, colors: any) =>
+const getStyles = (isDark: boolean, colors: any, viewportWidth: number) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background.default },
     scrollView: { flex: 1 },
-    content: { paddingBottom: 48 },
+    content: {
+      width: "100%",
+      maxWidth: DASHBOARD_PAGE_MAX_WIDTH,
+      alignSelf: "center",
+      paddingTop: viewportWidth >= 768 ? DASHBOARD_PAGE_TOP_GAP : 0,
+      paddingBottom: 48,
+    },
     hero: {
       height: EXPLORER_HERO_LAYOUT.height,
       position: "relative",
@@ -2287,8 +2291,8 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     heroProgress: {
       position: "absolute",
-      left: 20,
-      right: 20,
+      left: DASHBOARD_PAGE_SIDE_PADDING,
+      right: DASHBOARD_PAGE_SIDE_PADDING,
       bottom: EXPLORER_HERO_LAYOUT.progressBottomInset,
       flexDirection: "row",
       gap: 6,
@@ -2301,38 +2305,14 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: "rgba(255,255,255,.28)",
     },
     toolbar: {
-      paddingHorizontal: 16,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       paddingTop: 10,
       paddingBottom: 12,
       backgroundColor: getExplorerToolbarBackgroundColor(colors),
       borderBottomWidth: 1,
       borderBottomColor: colors.divider,
     },
-    toolbarRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-    searchField: {
-      flex: 1,
-      height: 46,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 9,
-      paddingHorizontal: 13,
-      borderRadius: uiTokens.radius.media,
-      backgroundColor: colors.background.paper,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    searchInput: {
-      flex: 1,
-      minWidth: 0,
-      color: colors.text.primary,
-      fontSize: 14,
-      paddingVertical: 0,
-    },
-    clearSearch: {
-      color: colors.text.secondary,
-      fontSize: 20,
-      paddingHorizontal: 4,
-    },
+    toolbarRow: { flexDirection: "row", alignItems: "center", gap: 12 },
     filterButton: {
       width: 46,
       height: 46,
@@ -2341,7 +2321,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       justifyContent: "center",
       borderWidth: 1,
       borderColor: colors.divider,
-      backgroundColor: isDark ? "rgba(175,13,1,.15)" : "#FFF2F0",
+      backgroundColor: uiPalette(isDark ? "dark" : "light").accentSoft,
     },
     filterBadge: {
       position: "absolute",
@@ -2386,7 +2366,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 6,
-      paddingHorizontal: 16,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       paddingTop: 14,
     },
     discoveryCounterCard: {
@@ -2478,7 +2458,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderRadius: uiTokens.radius.small,
       backgroundColor: isDark ? "rgba(255,255,255,.08)" : "#EEF0F3",
     },
-    resultsSection: { paddingHorizontal: 16, paddingTop: 20 },
+    resultsSection: { paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, paddingTop: 20 },
     sectionHeader: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -2747,7 +2727,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingTop: 24,
       paddingBottom: 4,
     },
-    passesSection: { paddingHorizontal: 16, paddingTop: 28 },
+    passesSection: { paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, paddingTop: 28 },
     passesHeader: {
       alignItems: "center",
       flexDirection: "row",
@@ -2756,13 +2736,13 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     quickSection: { paddingTop: 28, paddingBottom: 12 },
     quickHeader: {
-      paddingHorizontal: 16,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
     },
     quickSubtitle: { color: colors.text.secondary, fontSize: 12, marginTop: 4 },
-    quickRail: { gap: 10, paddingHorizontal: 16, paddingTop: 13 },
+    quickRail: { gap: 10, paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, paddingTop: 13 },
     quickCard: {
       width: 142,
       minHeight: 126,
@@ -2797,7 +2777,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      paddingHorizontal: 16,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       paddingTop: 16,
       paddingBottom: 12,
       borderBottomWidth: 1,

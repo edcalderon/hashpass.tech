@@ -1,3 +1,4 @@
+import { securityRequest } from '../security-request';
 const mockIdentity = jest.fn();
 const mockRpc = jest.fn();
 const mockLookup = jest.fn();
@@ -23,7 +24,7 @@ const owner = '00000000-0000-4000-8000-000000000001';
 const operation = '00000000-0000-4000-8000-000000000002';
 const row = { id: '00000000-0000-4000-8000-000000000003', user_id: owner, state: 'enrolled', operation_id: null, network: null };
 const walletProof = () => issueStepUpProof(owner, 'wallet:sign').token;
-const request = (body: unknown, proof: string | null = walletProof()) => new Request('https://localhost/api/wallet/enrollment', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-session', ...(proof ? { [STEP_UP_HEADER]: proof } : {}) }, body: JSON.stringify({ walletId: row.id, ...(body as object) }) });
+const request = (body: unknown, proof: string | null = walletProof()) => securityRequest(owner, 'https://localhost/api/wallet/enrollment', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-session', ...(proof ? { [STEP_UP_HEADER]: proof } : {}) }, body: JSON.stringify({ walletId: row.id, ...(body as object) }) });
 beforeEach(() => {
   jest.clearAllMocks(); mockEnvironment = 'development';
   mockParse.mockImplementation(() => { throw new Error('invalid_public_wallet'); });
@@ -37,12 +38,12 @@ beforeEach(() => {
 afterAll(() => { delete process.env.HASHPASS_WALLET_SETUP_ENABLED; delete process.env.HASHPASS_PIN_PEPPER; });
 it('denies unauthenticated requests before reading the body or database', async () => {
   mockIdentity.mockResolvedValue({ error: 'unauthorized', status: 401 });
-  expect((await GET(new Request('https://localhost/api/wallet/enrollment'))).status).toBe(401);
+  expect((await GET(securityRequest(owner, 'https://localhost/api/wallet/enrollment'))).status).toBe(401);
   expect((await POST(request({ action: 'reserve', operationId: operation }))).status).toBe(401);
   expect(mockFrom).not.toHaveBeenCalled(); expect(mockRpc).not.toHaveBeenCalled();
 });
 it('returns canonical scope with no-store caching', async () => {
-  const response = await GET(new Request('https://localhost/api/wallet/enrollment?userId=attacker'));
+  const response = await GET(securityRequest(owner, 'https://localhost/api/wallet/enrollment?userId=attacker'));
   expect(response.status).toBe(200);
   expect((await response.json()).scope.ownerId).toBe(owner);
   expect(mockEq).toHaveBeenCalledWith('user_id', owner);
@@ -63,9 +64,9 @@ it('fails closed on missing enrollment, unavailable DB and disabled rollout', as
   // A missing user_wallet row for a resolved registry user is provisioning drift, not an
   // outage: it is a distinct 409 so the UI can ask for provisioning instead of a retry.
   mockLookup.mockResolvedValue({ data: null, error: null });
-  expect((await GET(new Request('https://localhost/api/wallet/enrollment'))).status).toBe(409);
+  expect((await GET(securityRequest(owner, 'https://localhost/api/wallet/enrollment'))).status).toBe(409);
   mockLookup.mockResolvedValue({ data: null, error: { message: 'db down' } });
-  expect((await GET(new Request('https://localhost/api/wallet/enrollment'))).status).toBe(503);
+  expect((await GET(securityRequest(owner, 'https://localhost/api/wallet/enrollment'))).status).toBe(503);
   mockLookup.mockResolvedValue({ data: row, error: null });
   mockRpc.mockResolvedValue({ data: null, error: { code: '23514' } });
   expect((await POST(request({ action: 'reserve', operationId: operation }))).status).toBe(409);
@@ -109,7 +110,7 @@ it('registers only validated public addresses under the authenticated owner', as
 });
 it('keeps production disabled even with the development rollout flag set', async () => {
   mockEnvironment = 'production';
-  const response = await GET(new Request('https://localhost/api/wallet/enrollment'));
+  const response = await GET(securityRequest(owner, 'https://localhost/api/wallet/enrollment'));
   expect((await response.json()).setupEnabled).toBe(false);
   expect((await POST(request({ action: 'reserve', operationId: operation }))).status).toBe(503);
   expect(mockRpc).not.toHaveBeenCalled();
@@ -157,10 +158,11 @@ describe('second factor on wallet creation', () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('keeps registration a public-metadata call that needs no proof of its own', async () => {
+  it('requires fresh proofs for registration as well as reservation', async () => {
     mockParse.mockReturnValue({ network: 'testnet', ethereum: { address: 'e' }, bitcoin: { address: 'b' }, solana: { address: 's' } });
     mockRpc.mockResolvedValue({ data: { ...reserved, state: 'registered', ethereum_address: 'e', bitcoin_address: 'b', solana_address: 's' }, error: null });
-    expect((await POST(request({ action: 'register', operationId: operation, wallet: {} }, null))).status).toBe(200);
+    expect((await POST(request({ action: 'register', operationId: operation, wallet: {} }, null))).status).toBe(403);
+    expect((await POST(request({ action: 'register', operationId: operation, wallet: {} }))).status).toBe(200);
   });
 
   it('checks the proof after the cheaper request validation, never before authentication', async () => {

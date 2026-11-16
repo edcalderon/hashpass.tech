@@ -23,7 +23,7 @@ describe('mobile API CORS utility', () => {
 
     expect(headers.get('Access-Control-Allow-Origin')).toBe('https://hashpass.tech');
     expect(headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    expect(headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
+    expect(headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization, X-Hashpass-Step-Up, X-Hashpass-Authenticator');
     expect(headers.get('Vary')).toBe('Origin');
   });
 

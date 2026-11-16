@@ -2,7 +2,13 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable } from 'react-native';
 
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
+jest.mock('../../components/security/AuthenticatorFlow', () => ({ __esModule: true, default: 'AuthenticatorFlow' }));
+jest.mock('../../components/contacts/ContactsScreen', () => ({ __esModule: true, default: 'ContactsScreen' }));
+jest.mock('../../lib/vector-icons', () => ({ Ionicons: 'Ionicons', MaterialIcons: 'MaterialIcons' }));
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), useRouter: () => ({ push: (path: string) => mockRouterPush(path) }) }));
+const mockAuthenticatorStatus = jest.fn((_request?: unknown) => Promise.resolve({ enabled: false }));
+jest.mock('../../lib/authenticator-client', () => ({ authenticatorStatus: () => mockAuthenticatorStatus() }));
 let mockDark = false;
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: mockDark, colors: {
   primary: '#a00', primaryContrastText: '#fff', divider: '#ddd',
@@ -46,10 +52,26 @@ jest.mock('../../hooks/useWalletGuard', () => ({
 jest.mock('../../components/security/PinFlow', () => 'PinFlow');
 import Wallet from '../../app/(shared)/dashboard/wallet';
 
-it('explains setup availability, expands security, and navigates to genuine pass/reward surfaces', () => {
+beforeEach(() => {
+  mockRouterPush.mockReset();
+  mockEnrollmentLoad.mockClear();
+  mockAuthenticatorStatus.mockResolvedValue({ enabled: false });
+  mockEnrollmentLoad.mockResolvedValue({ state: 'registered', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
+});
+
+it('explains setup availability, expands security, and navigates to genuine pass/reward surfaces', async () => {
+  mockPhase = 'locked';
   let view!: ReactTestRenderer;
-  act(() => { view = create(<Wallet />); });
+  await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
+  const pinFlow = view.root.findByType('PinFlow' as any);
+  expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
+  act(() => { pinFlow.props.onAuthenticatorComplete('pin'); pinFlow.props.onDone('1234'); });
+  mockPhase = 'unlocked';
+  await act(async () => { view.update(<Wallet />); });
   expect(view.root.findAllByType('WalletEnrollment' as any)).toHaveLength(1);
+  expect(mockWalletEnrollmentProps?.initialState).toMatchObject({ status: 'ready' });
+  expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.');
   expect(JSON.stringify(view.toJSON())).not.toContain('BSL2025-VIP-001');
   // The security accordion is the only button whose state carries `expanded`; the balance
   // card's Send/Receive action buttons come first in the tree.
@@ -59,13 +81,46 @@ it('explains setup availability, expands security, and navigates to genuine pass
   expect(securityButton().props.accessibilityState.expanded).toBe(true);
   expect(JSON.stringify(view.toJSON())).toContain('never enter its recovery phrase here');
   const tabs = () => view.root.findAllByType(Pressable).filter(node => node.props.accessibilityRole === 'tab');
-  act(() => tabs()[1].props.onPress());
-  expect(view.root.findAllByType('Rewards' as any)).toHaveLength(1);
-  expect(tabs()[1].props.accessibilityState.selected).toBe(true);
   act(() => tabs()[2].props.onPress());
+  expect(view.root.findAllByType('Rewards' as any)).toHaveLength(1);
+  expect(tabs()[2].props.accessibilityState.selected).toBe(true);
+  act(() => tabs()[3].props.onPress());
   expect(view.root.findByType('PassesDisplay' as any).props.mode).toBe('dashboard');
   expect(view.root.findAllByType('Rewards' as any)).toHaveLength(0);
   act(() => view.unmount());
+});
+
+it('shows a dismissible security reminder after PIN-only unlock and hides it after authenticator unlock', async () => {
+  mockPhase = 'pin_entry';
+  let view!: ReactTestRenderer;
+  try {
+    await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
+    const pinFlow = view.root.findByType('PinFlow' as any);
+    act(() => { pinFlow.props.onAuthenticatorComplete('pin'); });
+    mockPhase = 'unlocked';
+    await act(async () => { view.update(<Wallet />); await Promise.resolve(); });
+    expect(JSON.stringify(view.toJSON())).toContain('PIN-only access is active.');
+    expect(JSON.stringify(view.toJSON())).toContain('A PIN protects wallet access; an authenticator adds another step when enabled.');
+    view.root.findByProps({ testID: 'authenticator-reminder' });
+    const setupLink = view.root.findByProps({ accessibilityLabel: 'Set up two-step verification' });
+    act(() => setupLink.props.onPress());
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/profile-settings?shortcut=authenticator');
+    const dismiss = view.root.findByProps({ accessibilityLabel: 'Dismiss authenticator reminder' });
+    act(() => dismiss.props.onPress());
+    expect(view.root.findAllByProps({ testID: 'authenticator-reminder' })).toHaveLength(0);
+
+    mockPhase = 'pin_entry';
+    act(() => { view.update(<Wallet />); });
+    const authenticatorFlow = view.root.findByType('PinFlow' as any);
+    mockAuthenticatorStatus.mockResolvedValue({ enabled: true });
+    act(() => { authenticatorFlow.props.onAuthenticatorComplete('authenticator'); });
+    mockPhase = 'unlocked';
+    await act(async () => { view.update(<Wallet />); await Promise.resolve(); });
+    expect(JSON.stringify(view.toJSON())).not.toContain('PIN-only access is active.');
+  } finally {
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
 });
 
 it('renders the shared segmented tabs in dark mode', () => {
@@ -91,11 +146,11 @@ it('keeps the guard PIN session when mounting the wallet enrollment flow', () =>
 });
 
 it.each([['pin_setup', 'create'], ['pin_entry', 'unlock'], ['locked', 'unlock']])(
-  'shows the PIN gate instead of wallet content while %s', (phase, intent) => {
+  'shows the PIN gate instead of wallet content while %s', async (phase, intent) => {
     mockPhase = phase;
     let view!: ReactTestRenderer;
     try {
-      act(() => { view = create(<Wallet />); });
+      await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
       const flow = view.root.findByType('PinFlow' as any);
       expect(flow.props.intent).toBe(intent);
       expect(flow.props.scope).toBe('wallet:unlock');
@@ -125,6 +180,8 @@ it('offers the email-code recovery from the locked gate, without unlocking the w
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     // The recovery mounts in the locked gate: recover-only, never the wallet's home.
     const flow = view.root.findByType('WalletVaultFlow' as any);
     expect(flow.props.recoverOnly).toBe(true);
@@ -132,6 +189,29 @@ it('offers the email-code recovery from the locked gate, without unlocking the w
     expect(view.root.findAllByType('PinFlow' as any)).toHaveLength(0);
     await act(async () => { flow.props.onExit(); });
     expect(view.root.findByType('PinFlow' as any)).toBeDefined();
+  } finally {
+    mockEnrollmentLoad.mockReset();
+    mockPhase = 'unlocked';
+    act(() => view.unmount());
+  }
+});
+
+it('keeps email-code PIN recovery available when the account has no authenticator', async () => {
+  mockPhase = 'pin_entry';
+  mockEnrollmentLoad.mockResolvedValue({ state: 'registered', setupEnabled: true, scope: { ownerId: 'reg-1', walletId: 'w1' } });
+  let view!: ReactTestRenderer;
+  try {
+    act(() => { view = create(<Wallet />); });
+    const forgot = view.root.findAllByType(Pressable)
+      .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
+    await act(async () => { forgot.props.onPress(); });
+    const flow = view.root.findByType('AuthenticatorFlow' as any);
+    expect(flow.props.onUnenrolled).toEqual(expect.any(Function));
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { flow.props.onUnenrolled(); await Promise.resolve(); });
+    expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
+    expect(view.root.findByType('WalletVaultFlow' as any).props.recoverOnly).toBe(true);
+    expect(view.root.findAllByType('PinFlow' as any)).toHaveLength(0);
   } finally {
     mockEnrollmentLoad.mockReset();
     mockPhase = 'unlocked';
@@ -148,6 +228,8 @@ it('says so when the locked gate has no wallet to recover', async () => {
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     expect(JSON.stringify(view.toJSON())).toContain('This account has no wallet yet, so there is nothing to recover.');
     expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
   } finally {
@@ -169,6 +251,8 @@ it.each([
     const forgot = view.root.findAllByType(Pressable)
       .find(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'I forgot my PIN')!;
     await act(async () => { forgot.props.onPress(); });
+    expect(mockEnrollmentLoad).not.toHaveBeenCalled();
+    await act(async () => { view.root.findByType('AuthenticatorFlow' as any).props.onDone(); });
     expect(JSON.stringify(view.toJSON())).toContain('Back to PIN entry');
     expect(view.root.findAllByType('WalletVaultFlow' as any)).toHaveLength(0);
     // Back to PIN entry is never a dead end: it returns to the gate's PIN pad. (It is the

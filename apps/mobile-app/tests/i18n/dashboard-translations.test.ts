@@ -32,6 +32,7 @@ const dashboardExplorerKeys = [
   "explore.rework.loadingMore",
   "explore.rework.allCaughtUp",
   "explore.rework.yourPasses",
+  "explore.rework.openSearch",
   "explore.rework.closeSearch",
   "explore.rework.recent",
   "explore.rework.suggestions",

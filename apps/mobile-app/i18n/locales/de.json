@@ -253,6 +253,11 @@
     "exchange": {
       "title": "Token-Austausch",
       "description": "Punkte in Kryptowährung umtauschen."
+    },
+    "guard": {
+      "unifiedSetupBody": "Wähle eine 4-stellige PIN. Ein Authenticator ist optional. Für mehr Sicherheit und zur Wiederherstellung der Wallet-PIN empfehlen wir eine Authenticator-App.",
+      "unifiedLockedBody": "Gib deine PIN ein, um Wallet & Contacts zu öffnen. Wenn du noch keinen Authenticator eingerichtet hast, empfehlen wir ihn für mehr Sicherheit und zur PIN-Wiederherstellung.",
+      "unifiedSetupTitle": "PIN einrichten"
     }
   },
   "digitalWallet": {
@@ -969,13 +974,17 @@
       "notifications": "Benachrichtigungen: Prüfe deine Meeting-Anfragen, Updates und wichtigen Hinweise. Das Abzeichen zeigt ungelesene Nachrichten. Tippe zum Fortfahren.",
       "profile": "Profil: Sieh dir deine Profilinformationen und Kontoeinstellungen an und bearbeite sie. Tippe zum Fortfahren.",
       "settings": "Einstellungen: Passe App-Präferenzen, Design, Sprache und Tutorials an. Tippe, um die Seitenleistenführung zu beenden.",
-      "admin": "Administrations-Panel: Verwalte Pässe, scanne QR-Codes und erstelle Meeting-Zuordnungen. Nur für Administratoren."
+      "admin": "Administrations-Panel: Verwalte Pässe, scanne QR-Codes und erstelle Meeting-Zuordnungen. Nur für Administratoren.",
+      "profileSettings": "Profil & Einstellungen: Sieh und bearbeite dein Profil, Kontodaten und App-Einstellungen an einem Ort. Tippe zum Fortfahren."
     },
     "light": "Hell",
     "dark": "Dunkel",
     "lightMode": "Heller Modus",
     "darkMode": "Dunkler Modus",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "profileSettings": "Profil & Einstellungen",
+    "profileSettingsTabs": "Profil- und Einstellungsbereiche",
+    "walletContacts": "Wallet und Kontakte"
   },
   "explore": {
     "noEvent": "Kein Event verfügbar",
@@ -1547,5 +1556,18 @@
     "navNotifications": "Benachrichtigungen",
     "navProfile": "Profil",
     "guestDescription": "Du nutzt eine vereinfachte Version von HASHPASS. Registriere dich und lade die App herunter, um das volle Erlebnis mit deinen Pässen, gespeicherten Events und Community-Funktionen zu nutzen."
+  },
+  "pin": {
+    "authenticator": {
+      "optionalTitle": "Authenticator empfohlen",
+      "optionalBody": "Der Zugang per PIN bleibt verfügbar. Eine Authenticator-App erhöht die Sicherheit und ermöglicht die PIN-Wiederherstellung.",
+      "setup": "Authenticator einrichten",
+      "continuePin": "Mit PIN fortfahren",
+      "pinRequired": "Es ist kein Authenticator eingerichtet. Für die Anmeldung nur mit PIN ist eine aktuelle PIN-Prüfung erforderlich.",
+      "setupUnavailable": "Die Authenticator-Einrichtung konnte nicht vorbereitet werden. Bitte versuche es gleich noch einmal. Der Zugang per PIN bleibt verfügbar.",
+      "emailSendUnavailable": "Die Einrichtung ist bereit, aber der E-Mail-Code konnte nicht gesendet werden. Versuche es erneut oder fahre mit deiner PIN fort.",
+      "emailRateLimited": "Vor Kurzem wurde eine Einrichtungs-E-Mail gesendet. Prüfe deinen Posteingang oder versuche es in einer Minute erneut.",
+      "unavailable": "Wir konnten den Authenticator-Status nicht bestätigen oder die Einrichtung vorbereiten. Prüfe deine Verbindung und versuche es erneut. Wenn kein Authenticator eingerichtet ist, kannst du nur deine PIN verwenden."
+    }
   }
 }

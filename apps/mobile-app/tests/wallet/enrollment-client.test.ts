@@ -49,7 +49,7 @@ it('validates both outbound and returned public manifests during registration', 
 
 describe('step-up proof', () => {
   const reserved = { ...row, state: 'provisioning', operationId, network: 'testnet' };
-  it('is sent as a header on reserve only, and read fresh for each call', async () => {
+  it('is sent on reserve and registration, and read fresh for each call', async () => {
     let proof: string | null = 'proof.one';
     const stepUp = createWalletEnrollmentClient(() => proof);
     mockPost.mockResolvedValue({ success: true, data: reserved });
@@ -65,7 +65,7 @@ describe('step-up proof', () => {
     mockParse.mockImplementation(value => value);
     mockPost.mockResolvedValue({ success: true, data: { ...reserved, state: 'registered', wallet: { network: 'testnet' } } });
     await stepUp.register(walletId, operationId, { network: 'testnet' } as any);
-    expect(mockPost.mock.calls[0][2]).toEqual({ skipEventSegment: true, retries: 0 });
+    expect(mockPost.mock.calls[0][2]).toEqual({ skipEventSegment: true, retries: 0, headers: { 'X-Hashpass-Step-Up': 'proof.two' } });
   });
 
   it('maps a refusal to a distinct error the screen can answer with the PIN pad', async () => {

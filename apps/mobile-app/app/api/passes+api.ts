@@ -7,6 +7,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
+import type { PassEventRow } from "@/types/pass-event.types";
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 const EVENT_IDS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026", "cbweek2026"]);
@@ -33,7 +34,12 @@ const numberOr = (value: unknown, fallback: number): number => {
 const passPriority = (pass: PassRow): number =>
   pass.pass_type === "vip" ? 2 : pass.pass_type === "business" ? 1 : 0;
 
-const toPassInfo = async (supabase: any, userId: string, pass: PassRow) => {
+const toPassInfo = async (
+  supabase: any,
+  userId: string,
+  pass: PassRow,
+  event?: PassEventRow,
+) => {
   const maxRequests = numberOr(pass.max_meeting_requests, 0);
   const usedRequests = numberOr(pass.used_meeting_requests, 0);
   const maxBoost = numberOr(pass.max_boost_amount, 0);
@@ -63,9 +69,29 @@ const toPassInfo = async (supabase: any, userId: string, pass: PassRow) => {
     counts?.remaining_boost,
     Math.max(0, maxBoost - usedBoost),
   );
+  const eventMetadata = event?.metadata;
+  const eventLocation = [event?.city, event?.country].filter(Boolean).join(", ")
+    || event?.venue_name
+    || "";
+  const walletPassStyle = eventMetadata?.walletPassStyle === "event"
+    ? "event"
+    : undefined;
+  const walletPassColor = typeof eventMetadata?.walletPassColor === "string"
+    ? eventMetadata.walletPassColor
+    : undefined;
 
   return {
     event_id: pass.event_id,
+    event_name: event?.name || pass.event_id,
+    event_date_label: typeof eventMetadata?.walletPassDateLabel === "string"
+      ? eventMetadata.walletPassDateLabel
+      : undefined,
+    event_location: eventLocation,
+    event_starts_at: event?.starts_at || null,
+    event_ends_at: event?.ends_at || null,
+    event_time_zone: event?.timezone || null,
+    wallet_pass_style: walletPassStyle,
+    wallet_pass_color: walletPassColor,
     pass_id: pass.id,
     pass_type: pass.pass_type || "general",
     status: pass.status || "active",
@@ -145,8 +171,30 @@ export async function GET(request: Request) {
       query = query.in("event_id", eventIds).eq("status", "active");
     }
 
+    const { error: expirationError } = await supabase.rpc("expire_ended_event_passes");
+    if (expirationError) {
+      console.error("[passes] expiry check failed:", expirationError);
+      return Response.json(
+        { error: "Pass expiry status is temporarily unavailable" },
+        { status: 503 },
+      );
+    }
+
     const { data, error } = await query;
     if (error) throw error;
+
+    const eventIdsForPasses = [...new Set(((data || []) as PassRow[]).map((pass) => pass.event_id))];
+    let eventsById = new Map<string, PassEventRow>();
+    if (eventIdsForPasses.length > 0) {
+      const { data: eventRows, error: eventError } = await supabase
+        .from("events")
+        .select("id, name, starts_at, ends_at, timezone, venue_name, city, country, metadata")
+        .in("id", eventIdsForPasses);
+      if (eventError) throw eventError;
+      eventsById = new Map(
+        ((eventRows || []) as PassEventRow[]).map((event) => [event.id, event]),
+      );
+    }
 
     const latestByEvent = new Map<string, PassRow>();
     for (const row of (data || []) as PassRow[]) {
@@ -163,7 +211,7 @@ export async function GET(request: Request) {
 
     const passes = await Promise.all(
       Array.from(latestByEvent.values()).map((pass) =>
-        toPassInfo(supabase, auth.userId, pass),
+        toPassInfo(supabase, auth.userId, pass, eventsById.get(pass.event_id)),
       ),
     );
     return Response.json({ data: passes });

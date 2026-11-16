@@ -27,6 +27,7 @@ import type {
   FormFieldFocusEvent,
   FormFieldProps,
   FormFieldTextStyle,
+  SearchFieldProps,
   SegmentedTab,
 } from "./primitives.types";
 type Themed = { mode?: ColorMode };
@@ -425,7 +426,7 @@ export function FilterChip({
     />
   );
 }
-export type { ControlSkin, FormFieldProps, SegmentedTab } from "./primitives.types";
+export type { ControlSkin, FormFieldProps, SearchFieldProps, SegmentedTab } from "./primitives.types";
 
 /**
  * The one tab control: a rounded pill track with a filled selected segment,
@@ -441,6 +442,7 @@ export function SegmentedTabs<T extends string = string>({
   surfaceColor,
   fullWidth = false,
   scrollable = false,
+  compact = false,
   accessibilityLabel,
 }: Themed & {
   tabs: readonly SegmentedTab<T>[];
@@ -454,6 +456,8 @@ export function SegmentedTabs<T extends string = string>({
   fullWidth?: boolean;
   /** Keep every tab on one line and allow horizontal scrolling when needed. */
   scrollable?: boolean;
+  /** Reduce horizontal tab padding for compact toolbars while keeping touch height. */
+  compact?: boolean;
   accessibilityLabel?: string;
 }) {
   const palette = uiPalette(mode);
@@ -481,6 +485,7 @@ export function SegmentedTabs<T extends string = string>({
               styles.segment,
               fullWidth && !scrollable ? styles.segmentFull : null,
               scrollable ? styles.segmentScrollable : null,
+              compact ? styles.segmentCompact : null,
               selected ? { backgroundColor: accent } : null,
               { opacity: pressed ? 0.8 : 1 },
             ]}
@@ -500,6 +505,7 @@ export function SegmentedTabs<T extends string = string>({
               <View
                 style={[
                   styles.segmentCount,
+                  compact ? styles.segmentCountCompact : null,
                   { backgroundColor: selected ? palette.onAccent : "#FF3B30" },
                 ]}
               >
@@ -902,6 +908,73 @@ export function FormField({
     </View>
   );
 }
+
+/**
+ * Shared 46px search control for dashboard toolbars. Callers provide the icon
+ * glyphs so each app can keep its existing icon set and accessibility labels.
+ */
+export function SearchField({
+  mode = "light",
+  value,
+  onChangeText,
+  leadingIcon,
+  onLeadingIconPress,
+  leadingIconAccessibilityLabel,
+  clearIcon,
+  onClear,
+  clearAccessibilityLabel = "Clear search",
+  accessibilityLabel,
+  containerStyle,
+  placeholder,
+  ...inputProps
+}: SearchFieldProps) {
+  const palette = uiPalette(mode);
+  return (
+    <View
+      style={[
+        styles.searchField,
+        { backgroundColor: palette.raised, borderColor: palette.border },
+        containerStyle,
+      ]}
+    >
+      {onLeadingIconPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={leadingIconAccessibilityLabel || "Open search"}
+          onPress={onLeadingIconPress}
+          hitSlop={8}
+          style={styles.searchLeadingIconButton}
+        >
+          {leadingIcon}
+        </Pressable>
+      ) : (
+        <View pointerEvents="none" style={styles.searchLeadingIcon}>
+          {leadingIcon}
+        </View>
+      )}
+      <TextInput
+        {...inputProps}
+        accessibilityLabel={accessibilityLabel || placeholder || "Search"}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={palette.muted}
+        style={[styles.searchInput, { color: palette.text }]}
+      />
+      {value.length > 0 && onClear && clearIcon ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={clearAccessibilityLabel}
+          onPress={onClear}
+          hitSlop={8}
+          style={styles.searchClearButton}
+        >
+          {clearIcon}
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
 /**
  * Text with full-content tooltip on hover/long-press when truncated.
  * Detects truncation via onTextLayout and only shows the affordance when needed.
@@ -1013,6 +1086,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: uiTokens.radius.pill,
   },
+  segmentCompact: { paddingHorizontal: 6 },
   segmentFull: { flex: 1, paddingHorizontal: 8 },
   segmentLabel: { fontSize: uiTokens.type.label, fontWeight: "600" },
   segmentLabelScrollable: { flexShrink: 0 },
@@ -1025,6 +1099,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   segmentCountText: { fontSize: 11, fontWeight: "600" },
+  segmentCountCompact: { marginLeft: 4, minWidth: 18, paddingHorizontal: 4 },
   revealIconButton: {
     alignItems: "center",
     flexDirection: "row",
@@ -1072,6 +1147,40 @@ const styles = StyleSheet.create({
     borderWidth: uiTokens.control.borderWidth,
     borderRadius: uiTokens.radius.card,
     padding: uiTokens.space.xl,
+  },
+  searchField: {
+    flex: 1,
+    height: 46,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: uiTokens.space.sm,
+    paddingHorizontal: 13,
+    borderRadius: uiTokens.radius.media,
+    borderWidth: uiTokens.control.borderWidth,
+  },
+  searchLeadingIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchLeadingIconButton: {
+    width: 22,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    height: "100%",
+    paddingVertical: 0,
+    fontSize: 14,
+  },
+  searchClearButton: {
+    minWidth: 28,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   badge: {
     alignSelf: "center",

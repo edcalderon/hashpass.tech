@@ -421,7 +421,10 @@
       "recoveryChecking": "Comprobando tu billetera…",
       "recoveryNoWallet": "Esta cuenta aún no tiene billetera, así que no hay nada que recuperar. Tu PIN protege tu cuenta; contacta a soporte si no puedes iniciar sesión.",
       "recoveryUnavailable": "No pudimos conectar con el servicio de recuperación de PIN. Revisa tu conexión e inténtalo de nuevo.",
-      "backToPin": "Volver al PIN"
+      "backToPin": "Volver al PIN",
+      "unifiedSetupBody": "Elige un PIN de 4 dígitos. Configurar un autenticador es opcional. Recomendamos una app autenticadora para mejorar la seguridad y recuperar el PIN de la billetera.",
+      "unifiedLockedBody": "Ingresa tu PIN para abrir Wallet & Contacts. Si no has configurado un autenticador, recomendamos hacerlo para mejorar la seguridad y recuperar el PIN.",
+      "unifiedSetupTitle": "Configura tu PIN"
     },
     "vault": {
       "title": "Tu billetera",
@@ -1290,13 +1293,17 @@
       "notifications": "Notificaciones: revisa tus solicitudes de reunión, actualizaciones y alertas importantes. La insignia muestra las no leídas. Toca para continuar.",
       "profile": "Perfil: consulta y edita tu información de perfil y la configuración de tu cuenta. Toca para continuar.",
       "settings": "Ajustes: personaliza tus preferencias, tema, idioma y tutoriales. Toca para finalizar el recorrido.",
-      "admin": "Panel de Administración: gestiona pases, escanea códigos QR y crea coincidencias de reuniones. Solo para administradores."
+      "admin": "Panel de Administración: gestiona pases, escanea códigos QR y crea coincidencias de reuniones. Solo para administradores.",
+      "profileSettings": "Perfil y ajustes: consulta y edita tu perfil, los datos de tu cuenta y las preferencias de la app en un solo lugar. Toca para continuar."
     },
     "light": "Claro",
     "dark": "Oscuro",
     "lightMode": "Modo claro",
     "darkMode": "Modo oscuro",
-    "logout": "Salir"
+    "logout": "Salir",
+    "profileSettings": "Perfil y ajustes",
+    "profileSettingsTabs": "Secciones de perfil y ajustes",
+    "walletContacts": "Cartera y contactos"
   },
   "explore": {
     "noEvent": "No hay evento disponible",
@@ -1424,6 +1431,7 @@
       "loadingMore": "Cargando más eventos",
       "allCaughtUp": "Ya estás al día.",
       "yourPasses": "Tus Pases",
+      "openSearch": "Abrir sugerencias de búsqueda",
       "closeSearch": "Cerrar búsqueda",
       "recent": "Recientes",
       "suggestions": "Sugerencias",
@@ -2562,7 +2570,18 @@
     "createTitle": "Crea un PIN de 4 dígitos",
     "createHint": "Este segundo paso protege tu billetera y tus contactos. HASHPASS no puede restablecerlo por ti.",
     "mismatch": "Los dos PIN no coinciden. Empieza de nuevo.",
-    "cancel": "Ahora no"
+    "cancel": "Ahora no",
+    "authenticator": {
+      "optionalTitle": "Recomendamos una app de autenticación",
+      "optionalBody": "Puedes acceder solo con tu PIN. Una app de autenticación mejora la seguridad y permite recuperar el PIN.",
+      "setup": "Configurar autenticador",
+      "continuePin": "Continuar con PIN",
+      "pinRequired": "No hay un autenticador configurado. Se requiere una verificación reciente del PIN para continuar solo con el PIN.",
+      "setupUnavailable": "No se pudo preparar la configuración del autenticador. Inténtalo de nuevo en un momento; el acceso con PIN sigue disponible.",
+      "emailSendUnavailable": "La configuración está lista, pero no se pudo enviar el código por correo. Inténtalo de nuevo o continúa con tu PIN.",
+      "emailRateLimited": "Se envió un correo de configuración hace poco. Revisa tu bandeja de entrada o inténtalo en un minuto.",
+      "unavailable": "No pudimos confirmar el estado del autenticador ni preparar la configuración. Revisa tu conexión e inténtalo de nuevo. Puedes usar solo tu PIN si no tienes un autenticador configurado."
+    }
   },
   "setup": {
     "loading": "Preparando todo",

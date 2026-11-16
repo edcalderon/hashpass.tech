@@ -199,6 +199,10 @@ describe('dashboard pages share the page layout', () => {
     expect(text(view)).toContain('center.urgent');
 
     const markRead = view.root.find(node => node.props.accessibilityLabel === 'center.markRead');
+    const archiveAction = view.root.findAll(node => node.props.accessibilityLabel === 'center.archive')[0];
+    const archiveIcon = archiveAction.find(node => String(node.type) === 'MaterialIcons');
+    const markReadIcon = markRead.find(node => String(node.type) === 'MaterialIcons');
+    expect(archiveIcon.props.color).toBe(markReadIcon.props.color);
     await act(async () => { await markRead.props.onPress(); });
     expect(mockMarkAsRead).toHaveBeenCalledWith('chat-unread');
     expect(mockMarkAsRead).toHaveBeenCalledWith('chat-read');

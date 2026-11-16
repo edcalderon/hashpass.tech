@@ -2,19 +2,22 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Modal, ActivityIndicator, TextInput, Switch } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
-import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import { DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import type { AuthUser } from '@hashpass/auth';
 import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
 import { getProfileRoleLabels } from '../../../lib/profile-roles';
 import { apiClient } from '../../../lib/api-client';
 import { resolveAvatarUrl } from '../../../lib/auth/avatar';
 import ProfileAvatar from '../../../components/ProfileAvatar';
+import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import CloudinaryImageUpload from '../../../components/CloudinaryImageUpload';
+import type { EmbeddedDashboardPageProps, PublicProfileTab } from '../../../types/profile-settings.types';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -78,7 +81,7 @@ const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
     (typeof attendee.company === 'string' || attendee.company === null);
 };
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onOpenSettings }: EmbeddedDashboardPageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { isDark, colors } = useTheme();
   const { topInset, bottomInset, column } = useDashboardPageLayout();
@@ -86,6 +89,8 @@ export default function ProfileScreen() {
   const styles = getStyles(isDark, colors);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarTarget, setAvatarTarget] = useState<'profile' | 'speaker'>('profile');
+  const [quickSettingsExpanded, setQuickSettingsExpanded] = useState(true);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('avataaars');
   const [profileUser, setProfileUser] = useState<AuthUser | null>(user ?? null);
@@ -97,6 +102,7 @@ export default function ProfileScreen() {
   const [adminAccess, setAdminAccess] = useState<AdminAccess | null>(null);
   const [speakerProfile, setSpeakerProfile] = useState<SpeakerProfile | null>(null);
   const [attendeeProfile, setAttendeeProfile] = useState<AttendeeProfile | null>(null);
+  const [publicProfileTab, setPublicProfileTab] = useState<PublicProfileTab>('attendee');
   const [rolesLoading, setRolesLoading] = useState(true);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [savingSpeaker, setSavingSpeaker] = useState(false);
@@ -254,12 +260,8 @@ export default function ProfileScreen() {
   };
 
   const getCurrentAvatarUrl = (): string | null => {
-    // A claimed speaker profile is the public identity attendees see. Prefer
-    // the photo it currently shows (event photo or the personal one).
-    if (speakerProfile?.imageUrl) return speakerProfile.imageUrl;
-
-    // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
-    // Raw Supabase session is the most reliable source across all auth paths
+    // The profile header is the account identity. Speaker photos belong to the
+    // separate attendee-facing speaker profile below.
     const existingPhoto = resolveAvatarUrl(rawSupabaseUser, activeUser);
     if (existingPhoto) return existingPhoto;
 
@@ -295,10 +297,6 @@ export default function ProfileScreen() {
     });
     if (metaError) throw metaError;
 
-    if (speakerProfile) {
-      await updateLinkedSpeaker({ imageUrl: avatarUrl });
-    }
-
     const { error: dbError } = await (supabase as any)
       .from('user_profiles')
       .upsert({ user_id: activeUser.id, avatar_url: avatarUrl }, { onConflict: 'user_id' });
@@ -317,7 +315,7 @@ export default function ProfileScreen() {
         },
       } : prev);
     }
-  }, [activeUser, speakerProfile, updateLinkedSpeaker]);
+  }, [activeUser]);
 
   const personalAvatarUrl = resolveAvatarUrl(rawSupabaseUser, activeUser);
   const eventPhotoUrl = speakerProfile?.eventImageUrl ?? null;
@@ -346,6 +344,12 @@ export default function ProfileScreen() {
   };
 
   const handleAvatarPress = () => {
+    setAvatarTarget('profile');
+    setShowAvatarModal(true);
+  };
+
+  const handleSpeakerAvatarPress = () => {
+    setAvatarTarget('speaker');
     setShowAvatarModal(true);
   };
 
@@ -404,6 +408,28 @@ export default function ProfileScreen() {
       setUpdatingAvatar(false);
     }
   }, [persistAvatarUrl, showError, showSuccess]);
+
+  const handleUploadedSpeakerAvatar = useCallback(async (result: unknown) => {
+    const uploadedUrl =
+      result && typeof result === 'object' && 'secure_url' in result
+        ? (result as { secure_url?: unknown }).secure_url
+        : null;
+    if (typeof uploadedUrl !== 'string' || !/^https?:\/\//i.test(uploadedUrl)) {
+      showError('Upload Failed', 'The image upload did not return a usable URL');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      await updateLinkedSpeaker({ imageUrl: uploadedUrl });
+      showSuccess('Speaker photo updated', 'Attendees now see your new speaker profile photo.');
+      setShowAvatarModal(false);
+    } catch (error: any) {
+      showError('Update Failed', error?.message || 'Failed to save speaker photo');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  }, [showError, showSuccess, updateLinkedSpeaker]);
 
   const openSpeakerEditor = () => {
     if (!speakerProfile) return;
@@ -472,6 +498,29 @@ export default function ProfileScreen() {
   const userNameDisplay = userName || 'Not available';
   const userEmailDisplay = userEmail || 'Not available';
   const profileRoleLabels = getProfileRoleLabels(adminAccess, Boolean(speakerProfile));
+  const quickSettingsShortcuts = onOpenSettings ? [
+    {
+      key: 'authenticator',
+      title: 'Two-step verification',
+      description: 'Set up or manage your authenticator app',
+      icon: 'shield-checkmark-outline',
+      onPress: () => onOpenSettings('authenticator'),
+    },
+    {
+      key: 'delete-account',
+      title: 'Delete Account',
+      description: 'Permanently remove your account and data',
+      icon: 'trash-outline',
+      onPress: () => onOpenSettings('delete-account'),
+    },
+    {
+      key: 'about',
+      title: 'About App',
+      description: 'View app version and information',
+      icon: 'information-circle-outline',
+      onPress: () => onOpenSettings('about'),
+    },
+  ] as const : [];
   
   // Member since — try multiple sources in priority order:
   // rawSupabaseUser.created_at is always set by Supabase regardless of auth provider
@@ -532,6 +581,8 @@ export default function ProfileScreen() {
             style={styles.avatarContainer}
             onPress={handleAvatarPress}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile picture"
           >
             <View style={styles.avatar}>
               <ProfileAvatar
@@ -646,102 +697,191 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Attendee Information</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Role or Title</Text>
-                  <Text style={styles.infoValue}>{attendeeProfile?.title || 'Not set'}</Text>
-                </View>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="business-outline" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Company</Text>
-                  <Text style={styles.infoValue}>{attendeeProfile?.company || 'Not set'}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.speakerEditButton}
-                onPress={openAttendeeEditor}
-                accessibilityLabel="Edit attendee information"
-              >
-                <MaterialIcons name="edit" size={18} color={colors.primary} />
-                <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Attendee Information</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.sectionTitle}>Public Account Information</Text>
+            <Surface mode={isDark ? 'dark' : 'light'} style={styles.publicProfileCard}>
+              {speakerProfile ? (
+                <SegmentedTabs<PublicProfileTab>
+                  mode={isDark ? 'dark' : 'light'}
+                  fullWidth
+                  value={publicProfileTab}
+                  onChange={setPublicProfileTab}
+                  accessibilityLabel="Public account information"
+                  accentColor={colors.primary}
+                  surfaceColor={colors.background.paper}
+                  tabs={[
+                    { id: 'attendee', label: 'Attendee' },
+                    { id: 'speaker', label: 'Speaker' },
+                  ]}
+                />
+              ) : null}
+              {publicProfileTab === 'attendee' || !speakerProfile ? (
+                <>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Role or Title</Text>
+                      <Text style={styles.infoValue}>{attendeeProfile?.title || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="business-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Company</Text>
+                      <Text style={styles.infoValue}>{attendeeProfile?.company || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.speakerEditButton}
+                    onPress={openAttendeeEditor}
+                    accessibilityLabel="Edit attendee information"
+                  >
+                    <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Attendee Information</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+              {speakerProfile && publicProfileTab === 'speaker' ? (
+                <>
+                  <View style={styles.speakerAvatarRow}>
+                    <TouchableOpacity
+                      style={styles.speakerAvatarButton}
+                      onPress={handleSpeakerAvatarPress}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit speaker photo"
+                    >
+                      <SpeakerAvatar
+                        name={speakerProfile.name}
+                        imageUrl={speakerProfile.imageUrl || undefined}
+                        fallbackImageUrl={eventPhotoUrl || undefined}
+                        size={72}
+                        showBorder
+                      />
+                      <View style={styles.speakerAvatarEditBadge}>
+                        <MaterialIcons name="camera-alt" size={15} color="#FFFFFF" />
+                      </View>
+                    </TouchableOpacity>
+                    <View style={styles.speakerAvatarCopy}>
+                      <Text style={styles.infoLabel}>Speaker profile photo</Text>
+                      <Text style={styles.speakerAvatarDescription}>Shown to attendees on your speaker profile</Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="mic-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Speaker Name</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.name}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Display Role</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.title || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="business-outline" size={22} color={colors.primary} />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Company</Text>
+                      <Text style={styles.infoValue}>{speakerProfile.company || 'Not set'}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.speakerEditButton}
+                    onPress={openSpeakerEditor}
+                    accessibilityLabel="Edit speaker information"
+                  >
+                    <MaterialIcons name="edit" size={18} color={colors.primary} />
+                    <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Speaker Information</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+            </Surface>
           </View>
 
-          {speakerProfile ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Speaker Information</Text>
-              <View style={styles.infoCard}>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="mic-outline" size={22} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Speaker Name</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.name}</Text>
-                  </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Display Role</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.title || 'Not set'}</Text>
-                  </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconContainer}>
-                    <Ionicons name="business-outline" size={22} color={colors.primary} />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Company</Text>
-                    <Text style={styles.infoValue}>{speakerProfile.company || 'Not set'}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.speakerEditButton}
-                  onPress={openSpeakerEditor}
-                  accessibilityLabel="Edit speaker information"
-                >
-                  <MaterialIcons name="edit" size={18} color={colors.primary} />
-                  <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Speaker Information</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Quick Actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, !activeUser && styles.actionButtonDisabled]}
-              onPress={handleAvatarPress}
-              disabled={!activeUser}
-              activeOpacity={0.7}
-            >
-              <View style={styles.actionIconContainer}>
-                <MaterialIcons name="photo-camera" size={24} color={colors.primary} />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Change Avatar</Text>
-                <Text style={styles.actionSubtitle}>Update your profile picture</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.text?.secondary || '#999'} />
-            </TouchableOpacity>
+            <Surface mode={isDark ? 'dark' : 'light'}>
+              <TouchableOpacity
+                style={styles.quickSettingsHeader}
+                onPress={() => setQuickSettingsExpanded((expanded) => !expanded)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Quick settings"
+                accessibilityHint="Show or hide quick settings"
+                accessibilityState={{ expanded: quickSettingsExpanded }}
+              >
+                <View style={styles.quickSettingsHeaderContent}>
+                  <Text style={styles.quickSettingsTitle}>
+                    Quick settings
+                  </Text>
+                  <Text style={styles.quickSettingsDescription}>
+                    Your most used account options
+                  </Text>
+                </View>
+                <Ionicons
+                  name={quickSettingsExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={uiPalette(isDark ? 'dark' : 'light').muted}
+                />
+              </TouchableOpacity>
+
+              {quickSettingsExpanded ? (
+                <View>
+                  {quickSettingsShortcuts.map((shortcut) => (
+                    <React.Fragment key={shortcut.key}>
+                      <View style={styles.quickSettingsDivider} />
+                      <TouchableOpacity
+                        style={styles.quickActionRow}
+                        onPress={shortcut.onPress}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={shortcut.title}
+                        accessibilityHint={shortcut.description}
+                      >
+                        <View style={styles.quickActionIcon}>
+                          <Ionicons name={shortcut.icon} size={22} color={colors.primary} />
+                        </View>
+                        <View style={styles.quickActionContent}>
+                          <Text style={styles.quickActionTitle}>{shortcut.title}</Text>
+                          <Text style={styles.quickActionDescription}>{shortcut.description}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={uiPalette(isDark ? 'dark' : 'light').muted} />
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+
+                  {onOpenSettings ? (
+                    <>
+                      <View style={styles.quickSettingsDivider} />
+                      <ActionButton
+                        mode={isDark ? 'dark' : 'light'}
+                        variant="ghost"
+                        label="More settings"
+                        leadingIcon={<Ionicons name="settings-outline" size={18} color={colors.primary} />}
+                        trailingIcon={<Ionicons name="chevron-forward" size={18} color={colors.primary} />}
+                        onPress={() => onOpenSettings()}
+                        style={styles.moreSettingsButton}
+                      />
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
+            </Surface>
           </View>
         </View>
       </ScrollView>
@@ -756,7 +896,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choose Avatar Style</Text>
+              <Text style={styles.modalTitle}>{avatarTarget === 'speaker' ? 'Speaker Profile Photo' : 'Choose Profile Picture'}</Text>
               <TouchableOpacity
                 onPress={() => setShowAvatarModal(false)}
                 style={styles.modalCloseButton}
@@ -765,7 +905,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            {speakerProfile && (
+            {avatarTarget === 'speaker' && speakerProfile && (
               <View style={styles.photoSourceRow} testID="speaker-photo-source">
                 {([
                   { key: 'event', label: 'Event photo', uri: eventPhotoUrl },
@@ -777,7 +917,7 @@ export default function ProfileScreen() {
                       key={option.key}
                       style={[styles.photoSourceOption, selected && styles.avatarOptionSelected]}
                       onPress={() => handleSpeakerPhotoSource(option.key)}
-                      disabled={updatingAvatar || selected}
+                      disabled={updatingAvatar || selected || (option.key === 'event' && !eventPhotoUrl)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       accessibilityLabel={`Use ${option.label.toLowerCase()} on speaker profile`}
@@ -798,12 +938,12 @@ export default function ProfileScreen() {
             )}
 
             <CloudinaryImageUpload
-              placeholder="Upload photo"
-              onUploadSuccess={handleUploadedAvatar}
+              placeholder={avatarTarget === 'speaker' ? 'Upload speaker photo' : 'Upload profile photo'}
+              onUploadSuccess={avatarTarget === 'speaker' ? handleUploadedSpeakerAvatar : handleUploadedAvatar}
               onUploadError={(error: Error) => showError('Upload Failed', error.message)}
             />
 
-            <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
+            {avatarTarget === 'profile' ? <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
               {AVATAR_STYLES.filter((style) => {
                 if (style.key === 'google-photo') {
                   return !!resolveAvatarUrl(rawSupabaseUser, activeUser);
@@ -852,13 +992,11 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </ScrollView> : null}
 
-            <View style={styles.modalFooter}>
-              <Text style={styles.modalFooterText}>
-                Select an avatar style to update your profile picture
-              </Text>
-            </View>
+            {avatarTarget === 'profile' ? <View style={styles.modalFooter}>
+              <Text style={styles.modalFooterText}>Select an avatar style to update your profile picture</Text>
+            </View> : null}
           </View>
         </View>
       </Modal>
@@ -1028,7 +1166,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 32,
-    paddingHorizontal: 20,
+    paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
     backgroundColor: isDark ? colors.background?.default || '#000000' : colors.background?.paper || '#FFFFFF',
   },
   avatarContainer: {
@@ -1090,7 +1228,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.primary || '#6366f1',
   },
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
     paddingTop: 8,
   },
   section: {
@@ -1143,6 +1281,61 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
+  quickSettingsHeader: {
+    minHeight: uiTokens.control.minHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: uiTokens.space.md,
+  },
+  quickSettingsHeaderContent: {
+    flex: 1,
+  },
+  quickSettingsTitle: {
+    color: uiPalette(isDark ? 'dark' : 'light').text,
+    fontSize: uiTokens.type.body,
+    fontWeight: '700',
+  },
+  quickSettingsDescription: {
+    color: uiPalette(isDark ? 'dark' : 'light').muted,
+    fontSize: uiTokens.type.label,
+    marginTop: uiTokens.space.xs,
+  },
+  quickSettingsDivider: {
+    height: uiTokens.control.borderWidth,
+    backgroundColor: uiPalette(isDark ? 'dark' : 'light').border,
+    marginVertical: uiTokens.space.md,
+  },
+  quickActionRow: {
+    minHeight: uiTokens.control.minHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+  },
+  quickActionIcon: {
+    width: uiTokens.control.compactHeight,
+    height: uiTokens.control.compactHeight,
+    borderRadius: uiTokens.radius.circle,
+    backgroundColor: uiPalette(isDark ? 'dark' : 'light').accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionContent: {
+    flex: 1,
+  },
+  quickActionTitle: {
+    color: uiPalette(isDark ? 'dark' : 'light').text,
+    fontSize: uiTokens.type.body,
+    fontWeight: '600',
+  },
+  quickActionDescription: {
+    color: uiPalette(isDark ? 'dark' : 'light').muted,
+    fontSize: uiTokens.type.label,
+    marginTop: uiTokens.space.xs,
+  },
+  moreSettingsButton: {
+    width: '100%',
+  },
   infoCard: {
     backgroundColor: isDark ? colors.card?.default || '#1a1a1a' : colors.card?.default || '#FFFFFF',
     borderRadius: 16,
@@ -1155,9 +1348,43 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? '#333333' : 'transparent',
   },
+  publicProfileCard: {
+    gap: uiTokens.space.md,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  speakerAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiTokens.space.md,
+  },
+  speakerAvatarButton: {
+    width: 72,
+    height: 72,
+    position: 'relative',
+  },
+  speakerAvatarEditBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: uiTokens.radius.circle,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.background.paper,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speakerAvatarCopy: {
+    flex: 1,
+  },
+  speakerAvatarDescription: {
+    color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
+    fontSize: uiTokens.type.label,
+    lineHeight: 20,
   },
   infoIconContainer: {
     width: 44,

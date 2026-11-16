@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { createActor } from 'xstate';
 
+import { clearAuthenticator, hasActiveAuthenticatorChallenge } from '../lib/authenticator-session';
 import { fetchSetup } from '../lib/setup-client';
-import { currentProof } from '../lib/step-up-session';
 import { walletGuardMachine, walletGuardPhase, type WalletGuardPhase } from './wallet-guard-machine';
 import { usePin, type UsePin } from './usePin';
 import type { UseWalletGuard } from './useWalletGuard.types';
@@ -19,17 +20,20 @@ export const WALLET_UNLOCK_SCOPE = 'wallet:unlock' as const;
 export function useWalletGuard(userId: string | null): UseWalletGuard {
   const pin = usePin(userId);
   const [phase, setPhase] = useState<WalletGuardPhase>('checking');
+  const ownerRef = useRef(userId);
+  if (ownerRef.current !== userId) { ownerRef.current = userId; clearAuthenticator(); setPhase('checking'); }
   const actorRef = useRef<ReturnType<typeof createActor<typeof walletGuardMachine>> | null>(null);
 
   const check = useCallback(async (actor: NonNullable<typeof actorRef.current>, cancelled: () => boolean) => {
     try {
       const setup = await fetchSetup();
       if (cancelled()) return;
-      actor.send({ type: 'CHECK_DONE', pinEnabled: setup.pin.enabled, unlocked: currentProof(userId, WALLET_UNLOCK_SCOPE) !== null });
+      const result = { type: 'CHECK_DONE' as const, pinEnabled: setup.pin.enabled, unlocked: false };
+      actor.send(result);
     } catch { if (!cancelled()) actor.send({ type: 'CHECK_FAILED' }); }
   }, [userId]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!userId) { setPhase('checking'); return undefined; }
     let stopped = false;
     const actor = createActor(walletGuardMachine);
@@ -37,9 +41,15 @@ export function useWalletGuard(userId: string | null): UseWalletGuard {
     const subscription = actor.subscribe(snapshot => setPhase(walletGuardPhase(snapshot.value)));
     actor.start();
     void check(actor, () => stopped);
-    const app = AppState.addEventListener('change', state => { if (state !== 'active') actor.send({ type: 'APP_BACKGROUND' }); });
-    return () => { stopped = true; app.remove(); subscription.unsubscribe(); actor.stop(); actorRef.current = null; };
-  }, [userId, check]);
+    const app = AppState.addEventListener('change', state => {
+      if (state !== 'active' && !hasActiveAuthenticatorChallenge() && actor.getSnapshot().matches('unlocked')) {
+        clearAuthenticator();
+        pin.lock(WALLET_UNLOCK_SCOPE);
+        actor.send({ type: 'APP_BACKGROUND' });
+      }
+    });
+    return () => { clearAuthenticator(); pin.lock(WALLET_UNLOCK_SCOPE); stopped = true; app.remove(); subscription.unsubscribe(); actor.stop(); actorRef.current = null; };
+  }, [userId, check, pin.lock]));
 
   // Observe proof expiry: unlocked content must not outlive the proof that opened it.
   const unlocked = phase === 'unlocked' && pin.isUnlocked(WALLET_UNLOCK_SCOPE);
@@ -55,5 +65,5 @@ export function useWalletGuard(userId: string | null): UseWalletGuard {
   const onPinDone = useCallback(() => actorRef.current?.send({ type: 'UNLOCKED' }), []);
   const retry = useCallback(() => { const a = actorRef.current; if (a) { a.send({ type: 'RETRY' }); void check(a, () => false); } }, [check]);
   const lock = useCallback(() => actorRef.current?.send({ type: 'LOCKED' }), []);
-  return { phase, pin, onPinDone, retry, lock };
+  return { phase: phase === 'unlocked' && !unlocked ? 'checking' : phase, pin, onPinDone, retry, lock };
 }

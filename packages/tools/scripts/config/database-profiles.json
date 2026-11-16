@@ -195,7 +195,9 @@
       "db/migrations/V149__harden_external_ticket_claim_fingerprints.sql",
       "db/migrations/V151__attach_qr_proof_to_pending_ticket_claims.sql",
       "db/migrations/V152__external_ticket_ownership_and_reports.sql",
-      "db/migrations/V153__ticket_claim_review_and_guards.sql"
+      "db/migrations/V153__ticket_claim_review_and_guards.sql",
+      "db/migrations/V178__expire_admission_qr_with_ended_passes.sql",
+      "db/migrations/V179__require_event_for_pass_qr_validation.sql"
     ],
     "event-auth-allies": [
       "db/migrations/V083__event_auth_allies.sql"
@@ -292,7 +294,8 @@
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",
-      "db/migrations/V024__expand_event_agenda_types.sql"
+      "db/migrations/V024__expand_event_agenda_types.sql",
+      "db/migrations/V177__backend_event_pass_metadata_and_expiration.sql"
     ],
     "speaker-identity-claims": [
       "db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql",
@@ -362,7 +365,9 @@
       "db/migrations/V097__non_custodial_wallet_enrollment.sql",
       "db/migrations/V137__wallet_vault.sql",
       "db/migrations/V138__wallet_pin_recovery.sql",
-      "db/migrations/V154__companion_email_confirmation_purpose.sql"
+      "db/migrations/V154__companion_email_confirmation_purpose.sql",
+      "db/migrations/V175__authenticator_security.sql",
+      "db/migrations/V176__wallet_email_two_factor.sql"
     ],
     "speaker-directory-status": [
       "db/migrations/V139__speaker_directory_status.sql"

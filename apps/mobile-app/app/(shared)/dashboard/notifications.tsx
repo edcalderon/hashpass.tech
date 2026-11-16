@@ -7,8 +7,9 @@ import DashboardRefreshButton from '../../../components/dashboard/DashboardRefre
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
-import { ActionButton, Badge, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
-import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import { ActionButton, Badge, SegmentedTabs } from '@hashpass/ui/primitives';
+import { DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import DashboardNoticeCard from '../../../components/dashboard/DashboardNoticeCard';
 import { useTranslation } from '../../../i18n/i18n';
 import { apiClient } from '../../../lib/api-client';
 import { disablePushForCurrentAccount, registerCurrentDeviceForPush } from '../../../lib/push-notification-registration';
@@ -46,6 +47,7 @@ export default function NotificationsScreen() {
   const [pushDeviceCount, setPushDeviceCount] = useState(0);
   const [pushSettingsLoading, setPushSettingsLoading] = useState(false);
   const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+  const [showPushNotice, setShowPushNotice] = useState(true);
 
   const refreshPushSettings = useCallback(async () => {
     const response = await apiClient.get('notifications/push-token', { skipEventSegment: true, retries: 0 });
@@ -501,7 +503,7 @@ export default function NotificationsScreen() {
               accentColor={palette.accent}
               onLinkOpen={() => {
                 notification.notificationIds.forEach((id: string) => {
-                  const sourceNotification = notifications.find((item) => item.id === id);
+                  const sourceNotification = notifications.find((item: Notification) => item.id === id);
                   if (sourceNotification && !sourceNotification.is_read) void markAsRead(id);
                 });
               }}
@@ -579,7 +581,7 @@ export default function NotificationsScreen() {
                 label={t('center.archive')}
                 labelNumberOfLines={1}
                 variant="ghost"
-                leadingIcon={<MaterialIcons name="archive" size={18} color={palette.muted} />}
+                leadingIcon={<MaterialIcons name="archive" size={18} color={palette.accent} />}
                 onPress={() => handleArchiveNotification(notification)}
                 style={styles.cardAction}
               />
@@ -635,39 +637,52 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      <Surface mode={mode} style={{ padding: uiTokens.space.md, gap: uiTokens.space.sm }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: uiTokens.space.md }}>
-          <View style={{ flex: 1, minWidth: 220, gap: uiTokens.space.xs }}>
-            <Text style={{ color: palette.text, fontSize: uiTokens.type.body, fontWeight: '700' }}>Push notifications</Text>
-            <Text style={{ color: palette.muted, fontSize: uiTokens.type.caption, lineHeight: 20 }}>
-              {pushDeviceCount > 0
-                ? `Enabled on ${pushDeviceCount} device(s). You can enable this device too, or turn off push on all devices.`
-                : Platform.OS === 'web'
-                  ? 'Enable browser alerts on this device. In-app notifications remain available if push is turned off.'
-                  : 'Enable device alerts for important in-app updates.'}
-            </Text>
+      {showPushNotice ? (
+        <DashboardNoticeCard
+          mode={mode}
+          style={styles.pushNotice}
+          onDismiss={() => setShowPushNotice(false)}
+          dismissLabel={t('center.dismissPushNotice', 'Dismiss push notifications notice')}
+          testID="push-notifications-notice"
+        >
+          <View style={styles.pushNoticeContent}>
+            <View style={styles.pushNoticeCopy}>
+              <Text style={styles.pushNoticeTitle}>Push notifications</Text>
+              <Text style={styles.pushNoticeBody}>
+                {pushDeviceCount > 0
+                  ? `Enabled on ${pushDeviceCount} device(s). You can enable this device too, or turn off push on all devices.`
+                  : Platform.OS === 'web'
+                    ? 'Enable browser alerts on this device. In-app notifications remain available if push is turned off.'
+                    : 'Enable device alerts for important in-app updates.'}
+              </Text>
+            </View>
+            <View style={styles.pushNoticeActions}>
+              <ActionButton
+                mode={mode}
+                label="Enable on this device"
+                variant="primary"
+                loading={pushSettingsLoading}
+                disabled={pushSettingsLoading}
+                onPress={() => void updatePushSettings('enable-device')}
+              />
+              {pushDeviceCount > 0 ? <ActionButton
+                mode={mode}
+                label="Turn off on all devices"
+                variant="secondary"
+                loading={pushSettingsLoading}
+                disabled={pushSettingsLoading}
+                onPress={() => void updatePushSettings('disable-all')}
+              /> : null}
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiTokens.space.sm }}>
-            <ActionButton
-              mode={mode}
-              label="Enable on this device"
-              variant="primary"
-              loading={pushSettingsLoading}
-              disabled={pushSettingsLoading}
-              onPress={() => void updatePushSettings('enable-device')}
-            />
-            {pushDeviceCount > 0 ? <ActionButton
-              mode={mode}
-              label="Turn off on all devices"
-              variant="secondary"
-              loading={pushSettingsLoading}
-              disabled={pushSettingsLoading}
-              onPress={() => void updatePushSettings('disable-all')}
-            /> : null}
-          </View>
-        </View>
-        {pushFeedback ? <Text accessibilityRole="alert" style={{ color: pushFeedback.includes('enabled') || pushFeedback.includes('disabled') ? palette.success : palette.danger, fontSize: uiTokens.type.caption }}>{pushFeedback}</Text> : null}
-      </Surface>
+          {pushFeedback ? (
+            <Text accessibilityRole="alert" style={[
+              styles.pushNoticeFeedback,
+              { color: pushFeedback.includes('enabled') || pushFeedback.includes('disabled') ? palette.success : palette.danger },
+            ]}>{pushFeedback}</Text>
+          ) : null}
+        </DashboardNoticeCard>
+      ) : null}
 
       {/* Filter Section */}
       <UnifiedSearchAndFilter
@@ -689,6 +704,7 @@ export default function NotificationsScreen() {
           <SegmentedTabs
             mode={mode}
             scrollable
+            compact
             accessibilityLabel={t('center.title')}
             tabs={([
               ['all', t('center.all')],
@@ -806,8 +822,42 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     },
     heading: {
       gap: uiTokens.space.sm,
-      paddingHorizontal: uiTokens.space.lg,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       paddingBottom: uiTokens.space.lg,
+    },
+    pushNotice: {
+      marginHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
+    },
+    pushNoticeContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: uiTokens.space.md,
+    },
+    pushNoticeCopy: {
+      flex: 1,
+      minWidth: 220,
+      gap: uiTokens.space.xs,
+    },
+    pushNoticeTitle: {
+      color: colors.text.primary,
+      fontSize: uiTokens.type.body,
+      fontWeight: '700',
+    },
+    pushNoticeBody: {
+      color: colors.text.secondary,
+      fontSize: uiTokens.type.caption,
+      lineHeight: 20,
+    },
+    pushNoticeActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: uiTokens.space.sm,
+    },
+    pushNoticeFeedback: {
+      marginTop: uiTokens.space.sm,
+      fontSize: uiTokens.type.caption,
     },
     eyebrow: {
       color: colors.text.secondary,
@@ -839,7 +889,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
     },
     tabsRefreshRow: {
       flexDirection: 'row',
-      paddingHorizontal: uiTokens.space.lg,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       alignItems: 'center',
       gap: uiTokens.space.xs,
       paddingTop: uiTokens.space.xs,
@@ -857,7 +907,7 @@ const getStyles = (isDark: boolean, colors: any, topInset: number = 0, bottomIns
       flex: 1,
     },
     scrollContent: {
-      paddingHorizontal: uiTokens.space.lg,
+      paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
       paddingTop: uiTokens.space.sm,
       paddingBottom: bottomInset,
     },

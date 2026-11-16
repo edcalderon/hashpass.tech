@@ -2,10 +2,12 @@ import type { PropsWithChildren, ReactNode } from 'react';
 import type {
   NativeSyntheticEvent,
   PressableProps,
+  StyleProp,
   TextInputChangeEventData,
   TextInputFocusEventData,
   TextInputProps,
   TextStyle,
+  ViewStyle,
 } from 'react-native';
 
 export type FormFieldTextStyle = TextStyle;
@@ -19,6 +21,21 @@ export type FormFieldProps = TextInputProps & {
   /** Requests a native browser input type for the shared web field surface. */
   webInputType?: 'datetime-local';
   webInputStep?: number;
+};
+
+/** Shared search control used by dashboard search and discovery toolbars. */
+export type SearchFieldProps = Omit<TextInputProps, 'style' | 'value' | 'onChangeText'> & {
+  mode?: 'light' | 'dark';
+  value: string;
+  onChangeText: (value: string) => void;
+  leadingIcon: ReactNode;
+  /** Optional action for the leading glyph, such as opening search suggestions. */
+  onLeadingIconPress?: () => void;
+  leadingIconAccessibilityLabel?: string;
+  clearIcon?: ReactNode;
+  onClear?: () => void;
+  clearAccessibilityLabel?: string;
+  containerStyle?: StyleProp<ViewStyle>;
 };
 
 export type SegmentedTab<T extends string = string> = {

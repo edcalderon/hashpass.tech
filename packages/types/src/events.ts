@@ -122,6 +122,9 @@ export interface EventTourMeta {
   summary?: string;
 }
 
+/** Art treatment returned by the backend for an event wallet pass. */
+export type WalletPassStyle = "event";
+
 export interface EventConfig {
   id: string;
   name: string;

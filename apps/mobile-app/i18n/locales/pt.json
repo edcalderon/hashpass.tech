@@ -253,6 +253,11 @@
     "exchange": {
       "title": "Troca de tokens",
       "description": "Converter pontos em criptomoeda."
+    },
+    "guard": {
+      "unifiedSetupBody": "Escolha um PIN de 4 dígitos. Configurar um autenticador é opcional. Recomendamos um app autenticador para mais segurança e recuperação do PIN da carteira.",
+      "unifiedLockedBody": "Digite seu PIN para abrir Wallet & Contacts. Se você não cadastrou um autenticador, recomendamos configurar um para mais segurança e recuperação do PIN.",
+      "unifiedSetupTitle": "Configurar seu PIN"
     }
   },
   "digitalWallet": {
@@ -969,13 +974,17 @@
       "notifications": "Notificações: confira suas solicitações de reunião, atualizações e alertas importantes. O indicador mostra as não lidas. Toque para continuar.",
       "profile": "Perfil: veja e edite suas informações de perfil e as configurações da conta. Toque para continuar.",
       "settings": "Configurações: personalize preferências, tema, idioma e tutoriais. Toque para finalizar o tour da barra lateral.",
-      "admin": "Painel de Administração: gerencie passes, escaneie códigos QR e crie combinações de reuniões. Somente para administradores."
+      "admin": "Painel de Administração: gerencie passes, escaneie códigos QR e crie combinações de reuniões. Somente para administradores.",
+      "profileSettings": "Perfil e configurações: consulte e edite seu perfil, os dados da conta e as preferências do app em um só lugar. Toque para continuar."
     },
     "light": "Claro",
     "dark": "Escuro",
     "lightMode": "Modo claro",
     "darkMode": "Modo escuro",
-    "logout": "Sair"
+    "logout": "Sair",
+    "profileSettings": "Perfil e configurações",
+    "profileSettingsTabs": "Seções de perfil e configurações",
+    "walletContacts": "Carteira e contatos"
   },
   "explore": {
     "noEvent": "Nenhum evento disponível",
@@ -1547,5 +1556,18 @@
     "navNotifications": "Notificações",
     "navProfile": "Perfil",
     "guestDescription": "Você está explorando uma versão simplificada do HASHPASS. Cadastre-se e baixe o app para acessar a experiência completa, incluindo seus passes, eventos salvos e recursos da comunidade."
+  },
+  "pin": {
+    "authenticator": {
+      "optionalTitle": "Recomendamos um autenticador",
+      "optionalBody": "O acesso só com PIN continua disponível. Um app autenticador reforça a segurança e permite recuperar o PIN.",
+      "setup": "Configurar autenticador",
+      "continuePin": "Continuar com PIN",
+      "pinRequired": "Nenhum autenticador está configurado. É necessária uma verificação recente do PIN para continuar usando apenas o PIN.",
+      "setupUnavailable": "Não foi possível preparar a configuração do autenticador. Tente novamente em instantes; o acesso só com PIN continua disponível.",
+      "emailSendUnavailable": "A configuração está pronta, mas não foi possível enviar o código por e-mail. Tente novamente ou continue com seu PIN.",
+      "emailRateLimited": "Um e-mail de configuração foi enviado há pouco. Confira sua caixa de entrada ou tente novamente em um minuto.",
+      "unavailable": "Não foi possível confirmar o status do autenticador nem preparar a configuração. Verifique sua conexão e tente novamente. Se você não cadastrou um autenticador, pode usar apenas o PIN."
+    }
   }
 }

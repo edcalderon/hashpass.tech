@@ -19,15 +19,10 @@ export interface PassDepthLayerProps {
   pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
 }
 
-// Maximum rotation at the very corner of the card, in degrees. Past ~10 the
-// text edges start to alias and it reads as a gimmick rather than a physical
-// card catching the light.
-const MAX_TILT_DEG = 9;
 const PERSPECTIVE_PX = 1100;
-const REST_TRANSFORM = `perspective(${PERSPECTIVE_PX}px) rotateX(0deg) rotateY(0deg) translateZ(0px)`;
 
 /**
- * Lifts a layer of the card off its face so it parallaxes against the tilt.
+ * Lifts a layer of the card off its face within the static 3D context.
  *
  * Only meaningful on web: it relies on the parent's `transform-style:
  * preserve-3d`, which is what makes translateZ resolve in the same 3D
@@ -57,13 +52,14 @@ export const PassDepthLayer: React.FC<PassDepthLayerProps> = ({
 };
 
 /**
- * The web half of the pass card's 3D treatment: the card tilts toward the
- * pointer with a specular sheen that tracks it, so it reads as a physical
- * pass being angled in the light rather than a flat rectangle.
+ * The web half of the pass card's hover treatment. A pointer-tracked sheen
+ * gives the surface a little depth without transforming the card contents.
+ * Continuously rotating the whole face forced browsers to re-rasterize its
+ * text and SVG icons on every pointer frame, which made the controls flicker.
  *
  * Written against the DOM directly rather than through animated state on
  * purpose -- pointer movement fires far faster than React can usefully
- * re-render, so the transform is written inside a single rAF frame and never
+ * re-render, so the sheen is updated inside a single rAF frame and never
  * touches the React tree. Same approach as components/GlowingEffect.web.tsx.
  */
 const PassTiltCard: React.FC<PassTiltCardProps> = ({
@@ -79,6 +75,12 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
   const sheenRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const { supports3d } = usePassMotionPreferences();
+  const baseShadow = isDark
+    ? `0 18px 40px -18px ${accentColor}66, 0 8px 24px -12px rgba(0,0,0,0.8)`
+    : `0 18px 40px -20px ${accentColor}55, 0 8px 20px -14px rgba(0,0,0,0.35)`;
+  const hoverShadow = isDark
+    ? `0 20px 44px -18px ${accentColor}77, 0 9px 26px -12px rgba(0,0,0,0.76)`
+    : `0 20px 44px -20px ${accentColor}66, 0 9px 24px -14px rgba(0,0,0,0.32)`;
 
   const reset = useCallback(() => {
     if (frameRef.current !== null) {
@@ -86,14 +88,14 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
       frameRef.current = null;
     }
     if (innerRef.current) {
-      innerRef.current.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
-      innerRef.current.style.transform = REST_TRANSFORM;
+      innerRef.current.style.transition = 'box-shadow 180ms ease-out';
+      innerRef.current.style.boxShadow = baseShadow;
     }
     if (sheenRef.current) {
       sheenRef.current.style.transition = 'opacity 420ms ease-out';
       sheenRef.current.style.opacity = '0';
     }
-  }, []);
+  }, [baseShadow]);
 
   const handleMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -116,14 +118,8 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
         frameRef.current = null;
         const inner = innerRef.current;
         if (inner) {
-          inner.style.transition = 'transform 90ms linear';
-          inner.style.transform =
-            `perspective(${PERSPECTIVE_PX}px) ` +
-            `rotateX(${(-py * 2 * MAX_TILT_DEG).toFixed(2)}deg) ` +
-            `rotateY(${(px * 2 * MAX_TILT_DEG).toFixed(2)}deg) ` +
-            // No translateZ pop: changing the layer's depth changes its raster
-            // scale, which makes the SVG icons re-rasterize and blink mid-tilt.
-            'translateZ(0px)';
+          inner.style.transition = 'box-shadow 180ms ease-out';
+          inner.style.boxShadow = hoverShadow;
         }
 
         const sheen = sheenRef.current;
@@ -137,7 +133,7 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
         }
       });
     },
-    [disabled, isDark, supports3d]
+    [disabled, hoverShadow, isDark, supports3d]
   );
 
   useEffect(
@@ -180,11 +176,8 @@ const PassTiltCard: React.FC<PassTiltCardProps> = ({
             // Keep the preserve-3d context unclipped. The wrapper above is
             // the separate clipping layer for both the fallback and 3D card.
             transformStyle: supports3d ? 'preserve-3d' : undefined,
-            transform: supports3d ? REST_TRANSFORM : undefined,
-            willChange: supports3d ? 'transform' : undefined,
-            boxShadow: isDark
-              ? `0 18px 40px -18px ${accentColor}66, 0 8px 24px -12px rgba(0,0,0,0.8)`
-              : `0 18px 40px -20px ${accentColor}55, 0 8px 20px -14px rgba(0,0,0,0.35)`,
+            boxShadow: baseShadow,
+            transition: 'box-shadow 180ms ease-out',
           }}
         >
           {children}

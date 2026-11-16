@@ -130,14 +130,15 @@ describe('PassTiltCard.web', () => {
     expect(inner.props.style.overflow).toBeUndefined();
   });
 
-  it('keeps the 3D context unclipped behind a separate clipping shell', () => {
+  it('keeps the 3D context unclipped without applying a transform to card contents', () => {
     const renderer = render(<PassTiltCard>Pass face</PassTiltCard>);
     const [outer, clippingShell, inner] = renderer.root.findAllByType('div');
 
     expect(outer.props.style.perspective).toBe('1100px');
     expect(clippingShell.props.style.overflow).toBe('hidden');
     expect(inner.props.style.transformStyle).toBe('preserve-3d');
-    expect(inner.props.style.overflow).toBeUndefined();
+    expect(inner.props.style.transform).toBeUndefined();
+    expect(inner.props.style.willChange).toBeUndefined();
   });
 
   it('does not leave translateZ layers active in the touch fallback', () => {
@@ -246,7 +247,7 @@ describe('PassTiltCard.web', () => {
       pending.forEach((cb) => cb(0));
     };
 
-    it('rotates toward the pointer and shows a tracking sheen, then relaxes back on leave', () => {
+    it('tracks a sheen and shadow without rotating the card contents, then resets on leave', () => {
       const { renderer, createdNodes } = renderWithDomRefs(
         <PassTiltCard accentColor="#34A853" isDark>
           <div>Pass face</div>
@@ -261,8 +262,9 @@ describe('PassTiltCard.web', () => {
         flushFrames();
       });
 
-      expect(innerMock.style.transform).toContain('rotateX(4.50deg)');
-      expect(innerMock.style.transform).toContain('rotateY(4.50deg)');
+      // Continuous transforms rasterized every icon and made them blink.
+      expect(innerMock.style.transform).toBeUndefined();
+      expect(innerMock.style.boxShadow).toContain('0 20px 44px');
       expect(sheenMock.style.opacity).toBe('0.5');
       expect(sheenMock.style.background).toContain('75.0% 25.0%');
       expect(sheenMock.style.background).toContain('rgba(255,255,255,0.22)');
@@ -271,8 +273,9 @@ describe('PassTiltCard.web', () => {
         outer!.props.onPointerLeave();
       });
 
-      expect(innerMock.style.transform).toBe(
-        'perspective(1100px) rotateX(0deg) rotateY(0deg) translateZ(0px)',
+      expect(innerMock.style.transform).toBeUndefined();
+      expect(innerMock.style.boxShadow).toBe(
+        '0 18px 40px -18px #34A85366, 0 8px 24px -12px rgba(0,0,0,0.8)',
       );
       expect(sheenMock.style.opacity).toBe('0');
     });

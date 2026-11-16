@@ -18,10 +18,11 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { ActionButton, HoverText } from '@hashpass/ui/primitives';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiTokens, withAlpha } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
 import { useToastHelpers } from '../../contexts/ToastContext';
+import SafeBlurView from '../SafeBlurView';
 import type { WalletPass } from '../../lib/pass-wallet';
 import { normalizePassNumber } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
@@ -54,6 +55,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const [isFlipped, setIsFlipped] = useState(false);
   const { supports3d, reducedMotion } = usePassMotionPreferences();
   const passNumber = normalizePassNumber(pass.pass_number);
+  const isEventPass = pass.walletPassStyle === 'event';
   const isNative = Platform.OS !== 'web';
 
   // A card behind the front one is already non-interactive (disabled via
@@ -293,18 +295,58 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             height: '100%',
             position: 'relative',
           }}
-          imageStyle={{
-            opacity: 0.3
-          }}
+          imageStyle={{ opacity: isEventPass ? 0.38 : 0.3 }}
         >
-          <View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: `${getPassTypeColor(pass.pass_type)}20`
-          }} />
+          {isEventPass ? (
+            <>
+              <SafeBlurView
+                pointerEvents="none"
+                intensity={16}
+                tint={isDark ? 'dark' : 'light'}
+                style={Platform.OS === 'web'
+                  ? {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                  } as any
+                  : {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+              />
+              <View
+                testID="pass-event-blue-overlay"
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: withAlpha(
+                    pass.walletPassColor ?? colors.primary,
+                    isDark ? 112 : 90,
+                  ),
+                }}
+              />
+            </>
+          ) : (
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: `${getPassTypeColor(pass.pass_type)}20`
+            }} />
+          )}
           <View style={{
             position: 'absolute',
             bottom: 12,
@@ -371,7 +413,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                 fontWeight: '700',
                 color: getPassTypeColor(pass.pass_type)
               }}>
-                {(pass.status || '').toUpperCase()}
+                {isEventPass
+                  ? t({ id: 'passes.pass', message: 'Pass' }).toUpperCase()
+                  : (pass.status || '').toUpperCase()}
               </Text>
             </View>
           </View>
@@ -501,7 +545,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           disabled={!interactive}
           onPress={handleFlip}
         >
-          <MaterialIcons name="info" size={16} color={colors.primary} />
+          <MaterialIcons name="flip" size={16} color={colors.primary} />
           <Text style={{
             fontSize: 12,
             fontWeight: '600',
@@ -820,7 +864,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   return (
     <View style={{ width: '100%', height: PASS_CARD_HEIGHT }}>
       <PassTiltCard
-        accentColor={getPassTypeColor(pass.pass_type)}
+        accentColor={isEventPass
+          ? pass.walletPassColor ?? getPassTypeColor(pass.pass_type)
+          : getPassTypeColor(pass.pass_type)}
         isDark={isDark}
         disabled={!interactive}
         style={{ width: '100%', height: PASS_CARD_HEIGHT, borderRadius: 16 }}

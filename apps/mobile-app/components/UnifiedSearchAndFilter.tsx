@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Pressable, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Platform, useWindowDimensions } from 'react-native';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
 // font glyphs @expo/vector-icons renders directly; the raw font can show its
 // tofu/"?" fallback glyph for a window before the icon font loads on web.
 import { MaterialIcons, NativeSafeIcon } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
+import { SearchField } from '@hashpass/ui/primitives';
 
 // Generic interfaces for different data types
 interface BaseItem {
@@ -326,24 +327,18 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
       {/* Top Row: Search Input + Filter Button */}
       <View style={styles.topRow}>
         {/* Search Input - expands to left */}
-        <View style={styles.searchContainer}>
-          <MaterialIcons name="search" size={20} color={colors.text.secondary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={searchPlaceholder}
-            placeholderTextColor={colors.text.secondary}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={() => handleSearchChange('')}
-            >
-              <MaterialIcons name="clear" size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchField
+          mode={isDark ? 'dark' : 'light'}
+          leadingIcon={<MaterialIcons name="search" size={20} color={colors.text.secondary} />}
+          value={searchQuery}
+          onChangeText={handleSearchChange}
+          placeholder={searchPlaceholder}
+          accessibilityLabel={searchPlaceholder}
+          returnKeyType="search"
+          clearIcon={<NativeSafeIcon name="close" size={18} color={colors.text.secondary} />}
+          clearAccessibilityLabel="Clear search"
+          onClear={() => handleSearchChange('')}
+        />
 
         {/* Filter Button - top right corner */}
         {filterGroups.length > 0 && (
@@ -356,8 +351,8 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
           >
             <NativeSafeIcon
               name="filter"
-              size={21}
-              color={hasActiveFilters ? colors.primaryContrastText : colors.primary}
+              size={22}
+              color={colors.primary}
             />
             {hasActiveFilters && (
               <View style={styles.filterBadge}>
@@ -462,36 +457,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
       ? ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } as any)
       : { position: 'absolute', top: -2000, left: -2000, right: -2000, bottom: -2000 }),
   },
-  // Search Container - expands to left
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderRadius: uiTokens.radius.media,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text.primary,
-    paddingVertical: 4,
-  },
-  clearButton: {
-    padding: 4,
-  },
   // Filter Button - top right corner
   filterButton: {
     width: 46,
     height: 46,
     borderRadius: uiTokens.radius.media,
-    backgroundColor: colors.background.paper,
+    backgroundColor: uiPalette(isDark ? 'dark' : 'light').accentSoft,
     borderWidth: 1,
     borderColor: colors.divider,
     justifyContent: 'center',
@@ -499,7 +470,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     position: 'relative',
   },
   filterButtonActive: {
-    backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   filterBadge: {

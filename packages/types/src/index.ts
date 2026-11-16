@@ -2,6 +2,7 @@ export * from "./agenda";
 export type {
   Speaker,
   EventConfig,
+  WalletPassStyle,
   EventBannerSlide,
   EventBannerCtaPosition,
   EventBannerSlideI18n,

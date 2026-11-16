@@ -58,6 +58,8 @@ export interface ContactsExperienceProps {
   signedIn: boolean;
   standalone?: boolean;
   mode: 'light' | 'dark';
+  /** Keep an open editor mounted but hidden while a protected save is verified. */
+  authenticating?: boolean;
   onAction: (action: ContactsAction) => Promise<boolean>;
   onRetry: () => void;
   onSignIn: () => void;
