@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
+import { ActionButton, SegmentedTabs } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
 import { DASHBOARD_PAGE_MAX_WIDTH, DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useTranslation } from '../../../i18n/i18n';
@@ -9,6 +9,7 @@ import BlockchainTokensView from '../../../components/BlockchainTokensView';
 import HashPointsView from '../../../components/HashPointsView';
 import BlockchainTicketsView from '../../../components/BlockchainTicketsView';
 import WalletEnrollmentView from '../../../components/wallet/WalletEnrollmentView';
+import type { State as WalletEnrollmentState } from '../../../components/wallet/WalletEnrollmentView.types';
 import WalletVaultFlow from '../../../components/wallet/WalletVaultFlow';
 import { walletEnrollmentClient } from '../../../lib/wallet/enrollment-client';
 import type { WalletEnrollment } from '../../../lib/wallet/enrollment-types';
@@ -20,6 +21,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useWalletGuard, WALLET_UNLOCK_SCOPE } from '../../../hooks/useWalletGuard';
 import type { ThemeColors } from '../../../lib/theme';
 import { uiTokens } from '@hashpass/ui/tokens';
+import DashboardNoticeCard from '../../../components/dashboard/DashboardNoticeCard';
 import { Ionicons } from '../../../lib/vector-icons';
 import { authenticatorStatus } from '../../../lib/authenticator-client';
 
@@ -32,7 +34,7 @@ export default function WalletScreen() {
   // registry id (rememberProof drops everything when the owner changes).
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const guard = useWalletGuard(authLoading ? null : dbUserId ?? null);
-  return <WalletGate guard={guard} signedIn={!!user} />;
+  return <WalletGate key={dbUserId ?? 'signed-out'} guard={guard} signedIn={!!user} />;
 }
 
 function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGuard>; signedIn: boolean }) {
@@ -41,17 +43,32 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   const { t } = useTranslation('wallet');
   const styles = getStyles(colors);
   const [authenticatorEnabled, setAuthenticatorEnabled] = useState<boolean | null>(null);
+  const [authenticatorUnavailable, setAuthenticatorUnavailable] = useState(false);
+  const [enrollmentState, setEnrollmentState] = useState<WalletEnrollmentState>({ status: 'loading' });
+  const preflightGeneration = useRef(0);
   useEffect(() => {
-    if (guard.phase !== 'unlocked') {
+    if (guard.phase === 'checking') {
+      preflightGeneration.current += 1;
       setAuthenticatorEnabled(null);
-      return undefined;
+      setAuthenticatorUnavailable(false);
+      setEnrollmentState({ status: 'loading' });
+      return;
     }
-    let current = true;
+    if ((guard.phase !== 'locked' && guard.phase !== 'pin_setup') || !signedIn) return;
+    const current = ++preflightGeneration.current;
+    setAuthenticatorEnabled(null);
+    setAuthenticatorUnavailable(false);
+    setEnrollmentState({ status: 'loading' });
     void authenticatorStatus()
-      .then((status: { enabled: boolean }) => { if (current) setAuthenticatorEnabled(status.enabled); })
-      .catch(() => undefined);
-    return () => { current = false; };
-  }, [guard.phase]);
+      .then((status: { enabled: boolean }) => { if (current === preflightGeneration.current) setAuthenticatorEnabled(status.enabled); })
+      .catch(() => { if (current === preflightGeneration.current) setAuthenticatorUnavailable(true); });
+    void walletEnrollmentClient.load()
+      .then((row: WalletEnrollment) => { if (current === preflightGeneration.current) setEnrollmentState({ status: 'ready', row }); })
+      .catch((failure: unknown) => {
+        if (current === preflightGeneration.current) setEnrollmentState({ status: 'error',
+          reason: failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'not_enrolled' : 'unavailable' });
+      });
+  }, [guard.phase, signedIn]);
   // The email-code recovery must be reachable from the locked gate: both in-flow recovery
   // entry points sit inside WalletContent, which mounts only after a successful unlock.
   const [recovery, setRecovery] = useState<'idle' | 'authenticator' | 'loading' | 'active' | 'noWallet' | 'unavailable'>('idle');
@@ -65,7 +82,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       .catch((failure: unknown) => setRecovery(failure instanceof Error && failure.message === 'wallet_not_enrolled' ? 'noWallet' : 'unavailable'));
   }, []);
   const endRecovery = useCallback(() => setRecovery('idle'), []);
-  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} />;
+  if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} enrollmentState={enrollmentState} />;
   const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
@@ -76,7 +93,18 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
     {children}
   </ScrollView>;
   if (!signedIn) return shell(<Text style={styles.body}>{t('enrollment.signIn', 'Sign in to see your wallet status.')}</Text>);
-  if (guard.phase === 'checking') return shell(<Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>);
+  if (guard.phase === 'checking'
+    || ((guard.phase === 'locked' || guard.phase === 'pin_setup') && authenticatorEnabled === null && !authenticatorUnavailable)) {
+    return shell(<View accessibilityRole="progressbar" accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.transition}>
+      <ActivityIndicator color={colors.primary} />
+      <Text style={styles.body}>{t('guard.unlocking', 'Checking your wallet protection…')}</Text>
+    </View>);
+  }
+  if ((guard.phase === 'locked' || guard.phase === 'pin_setup') && authenticatorUnavailable) return shell(<View style={styles.panel}>
+    <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
+    <Pressable accessibilityRole="button" onPress={guard.retry} style={styles.outlineButton}>
+      <Text style={styles.buttonText}>{t('guard.retry', 'Try again')}</Text></Pressable>
+  </View>);
   if (guard.phase === 'unavailable') return shell(<View style={styles.panel}>
     <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
     <Pressable accessibilityRole="button" onPress={guard.retry} style={styles.outlineButton}>
@@ -109,7 +137,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
               </View>
             : <>
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
-                  authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
+                  authenticatorScope="access" authenticatorEnabled={authenticatorEnabled} intent={settingUp ? 'create' : 'unlock'}
                   onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
                   onDone={guard.onPinDone} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
@@ -123,9 +151,10 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
   </View>);
 }
 
-function WalletContent({ pin, authenticatorEnabled }: {
+function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
   pin: ReturnType<typeof useWalletGuard>['pin'];
   authenticatorEnabled: boolean | null;
+  enrollmentState: WalletEnrollmentState;
 }) {
   const params = useLocalSearchParams<{ section?: string; inviteCode?: string }>();
   const { colors, isDark } = useTheme();
@@ -170,7 +199,7 @@ function WalletContent({ pin, authenticatorEnabled }: {
     {section === 'assets' && <View style={styles.stack}>
       {/* Balance, send/receive, status and the PIN-protected vault flow all live in this
           one card (WalletEnrollmentView) — one unified section, not two stacked panels. */}
-      <WalletEnrollmentView pin={pin} />
+      <WalletEnrollmentView key={enrollmentState.status} pin={pin} initialState={enrollmentState} />
       <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>{t('overview.activity', 'Recent activity')}</Text>
         <View style={styles.transactionEmpty}>
@@ -213,37 +242,36 @@ function WalletContent({ pin, authenticatorEnabled }: {
     </View>}
     </ScrollView>
     {authenticatorEnabled === false && showAuthenticatorReminder ? (
-      <Surface mode={isDark ? 'dark' : 'light'} style={[styles.authenticatorReminder, { bottom: bottomInset + 16 }]} testID="authenticator-reminder">
-        <View style={styles.reminderIcon}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+      <DashboardNoticeCard
+        mode={isDark ? 'dark' : 'light'}
+        style={[styles.authenticatorReminder, { bottom: bottomInset + 16 }]}
+        onDismiss={() => setShowAuthenticatorReminder(false)}
+        dismissLabel={t('guard.dismissAuthenticatorReminder', 'Dismiss authenticator reminder')}
+        testID="authenticator-reminder"
+      >
+        <View style={styles.reminderContent}>
+          <View style={styles.reminderIcon}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text accessibilityRole="header" style={styles.reminderTitle}>
+              {t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}
+            </Text>
+            <Text style={styles.reminderBody}>
+              {t('guard.authenticatorRecommendedBody', 'PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.')}
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t('guard.authenticatorSetupCta', 'Set up two-step verification')}
+              onPress={() => router.push('/dashboard/profile-settings?shortcut=authenticator' as any)}
+              style={styles.reminderLink}
+            >
+              <Text style={styles.reminderLinkText}>{t('guard.authenticatorSetupCta', 'Set up two-step verification')}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.reminderCopy}>
-          <Text accessibilityRole="header" style={styles.reminderTitle}>
-            {t('guard.authenticatorRecommendedTitle', 'Authenticator recommended')}
-          </Text>
-          <Text style={styles.reminderBody}>
-            {t('guard.authenticatorRecommendedBody', 'PIN-only access is active. Add an authenticator for stronger security and easier PIN recovery.')}
-          </Text>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={t('guard.authenticatorSetupCta', 'Set up two-step verification')}
-            onPress={() => router.push('/dashboard/profile-settings?shortcut=authenticator' as any)}
-            style={styles.reminderLink}
-          >
-            <Text style={styles.reminderLinkText}>{t('guard.authenticatorSetupCta', 'Set up two-step verification')}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </Pressable>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('guard.dismissAuthenticatorReminder', 'Dismiss authenticator reminder')}
-          onPress={() => setShowAuthenticatorReminder(false)}
-          hitSlop={8}
-          style={styles.reminderClose}
-        >
-          <Ionicons name="close" size={20} color={colors.text.secondary} />
-        </Pressable>
-      </Surface>
+      </DashboardNoticeCard>
     ) : null}
     {section === 'contacts' && <ContactsScreen />}
     <WalletHelpButton onPress={() => setHelpOpen(true)} />
@@ -258,6 +286,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   eyebrow: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
   title: { color: colors.text.primary, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
+  transition: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 44 },
   stack: { gap: 20 },
   securityHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   securityHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
@@ -276,16 +305,10 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     right: DASHBOARD_PAGE_SIDE_PADDING,
     alignSelf: 'center',
     maxWidth: 520,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderRadius: 16,
     elevation: 8,
     zIndex: 20,
   },
+  reminderContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   reminderIcon: {
     width: 36,
     height: 36,
@@ -299,7 +322,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   reminderBody: { color: colors.text.secondary, fontSize: 13, lineHeight: 19 },
   reminderLink: { minHeight: 40, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4 },
   reminderLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
-  reminderClose: { minWidth: 36, minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { color: colors.text.primary, fontSize: 16, fontWeight: '600' },
   transactionEmpty: { gap: 12, alignItems: 'center', paddingVertical: 18, borderTopWidth: 1, borderColor: colors.divider, marginTop: 4 },
   transactionIcon: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },

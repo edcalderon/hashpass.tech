@@ -27,6 +27,7 @@ import type {
   FormFieldFocusEvent,
   FormFieldProps,
   FormFieldTextStyle,
+  SearchFieldProps,
   SegmentedTab,
 } from "./primitives.types";
 type Themed = { mode?: ColorMode };
@@ -425,7 +426,7 @@ export function FilterChip({
     />
   );
 }
-export type { ControlSkin, FormFieldProps, SegmentedTab } from "./primitives.types";
+export type { ControlSkin, FormFieldProps, SearchFieldProps, SegmentedTab } from "./primitives.types";
 
 /**
  * The one tab control: a rounded pill track with a filled selected segment,
@@ -902,6 +903,59 @@ export function FormField({
     </View>
   );
 }
+
+/**
+ * Shared 46px search control for dashboard toolbars. Callers provide the icon
+ * glyphs so each app can keep its existing icon set and accessibility labels.
+ */
+export function SearchField({
+  mode = "light",
+  value,
+  onChangeText,
+  leadingIcon,
+  clearIcon,
+  onClear,
+  clearAccessibilityLabel = "Clear search",
+  accessibilityLabel,
+  containerStyle,
+  placeholder,
+  ...inputProps
+}: SearchFieldProps) {
+  const palette = uiPalette(mode);
+  return (
+    <View
+      style={[
+        styles.searchField,
+        { backgroundColor: palette.raised, borderColor: palette.border },
+        containerStyle,
+      ]}
+    >
+      <View pointerEvents="none" style={styles.searchLeadingIcon}>
+        {leadingIcon}
+      </View>
+      <TextInput
+        {...inputProps}
+        accessibilityLabel={accessibilityLabel || placeholder || "Search"}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={palette.muted}
+        style={[styles.searchInput, { color: palette.text }]}
+      />
+      {value.length > 0 && onClear && clearIcon ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={clearAccessibilityLabel}
+          onPress={onClear}
+          hitSlop={8}
+          style={styles.searchClearButton}
+        >
+          {clearIcon}
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
 /**
  * Text with full-content tooltip on hover/long-press when truncated.
  * Detects truncation via onTextLayout and only shows the affordance when needed.
@@ -1072,6 +1126,34 @@ const styles = StyleSheet.create({
     borderWidth: uiTokens.control.borderWidth,
     borderRadius: uiTokens.radius.card,
     padding: uiTokens.space.xl,
+  },
+  searchField: {
+    flex: 1,
+    height: 46,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: uiTokens.space.sm,
+    paddingHorizontal: 13,
+    borderRadius: uiTokens.radius.media,
+    borderWidth: uiTokens.control.borderWidth,
+  },
+  searchLeadingIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    height: "100%",
+    paddingVertical: 0,
+    fontSize: 14,
+  },
+  searchClearButton: {
+    minWidth: 28,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   badge: {
     alignSelf: "center",

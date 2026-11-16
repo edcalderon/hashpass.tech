@@ -3,8 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ActionButton } from '@hashpass/ui/primitives';
 import { uiTokens } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
-import type { PinProblem, UsePin } from '../../hooks/usePin';
-import type { StepUpScope } from '../../lib/step-up-session';
+import type { PinProblem } from '../../hooks/usePin';
 import type { AuthenticatorCompletion } from '../../types/authenticator.types';
 import PinPad from './PinPad';
 import AuthenticatorFlow from './AuthenticatorFlow';
@@ -33,13 +32,17 @@ export function describePinProblem(problem: PinProblem | null, t: Translate, now
  * Enrolled authenticators add a verification step; otherwise the PIN can be used on its own.
  * Digits stay in transient component memory until the flow completes or unmounts; they are never persisted.
  */
-export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope }: PinFlowProps) {
+export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, onAuthenticatorComplete, authenticatorScope, authenticatorEnabled }: PinFlowProps) {
   const { t } = useTranslation('pin');
   const [verifiedPin, setVerifiedPin] = useState<string | null>(null);
   const completed = useCallback((entered: string) => {
-    if (scope === 'wallet:unlock' || scope === 'wallet:sign') setVerifiedPin(entered);
+    if (scope === 'wallet:unlock' && authenticatorEnabled === false) {
+      onAuthenticatorComplete?.('pin');
+      onDone(entered);
+    }
+    else if (scope === 'wallet:unlock' || scope === 'wallet:sign') setVerifiedPin(entered);
     else onDone(entered);
-  }, [scope, onDone]);
+  }, [scope, onDone, authenticatorEnabled, onAuthenticatorComplete]);
   const [creating, setCreating] = useState(intent === 'create');
   const [first, setFirst] = useState<string | null>(null);
   const [mismatch, setMismatch] = useState(false);
@@ -80,7 +83,7 @@ export default function PinFlow({ mode, pin, scope, intent, onDone, onCancel, on
   const onUnenrolled = useCallback(() => complete('pin'), [complete]);
 
   if (verifiedPin !== null) return <View style={styles.root}>
-    <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)}
+    <AuthenticatorFlow scope={authenticatorScope ?? 'critical'} pinProof={pin.proofFor(scope)} initialEnabled={authenticatorEnabled ?? undefined}
       onDone={complete} onUnenrolled={onUnenrolled} />
     <ActionButton mode={mode} variant="ghost" label={t('cancel', 'Back to PIN entry')} onPress={() => { setVerifiedPin(null); onCancel?.(); }} />
   </View>;

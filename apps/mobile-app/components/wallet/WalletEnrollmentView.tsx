@@ -16,7 +16,7 @@ import DashboardRefreshButton from '../dashboard/DashboardRefreshButton';
 import WalletVaultFlow, { type VaultCommand } from './WalletVaultFlow';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { PESO_CURRENCY_OPTIONS } from './WalletEnrollmentView.types';
-import type { BalanceCurrency, BalanceDisplayMode, BalanceState, PesoCurrency, State, WalletChain, WalletNetwork } from './WalletEnrollmentView.types';
+import type { BalanceCurrency, BalanceDisplayMode, BalanceState, PesoCurrency, State, WalletChain, WalletNetwork, WalletEnrollmentViewProps } from './WalletEnrollmentView.types';
 
 const WALLET_SHARE_ORIGIN = (process.env.EXPO_PUBLIC_LINKS_API_BASE_URL || 'https://hpass.id').replace(/\/$/, '');
 
@@ -28,10 +28,10 @@ const WALLET_SHARE_ORIGIN = (process.env.EXPO_PUBLIC_LINKS_API_BASE_URL || 'http
  * A refresh reads public chain balances and current fiat quotes; until those sources
  * respond, the total stays honest and never becomes a fabricated zero.
  */
-export default function WalletEnrollmentView({ pin }: { pin?: UsePin }) {
+export default function WalletEnrollmentView({ pin, initialState }: WalletEnrollmentViewProps) {
   const { dbUserId, user } = useAuth();
   // Remount before rendering a different account. Late responses are discarded.
-  return <Enrollment key={`${user?.id ?? 'signed-out'}:${dbUserId ?? ''}`} accountId={user?.id} pin={pin} />;
+  return <Enrollment key={`${user?.id ?? 'signed-out'}:${dbUserId ?? ''}`} accountId={user?.id} pin={pin} initialState={initialState} />;
 }
 
 function WalletNetworkBadge({ network, connected }: { network: WalletNetwork; connected: boolean }) {
@@ -65,12 +65,12 @@ function WalletNetworkBadge({ network, connected }: { network: WalletNetwork; co
   </View>;
 }
 
-function Enrollment({ accountId, pin }: { accountId: string | null | undefined; pin?: UsePin }) {
+function Enrollment({ accountId, pin, initialState }: { accountId: string | null | undefined; pin?: UsePin; initialState?: State }) {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('wallet');
   const { showToast } = useToast();
   const mode = isDark ? 'dark' : 'light';
-  const [state, setState] = useState<State>({ status: 'loading' });
+  const [state, setState] = useState<State>(initialState ?? { status: 'loading' });
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [networkMenuOpen, setNetworkMenuOpen] = useState(false);
@@ -133,7 +133,10 @@ function Enrollment({ accountId, pin }: { accountId: string | null | undefined; 
       return null;
     }
   }, [accountId]);
-  useEffect(() => { void load(); return () => { request.current++; balanceRequest.current++; }; }, [load]);
+  useEffect(() => {
+    if (initialState === undefined) void load();
+    return () => { request.current++; balanceRequest.current++; };
+  }, [initialState, load]);
   const row = state.status === 'ready' ? state.row : null;
   const wallet = row?.wallet;
   const network = wallet?.network ?? row?.network ?? 'testnet';

@@ -9,6 +9,7 @@ import {
   FilterChip,
   SegmentedTabs,
   FormField,
+  SearchField,
   HoverText,
   Surface,
   type ControlSkin,
@@ -18,6 +19,7 @@ import { contrastRatio, onFillPairs, uiPalette, uiTokens, type ColorMode } from 
 function Catalog({ mode = "light" }: { mode?: ColorMode }) {
   const palette = uiPalette(mode);
   const [removeBackground, setRemoveBackground] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
   return (
     <View
       style={{
@@ -414,6 +416,29 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         editable={false}
         value="Read only"
       />
+      <View style={{ gap: uiTokens.space.sm }}>
+        <SearchField
+          mode={mode}
+          leadingIcon={<Text style={{ color: palette.muted, fontSize: 20 }}>⌕</Text>}
+          value={searchValue}
+          onChangeText={setSearchValue}
+          placeholder="Search events, passes, cities"
+          accessibilityLabel="Search discovery"
+          clearIcon={<Text style={{ color: palette.muted, fontSize: 20 }}>×</Text>}
+          clearAccessibilityLabel="Clear search"
+          onClear={() => setSearchValue("")}
+        />
+        <SearchField
+          mode={mode}
+          leadingIcon={<Text style={{ color: palette.muted, fontSize: 20 }}>⌕</Text>}
+          value="Conference passes and city events"
+          onChangeText={() => undefined}
+          placeholder="Search events, passes, cities"
+          accessibilityLabel="Search results"
+          clearIcon={<Text style={{ color: palette.muted, fontSize: 20 }}>×</Text>}
+          onClear={() => undefined}
+        />
+      </View>
       <View style={{ gap: uiTokens.space.md }}>
         <Text
           style={{

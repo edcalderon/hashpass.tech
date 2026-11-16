@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Modal, ActivityIndicator, TextInput, Switch } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
-import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import { DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
@@ -1166,7 +1166,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 32,
-    paddingHorizontal: 20,
+    paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
     backgroundColor: isDark ? colors.background?.default || '#000000' : colors.background?.paper || '#FFFFFF',
   },
   avatarContainer: {
@@ -1228,7 +1228,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.primary || '#6366f1',
   },
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
     paddingTop: 8,
   },
   section: {

@@ -10,6 +10,7 @@ import {
   ArrowUp,
   ArrowUpRight,
   ArrowDownLeft,
+  Archive,
   Diamond,
   Download,
   EllipsisVertical,
@@ -163,6 +164,7 @@ export type NativeSafeIconName =
   | "arrow-left"
   | "arrow-right"
   | "refresh"
+  | "close"
   | "event"
   | "map-pin"
   | "mic"
@@ -195,6 +197,7 @@ const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
   "arrow-left": ArrowLeft,
   "arrow-right": ArrowRight,
   refresh: RefreshCw,
+  close: X,
   event: CalendarDays,
   "map-pin": MapPin,
   mic: Mic,
@@ -268,6 +271,8 @@ export const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   // unmapped names intentionally fall back to CircleHelp, so add new names
   // before using them in UI copy or controls.
   add: Plus,
+  archive: Archive,
+  "archive-outline": Archive,
   "add-circle-outline": CirclePlus,
   "remove-circle-outline": CircleMinus,
   "more-vert": EllipsisVertical,

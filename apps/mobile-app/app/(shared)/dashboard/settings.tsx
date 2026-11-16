@@ -10,7 +10,7 @@ import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
 import { uiTokens } from '@hashpass/ui/tokens';
-import { useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
+import { DASHBOARD_PAGE_SIDE_PADDING, useDashboardPageLayout } from '../../../hooks/useDashboardPageLayout';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
@@ -1594,7 +1594,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   section: {
     marginTop: 24,
-    marginHorizontal: 20,
+    marginHorizontal: DASHBOARD_PAGE_SIDE_PADDING,
   },
   card: {
     backgroundColor: colors.card?.default || (isDark ? '#1a1a1a' : '#FFFFFF'),

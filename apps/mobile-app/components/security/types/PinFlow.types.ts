@@ -1,5 +1,5 @@
 import type { ColorMode } from '@hashpass/ui/tokens';
-import type { PinProblem, UsePin } from '../../../types/pin.types';
+import type { UsePin } from '../../../types/pin.types';
 import type { StepUpScope } from '../../../types/step-up.types';
 import type { AuthenticatorCompletion } from '../../../types/authenticator.types';
 
@@ -18,5 +18,7 @@ export interface PinFlowProps {
   onDone: (pin?: string) => void;
   /** Reports whether wallet access used PIN-only or a verified authenticator. */
   onAuthenticatorComplete?: (completion: AuthenticatorCompletion) => void;
+  /** The wallet gate's authenticator status, checked while the user enters their PIN. */
+  authenticatorEnabled?: boolean | null;
   onCancel?: () => void;
 }

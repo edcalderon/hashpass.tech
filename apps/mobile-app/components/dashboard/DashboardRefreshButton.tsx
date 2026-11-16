@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { uiTokens } from '@hashpass/ui/tokens';
+import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import { useTheme } from '../../hooks/useTheme';
 import { MaterialIcons } from '../../lib/vector-icons';
 import type { DashboardRefreshButtonProps } from './DashboardRefreshButton.types';
@@ -19,7 +19,8 @@ export default function DashboardRefreshButton({
   hint,
   testID,
 }: DashboardRefreshButtonProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const palette = uiPalette(isDark ? 'dark' : 'light');
   const [interactive, setInteractive] = useState(false);
   const isDisabled = disabled || loading;
   const showLabel = !compact || interactive || loading;
@@ -40,14 +41,14 @@ export default function DashboardRefreshButton({
         styles.button,
         compact && !showLabel ? styles.compactButton : null,
         {
-          borderColor: `${colors.primary}55`,
-          backgroundColor: `${colors.primary}12`,
+          borderColor: colors.divider,
+          backgroundColor: palette.surface,
           opacity: isDisabled ? 0.55 : pressed ? 0.78 : 1,
         },
       ]}
       onPress={onPress}
     >
-      <MaterialIcons name="refresh" size={18} color={colors.primary} />
+      <MaterialIcons name="refresh" size={15} color={colors.primary} />
       {showLabel && <Text style={[styles.label, { color: colors.primary }]}>{loading ? loadingLabel : label}</Text>}
     </Pressable>
   );
@@ -65,6 +66,7 @@ const styles = StyleSheet.create({
   },
   compactButton: {
     width: 36,
+    height: 36,
     paddingHorizontal: 0,
     justifyContent: 'center',
   },

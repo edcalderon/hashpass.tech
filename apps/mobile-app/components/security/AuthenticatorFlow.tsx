@@ -12,12 +12,12 @@ import type { AuthenticatorFlowPhase } from './types/AuthenticatorFlow.types';
 import type { AuthenticatorEnrollment, AuthenticatorFlowProps, AuthenticatorResult, AuthenticatorStatus } from '../../types/authenticator.types';
 
 /** Secrets, codes and recovery material stay in this mounted wizard only. */
-export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolled }: AuthenticatorFlowProps) {
+export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolled, initialEnabled }: AuthenticatorFlowProps) {
   const { dbUserId } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation('pin');
   const mode = isDark ? 'dark' : 'light', palette = uiPalette(mode);
-  const [phase, setPhase] = useState<AuthenticatorFlowPhase>('checking');
+  const [phase, setPhase] = useState<AuthenticatorFlowPhase>(initialEnabled === true ? 'verify' : 'checking');
   const [enrollment, setEnrollment] = useState<AuthenticatorEnrollment | null>(null);
   const [result, setResult] = useState<AuthenticatorResult | null>(null);
   const [code, setCode] = useState('');
@@ -30,7 +30,14 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
   useEffect(() => beginAuthenticatorChallenge(), []);
   useEffect(() => {
     const mine = ++generation.current;
-    setEnrollment(null); setResult(null); setCode(''); setEmailCode(''); setError(null); setPhase('checking');
+    setEnrollment(null); setResult(null); setCode(''); setEmailCode(''); setError(null);
+    if (initialEnabled !== undefined) {
+      if (initialEnabled) setPhase('verify');
+      else if (onUnenrolled) onUnenrolled();
+      else setPhase(pinProof ? 'optional' : 'pinRequired');
+      return () => { generation.current += 1; };
+    }
+    setPhase('checking');
     void authenticatorStatus().then((status: AuthenticatorStatus) => {
       if (mine !== generation.current) return;
       if (status.enabled) { setPhase('verify'); return; }
@@ -39,7 +46,7 @@ export default function AuthenticatorFlow({ scope, onDone, pinProof, onUnenrolle
       setPhase('optional');
     }).catch(() => { if (mine === generation.current) setPhase('statusUnavailable'); });
     return () => { generation.current += 1; };
-  }, [dbUserId, onUnenrolled, pinProof, retry]);
+  }, [dbUserId, initialEnabled, onUnenrolled, pinProof, retry]);
   const startEnrollment = async () => {
     if (inFlight.current || !pinProof) return;
     inFlight.current = true; setBusy(true); setError(null);
