@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { mixHex, uiPalette, uiTokens, withAlpha, type ColorMode } from "./tokens";
 import type {
+  ActionButtonProps,
   BadgeProps,
   ControlSkin,
   FormFieldChangeEvent,
@@ -30,6 +31,7 @@ import type {
   SearchFieldProps,
   SegmentedTab,
 } from "./primitives.types";
+export type { ActionButtonProps } from "./primitives.types";
 type Themed = { mode?: ColorMode };
 
 // Android needs this opt-in once per process before LayoutAnimation calls
@@ -334,23 +336,10 @@ function BadgeBase({
 export function Badge(props: BadgeProps) {
   return props.revealLabel ? <RevealBadge {...props} /> : <BadgeBase {...props} />;
 }
-export type ActionButtonProps = Omit<PressableProps, "children"> &
-  Themed & {
-    label: string;
-    /** Limit the visible label without changing the accessible name. */
-    labelNumberOfLines?: number;
-    /** Optional native/web tooltip for a truncated visible label. */
-    tooltipText?: string;
-    leadingIcon?: React.ReactNode;
-    trailingIcon?: React.ReactNode;
-    variant?: "primary" | "secondary" | "ghost";
-    loading?: boolean;
-    /** Brand colours for a product skin; geometry and states stay shared. */
-    skin?: ControlSkin;
-  };
 export function ActionButton({
   mode = "light",
   label,
+  labelStyle,
   labelNumberOfLines,
   tooltipText,
   leadingIcon,
@@ -404,7 +393,7 @@ export function ActionButton({
       ]}
     >
       {loading ? <ActivityIndicator size="small" color={foreground} /> : leadingIcon && <View accessible={false} style={{ pointerEvents: "none" }}>{leadingIcon}</View>}
-      <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+      <Text numberOfLines={labelNumberOfLines} ellipsizeMode="tail" style={[styles.buttonLabel, labelStyle, { color: foreground }]}>{label}</Text>
       {!loading && trailingIcon ? <View accessible={false} style={{ pointerEvents: "none" }}>{trailingIcon}</View> : null}
     </Pressable>
   );
