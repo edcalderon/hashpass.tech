@@ -1074,7 +1074,9 @@ const styles = StyleSheet.create({
     borderRadius: uiTokens.radius.pill,
   },
   segmentTrackFull: { alignSelf: "stretch", flexWrap: "nowrap" },
-  segmentScroll: { width: "100%" },
+  // A horizontal ScrollView inside a vertical page must keep its content height;
+  // flex growth otherwise pushes the next section to the bottom of tall viewports.
+  segmentScroll: { width: "100%", flexGrow: 0 },
   segmentScrollContent: { alignItems: "center" },
   segmentTrackScrollable: { flexWrap: "nowrap", minWidth: "100%" },
   segmentScrollable: { flexShrink: 0 },

@@ -221,7 +221,7 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
             { id: "all", label: "All" },
             { id: "messages", label: "Messages", count: 3 },
             { id: "updates", label: "Updates", count: 1 },
-            { id: "archive", label: "Archive" },
+            { id: "archive", label: "Long translated notification category" },
           ]}
         />
       </View>
