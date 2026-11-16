@@ -67,7 +67,7 @@ it('explains setup availability, expands security, and navigates to genuine pass
   await act(async () => { view = create(<Wallet />); await Promise.resolve(); });
   const pinFlow = view.root.findByType('PinFlow' as any);
   expect(mockEnrollmentLoad).toHaveBeenCalledTimes(1);
-  expect(JSON.stringify(view.toJSON())).not.toContain('YOUR HASHPASS');
+  expect(JSON.stringify(view.toJSON())).toContain('YOUR HASHPASS');
   expect(JSON.stringify(view.toJSON())).not.toContain('Your contacts, assets, rewards and event passes.');
   act(() => { pinFlow.props.onAuthenticatorComplete('pin'); pinFlow.props.onDone('1234'); });
   mockPhase = 'unlocked';

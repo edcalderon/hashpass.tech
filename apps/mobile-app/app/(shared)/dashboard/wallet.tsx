@@ -87,6 +87,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
     styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
     <View style={styles.heading}>
+      <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
     </View>
     {children}
@@ -193,6 +194,7 @@ function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
       styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
     ]}>
     <View style={styles.heading}>
+      <Text style={styles.eyebrow}>{t('overview.eyebrow', 'YOUR HASHPASS')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
     </View>
     <SegmentedTabs
@@ -293,8 +295,9 @@ function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background.default, position: 'relative' },
   content: { flexGrow: 1, width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 20 },
-  heading: { gap: 8 },
-  title: { color: colors.text.primary, fontSize: uiTokens.type.heading, fontWeight: '800', letterSpacing: -0.5 },
+  heading: { gap: uiTokens.space.sm },
+  eyebrow: { color: colors.text.secondary, fontSize: uiTokens.type.caption, fontWeight: '700', letterSpacing: 1 },
+  title: { color: colors.text.primary, fontSize: uiTokens.type.heading, fontWeight: '700' },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
   stack: { gap: 20, width: '100%', maxWidth: 720, alignSelf: 'center' },
   pinPanel: { width: '100%', maxWidth: 480, alignSelf: 'center', alignItems: 'center' },
