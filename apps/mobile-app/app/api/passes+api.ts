@@ -7,6 +7,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from "@/lib/server/resolve-notification-identity";
+import type { PassEventRow } from "@/types/pass-event.types";
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 const EVENT_IDS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026", "cbweek2026"]);
@@ -25,18 +26,6 @@ type PassRow = Record<string, unknown> & {
   special_perks?: string[] | null;
 };
 
-type EventRow = Record<string, unknown> & {
-  id: string;
-  name?: string | null;
-  starts_at?: string | null;
-  ends_at?: string | null;
-  timezone?: string | null;
-  venue_name?: string | null;
-  city?: string | null;
-  country?: string | null;
-  metadata?: Record<string, unknown> | null;
-};
-
 const numberOr = (value: unknown, fallback: number): number => {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -49,7 +38,7 @@ const toPassInfo = async (
   supabase: any,
   userId: string,
   pass: PassRow,
-  event?: EventRow,
+  event?: PassEventRow,
 ) => {
   const maxRequests = numberOr(pass.max_meeting_requests, 0);
   const usedRequests = numberOr(pass.used_meeting_requests, 0);
@@ -195,7 +184,7 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     const eventIdsForPasses = [...new Set(((data || []) as PassRow[]).map((pass) => pass.event_id))];
-    let eventsById = new Map<string, EventRow>();
+    let eventsById = new Map<string, PassEventRow>();
     if (eventIdsForPasses.length > 0) {
       const { data: eventRows, error: eventError } = await supabase
         .from("events")
@@ -203,7 +192,7 @@ export async function GET(request: Request) {
         .in("id", eventIdsForPasses);
       if (eventError) throw eventError;
       eventsById = new Map(
-        ((eventRows || []) as EventRow[]).map((event) => [event.id, event]),
+        ((eventRows || []) as PassEventRow[]).map((event) => [event.id, event]),
       );
     }
 
