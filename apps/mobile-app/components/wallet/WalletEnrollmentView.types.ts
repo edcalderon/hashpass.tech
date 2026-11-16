@@ -5,14 +5,11 @@ export type WalletChain = 'ethereum' | 'bitcoin' | 'solana';
 export type WalletNetwork = 'mainnet' | 'testnet';
 /** Supported LATAM peso display units plus the $LKS regional index reference. */
 export type PesoCurrency = 'ARS' | 'CLP' | 'COP' | 'CUP' | 'DOP' | 'MXN' | 'UYU' | 'LKS';
+export type PesoCurrencyOption = { code: PesoCurrency; label: string; symbol: string };
 export type BalanceCurrency = 'USD' | PesoCurrency;
 export type BalanceDisplayMode = 'USD' | 'PESO';
 
-export const PESO_CURRENCY_OPTIONS: readonly {
-  code: PesoCurrency;
-  label: string;
-  symbol: string;
-}[] = [
+export const PESO_CURRENCY_OPTIONS: readonly PesoCurrencyOption[] = [
   { code: 'LKS', label: '$LKS · LatAm index', symbol: '$LKS' },
   { code: 'ARS', label: 'Argentine peso', symbol: 'ARS' },
   { code: 'CLP', label: 'Chilean peso', symbol: 'CLP' },

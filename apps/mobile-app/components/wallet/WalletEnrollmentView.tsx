@@ -16,7 +16,7 @@ import DashboardRefreshButton from '../dashboard/DashboardRefreshButton';
 import WalletVaultFlow, { type VaultCommand } from './WalletVaultFlow';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { PESO_CURRENCY_OPTIONS } from './WalletEnrollmentView.types';
-import type { BalanceCurrency, BalanceDisplayMode, BalanceState, PesoCurrency, State, WalletChain, WalletNetwork, WalletEnrollmentViewProps } from './WalletEnrollmentView.types';
+import type { BalanceCurrency, BalanceDisplayMode, BalanceState, PesoCurrency, PesoCurrencyOption, State, WalletChain, WalletNetwork, WalletEnrollmentViewProps } from './WalletEnrollmentView.types';
 
 const WALLET_SHARE_ORIGIN = (process.env.EXPO_PUBLIC_LINKS_API_BASE_URL || 'https://hpass.id').replace(/\/$/, '');
 
@@ -96,14 +96,14 @@ function Enrollment({ accountId, pin, initialState }: { accountId: string | null
     if (copyAddressTimer.current) clearTimeout(copyAddressTimer.current);
     setCopiedChain(chain);
     copyAddressTimer.current = setTimeout(() => {
-      setCopiedChain(current => current === chain ? null : current);
+      setCopiedChain((current: WalletChain | null) => current === chain ? null : current);
     }, 2200);
   }, []);
   const markLinkCopied = useCallback((chain: WalletChain) => {
     if (copyLinkTimer.current) clearTimeout(copyLinkTimer.current);
     setCopiedLinkChain(chain);
     copyLinkTimer.current = setTimeout(() => {
-      setCopiedLinkChain(current => current === chain ? null : current);
+      setCopiedLinkChain((current: WalletChain | null) => current === chain ? null : current);
     }, 2200);
   }, []);
   useEffect(() => () => {
@@ -197,7 +197,7 @@ function Enrollment({ accountId, pin, initialState }: { accountId: string | null
   const displayedBalance = balanceState.status === 'ready'
     ? balanceState.snapshot.totals[balanceCurrency]
     : null;
-  const selectedPeso = PESO_CURRENCY_OPTIONS.find(option => option.code === balanceCurrency) ?? PESO_CURRENCY_OPTIONS[0];
+  const selectedPeso = PESO_CURRENCY_OPTIONS.find((option: PesoCurrencyOption) => option.code === balanceCurrency) ?? PESO_CURRENCY_OPTIONS[0];
   const selectedPesoIndicator = selectedPeso.symbol.startsWith('$') ? selectedPeso.symbol : `$${selectedPeso.symbol}`;
   const pesoModeLabel = `${t('overview.currencyModePeso', 'PESO')} - ${selectedPesoIndicator}`;
   const pesoLabel = (code: PesoCurrency, fallback: string) => t(`overview.currency${code}`, fallback);
@@ -401,7 +401,6 @@ function Enrollment({ accountId, pin, initialState }: { accountId: string | null
         </Pressable>)}
       </View>
     </>}
-    <Text accessibilityRole="header" style={[styles.title, { color: colors.text.primary }]}>{t('overview.ownershipTitle', 'Your wallet. Your control.')}</Text>
     {/* General balance + send/receive, unified with the status below in one card. */}
     <View style={styles.balanceBlock}>
       <View style={styles.balanceHeader}>
@@ -433,7 +432,7 @@ function Enrollment({ accountId, pin, initialState }: { accountId: string | null
           {balanceMode === 'PESO' && pesoMenuOpen && <View style={[styles.pesoMenu, { backgroundColor: uiTokens.colors[mode].raised, borderColor: colors.divider }]}
               accessibilityRole="radiogroup">
               <ScrollView style={[styles.pesoMenuScroll, { backgroundColor: uiTokens.colors[mode].raised }]} contentContainerStyle={styles.pesoMenuContent} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                {PESO_CURRENCY_OPTIONS.map(option => {
+                {PESO_CURRENCY_OPTIONS.map((option: PesoCurrencyOption) => {
                   const selected = option.code === balanceCurrency;
                   return <Pressable key={option.code} accessibilityRole="radio" accessibilityLabel={pesoLabel(option.code, option.label)}
                     accessibilityState={{ selected }} onPress={() => selectPeso(option.code)} style={[styles.pesoOption,
@@ -635,7 +634,6 @@ const getStyles = () => StyleSheet.create({
   networkOption: { minHeight: 42, borderWidth: 1, borderRadius: uiTokens.radius.input, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 8 },
   networkOptionLabel: { flex: 1, fontSize: 13, fontWeight: '700' },
   networkOptionHint: { fontSize: 11, fontWeight: '600' },
-  title: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
   balanceBlock: { gap: 4, position: 'relative', zIndex: 30, elevation: 30, overflow: 'visible' },
   balanceHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   skeletonBlock: { gap: 8, paddingVertical: 4 },

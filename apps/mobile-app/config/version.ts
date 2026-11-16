@@ -22,23 +22,52 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611152148, // Updated to current timestamp
-  releaseDate: '2026-11-15',
+  buildNumber: 202611162349, // Updated to current timestamp
+  releaseDate: '2026-11-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'make authenticator optional and merge profile settings',
-    'protect Wallet and Contacts with authenticator verification'
+    'polish native PIN keypad (#622)'
   ],
   bugfixes: [
-    'preserve authenticator handoffs and contact drafts'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'make authenticator optional and merge profile settings; protect Wallet and Contacts with authenticator verification; preserve authenticator handoffs and contact drafts'
+  notes: 'polish native PIN keypad (#622)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.226': {
+    version: '1.9.226',
+    buildNumber: 202611162349,
+    releaseDate: '2026-11-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'polish native PIN keypad (#622)'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'polish native PIN keypad (#622)'
+  },
+  '1.9.225': {
+    version: '1.9.225',
+    buildNumber: 202611161514,
+    releaseDate: '2026-11-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'polish wallet and PIN mobile layout (#622)'
+    ],
+    breakingChanges: [],
+    notes: 'polish wallet and PIN mobile layout (#622)'
+  },
   '1.9.224': {
     version: '1.9.224',
     buildNumber: 202611152148,

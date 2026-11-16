@@ -10,6 +10,9 @@ export interface PinFlowProps {
   authenticatorScope?: import('../../../types/authenticator.types').AuthenticatorScope;
   mode: ColorMode;
   pin: UsePin;
+  /** Keep the PIN pad in place while the wallet guard confirms a completed unlock. */
+  pending?: boolean;
+  pendingTitle?: string;
   /** What the proof is for: it only works for this action. */
   scope: StepUpScope;
   /** `create` asks twice; `unlock` asks once. The flow switches by itself if the server disagrees. */
