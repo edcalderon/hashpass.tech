@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActionButton, SegmentedTabs, Surface } from '@hashpass/ui/primitives';
 import { useTheme } from '../../../hooks/useTheme';
@@ -24,7 +24,7 @@ import { uiTokens } from '@hashpass/ui/tokens';
 import DashboardNoticeCard from '../../../components/dashboard/DashboardNoticeCard';
 import { Ionicons } from '../../../lib/vector-icons';
 
-import type { WalletSection as Section } from '../../../types/authenticator.types';
+import type { AuthenticatorCompletion, WalletSection as Section } from '../../../types/authenticator.types';
 
 export default function WalletScreen() {
   // The guard must key on the registry id (dbUserId), the same identity the enrollment row's
@@ -83,8 +83,8 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
     guard.onPinDone();
   };
   if (guard.phase === 'unlocked') return <WalletContent pin={guard.pin} authenticatorEnabled={authenticatorEnabled} enrollmentState={enrollmentState} />;
-  const shell = (children: React.ReactNode, centered = false) => <ScrollView style={styles.page} contentContainerStyle={[
-    styles.content, centered && styles.centeredContent, { paddingTop: topInset, paddingBottom: bottomInset },
+  const shell = (children: React.ReactNode) => <ScrollView style={styles.page} contentContainerStyle={[
+    styles.content, { paddingTop: topInset, paddingBottom: bottomInset },
   ]}>
     <View style={styles.heading}>
       <Text accessibilityRole="header" style={styles.title}>{t('overview.unifiedTitle', 'Wallet & Contacts')}</Text>
@@ -97,11 +97,27 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
       <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
         authenticatorScope="access" intent="unlock" pending pendingTitle={t('guard.openingWallet', 'Opening wallet…')}
         onDone={guard.onPinDone} />
-    </Surface>, true);
-    return shell(<View accessibilityRole="progressbar" accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.transition}>
-      <ActivityIndicator color={colors.primary} />
-      <Text style={styles.body}>{t('guard.unlocking', 'Checking wallet…')}</Text>
-    </View>);
+    </Surface>);
+    return shell(<Surface mode={isDark ? 'dark' : 'light'} style={styles.pinPanel}>
+      <View accessibilityRole="progressbar" accessibilityState={{ busy: true }}
+        accessibilityLabel={t('guard.unlocking', 'Checking your wallet protection…')} style={styles.pinSkeleton}>
+        <View style={[styles.skeletonTitle, styles.skeletonBlock]} />
+        <View style={styles.skeletonDots}>
+          {Array.from({ length: 4 }, (_, index) => <View key={index} style={[styles.skeletonDot, styles.skeletonBlock]} />)}
+        </View>
+        <View style={styles.skeletonGrid}>
+          {Array.from({ length: 3 }, (_, row) => <View key={row} style={styles.skeletonRow}>
+            {Array.from({ length: 3 }, (_, column) => <View key={column} style={[styles.skeletonKey, styles.skeletonBlock]} />)}
+          </View>)}
+          <View style={[styles.skeletonRow, styles.skeletonBottomRow]}>
+            <View style={styles.skeletonPlaceholder} />
+            <View style={[styles.skeletonKey, styles.skeletonBlock]} />
+            <View style={[styles.skeletonKey, styles.skeletonBlock]} />
+          </View>
+        </View>
+        <View style={[styles.skeletonAction, styles.skeletonBlock]} />
+      </View>
+    </Surface>);
   }
   if (guard.phase === 'unavailable') return shell(<View style={styles.panel}>
     <Text style={styles.body}>{t('guard.unavailable', 'We could not check your wallet protection. Check your connection and try again.')}</Text>
@@ -131,7 +147,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
             : <>
                 <PinFlow mode={isDark ? 'dark' : 'light'} pin={guard.pin} scope={WALLET_UNLOCK_SCOPE}
                   authenticatorScope="access" intent={settingUp ? 'create' : 'unlock'}
-                  onAuthenticatorComplete={(completion) => setAuthenticatorEnabled(completion === 'authenticator')}
+                  onAuthenticatorComplete={(completion: AuthenticatorCompletion) => setAuthenticatorEnabled(completion === 'authenticator')}
                   pending={pinVerificationPending} pendingTitle={t('guard.openingWallet', 'Opening wallet…')}
                   onDone={onPinComplete} />
                 {/* The recovery path is offered exactly where it is needed: at the PIN entry of a
@@ -142,7 +158,7 @@ function WalletGate({ guard, signedIn }: { guard: ReturnType<typeof useWalletGua
                 </Pressable>}
               </>
           }
-  </Surface>, true);
+  </Surface>);
 }
 
 function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
@@ -277,13 +293,22 @@ function WalletContent({ pin, authenticatorEnabled, enrollmentState }: {
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background.default, position: 'relative' },
   content: { flexGrow: 1, width: '100%', maxWidth: DASHBOARD_PAGE_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: DASHBOARD_PAGE_SIDE_PADDING, gap: 20 },
-  centeredContent: { justifyContent: 'center' },
   heading: { gap: 8 },
   title: { color: colors.text.primary, fontSize: uiTokens.type.heading, fontWeight: '800', letterSpacing: -0.5 },
   body: { color: colors.text.secondary, fontSize: 14, lineHeight: 23 },
-  transition: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 44 },
   stack: { gap: 20, width: '100%', maxWidth: 720, alignSelf: 'center' },
   pinPanel: { width: '100%', maxWidth: 480, alignSelf: 'center', alignItems: 'center' },
+  pinSkeleton: { alignItems: 'center', gap: uiTokens.space.sm, width: '100%', maxWidth: 360, alignSelf: 'center' },
+  skeletonBlock: { backgroundColor: colors.divider, opacity: 0.55 },
+  skeletonTitle: { width: 184, maxWidth: '80%', height: 30, borderRadius: uiTokens.radius.small },
+  skeletonDots: { flexDirection: 'row', gap: uiTokens.space.md, paddingVertical: uiTokens.space.xs },
+  skeletonDot: { width: 16, height: 16, borderRadius: uiTokens.radius.circle },
+  skeletonGrid: { width: '100%', gap: uiTokens.space.xs },
+  skeletonRow: { flexDirection: 'row', gap: uiTokens.space.xs, width: '100%' },
+  skeletonBottomRow: { justifyContent: 'flex-end' },
+  skeletonPlaceholder: { flex: 1, minWidth: 0, minHeight: 48 },
+  skeletonKey: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: uiTokens.radius.card },
+  skeletonAction: { alignSelf: 'flex-start', width: 152, height: 48, borderRadius: uiTokens.radius.card },
   securityHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   securityHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   securityIcon: { width: 36, height: 36, borderRadius: uiTokens.radius.input, borderWidth: 1, borderColor: colors.divider, alignItems: 'center', justifyContent: 'center' },
