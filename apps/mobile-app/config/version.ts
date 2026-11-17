@@ -22,18 +22,19 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611162349, // Updated to current timestamp
-  releaseDate: '2026-11-16',
+  buildNumber: 202611170028, // Updated to current timestamp
+  releaseDate: '2026-11-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'polish native PIN keypad (#622)'
+    'polish native PIN keypad (#622)',
+    'add contact messaging and pending-reply notifications'
   ],
   bugfixes: [
-    // No bugfixes
+    'secure messaging and oauth sessions'
   ],
   breakingChanges: [],
-  notes: 'polish native PIN keypad (#622)'
+  notes: 'polish native PIN keypad (#622); add contact messaging and pending-reply notifications; secure messaging and oauth sessions'
 };
 
 // Version History

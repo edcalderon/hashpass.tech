@@ -4,16 +4,17 @@
 ### Features
 
 * **wallet:** polish native PIN keypad ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([0115444](https://github.com/hashpass-tech/hashpass.tech/commit/0115444f79296d0bd0353aeca626bb8382e5acae))
-### Release Highlights
-- polish native PIN keypad (#622)
-
 ### Release scope
 - Compared with: `v1.9.225` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
 - Shared UI
+- Database migrations
 - Documentation
+
+### Release Highlights
+- polish native PIN keypad (#622); add contact messaging and pending-reply notifications; secure messaging and oauth sessions
 
 ## [1.9.225](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.224...v1.9.225) (2026-11-16)
 
