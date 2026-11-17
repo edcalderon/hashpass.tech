@@ -2461,7 +2461,7 @@ export const EVENTS: Record<string, EventConfig> = {
       },
     ],
     color: "#FCD116",
-    eventStartDate: "2026-12-12T08:30:00-05:00",
+    eventStartDate: "2026-12-11T19:30:00-05:00",
     eventEndDate: "2026-12-12T18:00:00-05:00",
     eventDateString: "December 11-12, 2026 • Medellín, Colombia",
     series: "Blockchain Week",
@@ -2525,32 +2525,26 @@ export const EVENTS: Record<string, EventConfig> = {
     ],
     dayThemes: {
       "1": {
-        es: "Programa demo · Main Day basado en los temas oficiales",
-        en: "Demo programme · Main Day based on official topics",
+        es: "Welcome Drink Night · privado (entrada EXPERIENCE)",
+        en: "Welcome Drink Night · private (EXPERIENCE ticket)",
+      },
+      "2": {
+        es: "Main Day · Hotel InterContinental Medellín",
+        en: "Main Day · Hotel InterContinental Medellín",
       },
     },
+    // Only the hours published by the organizers (colombiablockchainweek.com,
+    // all times Colombia): there is no session-level agenda yet. Mirrors
+    // db/migrations/V184/V186; the live agenda comes from event_agenda.
     agenda: [
-      { id: "cbweek2026-demo-01", time: "2026-12-12T08:30:00-05:00", title: "Acreditación y bienvenida", description: "Programa demo de HashPass para el Main Day (08:30–18:00).", type: "registration", location: "Registro · Hotel InterContinental Medellín", day: "1" },
-      { id: "cbweek2026-demo-02", time: "2026-12-12T09:00:00-05:00", title: "Apertura: Medellín entra al mapa cripto de LATAM", description: "Demo keynote de apertura del programa basado en los temas publicados por CBWeek.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-03", time: "2026-12-12T09:30:00-05:00", title: "Blockchain, Bitcoin, Criptomonedas & Trading", description: "Fundamentos, adopción y estrategias para entender y operar el ecosistema cripto global. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "keynote", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-04", time: "2026-12-12T10:00:00-05:00", title: "Forex, Inversiones & Mercados Financieros · Exchanges & Brokers", description: "Análisis macroeconómico, gestión de riesgo, oportunidades, plataformas, liquidez y herramientas que conectan a inversionistas con mercados globales. Sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201"], type: "panel", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-05", time: "2026-12-12T11:00:00-05:00", title: "Coffee break y visitas a stands", description: "Espacio demo para networking y descubrimiento de soluciones.", type: "break", location: "Zona de Stands", day: "1" },
-      { id: "cbweek2026-demo-06", time: "2026-12-12T11:15:00-05:00", title: "Activos Digitales, Stablecoins, OTC, P2P, Liquidez, Wallets & Pagos Digitales", description: "Infraestructura y soluciones para custodiar, intercambiar y mover valor digital sin fronteras. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "panel", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-07", time: "2026-12-12T12:15:00-05:00", title: "Tokenización, RWA, Web3, Fintech & Startups", description: "Casos de innovación que llevan activos, productos y nuevos negocios al entorno on-chain. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-08", time: "2026-12-12T12:45:00-05:00", title: "Custodia, Servicios Institucionales & Soluciones B2B", description: "Servicios seguros y escalables para empresas e instituciones que adoptan activos digitales. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-09", time: "2026-12-12T13:45:00-05:00", title: "Almuerzo y networking", description: "Espacio demo de conexiones de negocio.", type: "meal", location: "Networking Zone", day: "1" },
-      { id: "cbweek2026-demo-10", time: "2026-12-12T14:45:00-05:00", title: "DeFi, Regulación & Marco Legal LATAM", description: "Protocolos descentralizados y marcos normativos que están definiendo el futuro financiero regional. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "panel", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-11", time: "2026-12-12T15:45:00-05:00", title: "Educación Financiera & Web3", description: "Conocimiento práctico para tomar mejores decisiones y participar responsablemente en la economía digital. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "workshop", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-12", time: "2026-12-12T16:15:00-05:00", title: "Inteligencia Artificial & Tecnologías Emergentes", description: "Aplicaciones de IA y tecnologías emergentes que transforman productos, operaciones y experiencias digitales. Tema publicado por CBWeek; taller demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "workshop", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-13", time: "2026-12-12T16:45:00-05:00", title: "Security, Compliance & Blockchain Analytics", description: "Prevención de fraude, trazabilidad y cumplimiento para construir un ecosistema Web3 más confiable. Tema publicado por CBWeek; sesión demo.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6203"], type: "keynote", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-14", time: "2026-12-12T17:15:00-05:00", title: "Cierre: conexiones que impulsan el circuito LATAM", description: "Panel demo de cierre sobre educación, adopción, negocios y experiencias presenciales en la región.", speakers: ["90e7014d-0d4b-4ee0-a7bf-b5f3b8db6201", "90e7014d-0d4b-4ee0-a7bf-b5f3b8db6202"], type: "keynote", location: "Main Stage", day: "1" },
-      { id: "cbweek2026-demo-15", time: "2026-12-12T17:45:00-05:00", title: "Networking de cierre", description: "17:45–18:00 · Cierre del Main Day. Espacio demo de conexiones.", type: "break", location: "Networking Zone", day: "1" },
+      { id: "cbweek2026-official-welcome-drink", time: "2026-12-11T19:30:00-05:00", duration_minutes: 270, title: "Welcome Drink Night", description: "Viernes 11 de diciembre, de 7:30 p. m. a 12:00 a. m. Evento privado incluido solo con la entrada EXPERIENCE.", type: "networking", location: "Mamba Negra Rooftop · El Poblado, Medellín", day: "1" },
+      { id: "cbweek2026-official-main-day", time: "2026-12-12T07:30:00-05:00", duration_minutes: 630, title: "Main Day · Colombia Blockchain Week", description: "Sábado 12 de diciembre, de 7:30 a. m. a 6:00 p. m., incluido en todas las entradas. La agenda por sesiones aún no ha sido publicada por los organizadores.", type: "networking", location: "Hotel InterContinental Medellín · Calle 16, Variante #28-51, Las Palmas, El Poblado", day: "2" },
     ],
     quickAccessItems: [
       {
         id: "agenda",
         title: "Event Agenda",
-        subtitle: "Demo programme · Dec 12",
+        subtitle: "Welcome Drink Dec 11 · Main Day Dec 12",
         icon: "event",
         color: "#34A853",
         route: "/events/cbweek2026/agenda",

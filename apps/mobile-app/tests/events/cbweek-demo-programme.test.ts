@@ -13,33 +13,41 @@ type DemoSpeaker = {
 describe('CBWeek 2026 demo programme', () => {
   const event = EVENTS.cbweek2026;
 
-  it('provides an explicitly demo day-one schedule for the published main-conference hours', () => {
-    expect(event.dayThemes?.['1']?.es).toContain('Programa demo');
-    expect(event.agenda).toHaveLength(15);
-    expect(event.agenda?.every((item: AgendaItem) => item.day === '1')).toBe(true);
+  it('anchors eventStartDate to day 1 so day N maps to each block\'s real calendar date', () => {
+    const start = event.eventStartDate.match(/^(\d{4})-(\d{2})-(\d{2})/)!;
+    for (const item of event.agenda ?? []) {
+      const dayNumber = parseInt(String(item.day), 10);
+      const expected = new Date(Number(start[1]), Number(start[2]) - 1, Number(start[3]) + dayNumber - 1);
+      const iso = String(item.time).match(/^(\d{4})-(\d{2})-(\d{2})/)!;
+      expect([expected.getFullYear(), expected.getMonth() + 1, expected.getDate()])
+        .toEqual([Number(iso[1]), Number(iso[2]), Number(iso[3])]);
+    }
+  });
+
+  it('lists only the officially published Welcome Drink and Main Day hours (Colombia time)', () => {
+    expect(event.dayThemes?.['1']?.es).toContain('Welcome Drink');
+    expect(event.dayThemes?.['2']?.es).toContain('Main Day');
+    expect(event.agenda).toHaveLength(2);
     expect(event.agenda?.[0]).toMatchObject({
-      time: '2026-12-12T08:30:00-05:00',
-      type: 'registration',
+      id: 'cbweek2026-official-welcome-drink',
+      time: '2026-12-11T19:30:00-05:00',
+      duration_minutes: 270,
+      day: '1',
+      location: expect.stringContaining('Mamba Negra'),
     });
-    expect(event.agenda?.at(-1)).toMatchObject({
-      time: '2026-12-12T17:45:00-05:00',
-      type: 'break',
+    expect(event.agenda?.[1]).toMatchObject({
+      id: 'cbweek2026-official-main-day',
+      time: '2026-12-12T07:30:00-05:00',
+      duration_minutes: 630,
+      day: '2',
+      location: expect.stringContaining('InterContinental'),
     });
   });
 
-  it('uses the ten topic pillars published by CBWeek instead of claiming an official timed agenda', () => {
-    const programmeText = event.agenda?.map((item: AgendaItem) => `${item.title} ${item.description || ''}`).join(' ') || '';
-
-    expect(programmeText).toContain('Blockchain, Bitcoin, Criptomonedas & Trading');
-    expect(programmeText).toContain('Forex, Inversiones & Mercados Financieros');
-    expect(programmeText).toContain('Exchanges & Brokers');
-    expect(programmeText).toContain('Activos Digitales, Stablecoins, OTC, P2P, Liquidez, Wallets & Pagos Digitales');
-    expect(programmeText).toContain('Tokenización, RWA, Web3, Fintech & Startups');
-    expect(programmeText).toContain('Custodia, Servicios Institucionales & Soluciones B2B');
-    expect(programmeText).toContain('DeFi, Regulación & Marco Legal LATAM');
-    expect(programmeText).toContain('Educación Financiera & Web3');
-    expect(programmeText).toContain('Inteligencia Artificial & Tecnologías Emergentes');
-    expect(programmeText).toContain('Security, Compliance & Blockchain Analytics');
+  it('does not invent sessions: no demo ids or speaker assignments in the bundled agenda', () => {
+    const items = (event.agenda || []) as AgendaItem[];
+    expect(items.some((item) => item.id.includes('demo'))).toBe(false);
+    expect(items.flatMap((item) => item.speakers || [])).toHaveLength(0);
   });
 
   it('shows the requested active CBWeek demo speakers with event-owned images', () => {

@@ -16,6 +16,9 @@ export interface AgendaItem {
   speakers?: string[];
   type: AgendaType;
   location?: string;
+  // Length of the session in minutes; when absent the client falls back to a
+  // default per agenda type (e.g. 30 min for networking).
+  duration_minutes?: number;
   // Explicit day number ('1' | '2' | '3') for multi-day events -- see the
   // "Group agenda by day" effect in app/events/[eventSlug]/agenda.tsx, which
   // falls back to positionally slicing the flat item list into groups of 4

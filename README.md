@@ -20,18 +20,26 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.227)
+## 📋 Latest Changes (v1.9.228)
+
+### Bug Fixes
+
+* **db:** backfill general CBWeek 2026 passes for every verified account ([4d80942](https://github.com/hashpass-tech/hashpass.tech/commit/4d8094232a4fa2a106197c3178d093c255866b72))
+* **db:** register the cbweek2026 chat room in production ([e1fe2d9](https://github.com/hashpass-tech/hashpass.tech/commit/e1fe2d9eba7e115d3babfe774f5e25424beb804b))
+
 
 ### Features
 
-* **db:** seed official CBWeek 2026 speakers and register contact messaging ([6fb6a33](https://github.com/hashpass-tech/hashpass.tech/commit/6fb6a333eb8384b22e134faf66c1fe837c4a1b29))
+* **cbweek:** publish official Welcome Drink and Main Day hours and let admins manage event speakers ([dafd9c9](https://github.com/hashpass-tech/hashpass.tech/commit/dafd9c921c1a04dc52a5ddb472ff5d9a43f5ebf7))
+* **cbweek:** venue photos, real durations and official day labels for the agenda ([2df58c8](https://github.com/hashpass-tech/hashpass.tech/commit/2df58c86e666329daffb9f6053b6c11bea68d9a0))
 ### Release Highlights
-- seed official CBWeek 2026 speakers and register contact messaging
+- venue photos, real durations and official day labels for the agenda; publish official Welcome Drink and Main Day hours and let admins manage event speakers; backfill general CBWeek 2026 passes for every verified account; register the cbweek2026 chat room in production
 
 ### Release scope
-- Compared with: `v1.9.226` (the previous global release tag)
+- Compared with: `v1.9.227` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
 - Mobile app
 - Database migrations
 - Release tooling

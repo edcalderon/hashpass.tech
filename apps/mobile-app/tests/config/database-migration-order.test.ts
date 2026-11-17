@@ -133,4 +133,79 @@ describe("CBWeek migration plans", () => {
       expect(migrations).toContain("db/migrations/V183__event_scoped_speaker_claims.sql");
     }
   });
+
+  it("registers the CBWeek schedule and event-scoped speaker role migrations", () => {
+    const schedule = readFileSync(
+      path.join(root, "db/migrations/V184__cbweek2026_official_schedule.sql"),
+      "utf8",
+    );
+    expect(schedule).toContain("2026-12-11T19:30:00-05:00");
+    expect(schedule).toContain("2026-12-12T07:30:00-05:00");
+    expect(schedule.replace(/^--.*$/gm, "")).not.toMatch(/colombia2026/);
+    const roles = readFileSync(
+      path.join(root, "db/migrations/V185__event_scoped_speaker_admin_roles.sql"),
+      "utf8",
+    );
+    expect(roles).toContain("FUNCTION public.admin_manage_speaker_role(");
+    expect(roles).toContain("FROM public.speakers");
+    expect(roles).toContain("UPDATE public.speakers");
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      expect(migrations).toContain("db/migrations/V184__cbweek2026_official_schedule.sql");
+      expect(migrations).toContain("db/migrations/V185__event_scoped_speaker_admin_roles.sql");
+    }
+  });
+  it("registers the cbweek2026 chat room for production as well as development", () => {
+    const room = readFileSync(
+      path.join(root, "db/migrations/V187__cbweek2026_chat_room.sql"),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    expect(room).toContain("INSERT INTO public.event_chat_rooms");
+    expect(room).toContain("'cbweek2026'");
+    expect(room).not.toMatch(/colombia2026/);
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      expect(migrations).toContain("db/migrations/V187__cbweek2026_chat_room.sql");
+      expect(migrations.indexOf("db/migrations/V187__cbweek2026_chat_room.sql")).toBeGreaterThan(
+        migrations.indexOf("db/migrations/V073__event_chat_room_registry.sql"),
+      );
+    }
+  });
+  it("backfills general CBWeek passes in production after the pass trigger and tiers exist", () => {
+    const backfill = readFileSync(
+      path.join(root, "db/migrations/V188__backfill_cbweek2026_general_passes.sql"),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    expect(backfill).toContain("create_default_pass(v_user.id::text, 'general', 'cbweek2026')");
+    expect(backfill).not.toMatch(/colombia2026/);
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      const backfillIndex = migrations.indexOf("db/migrations/V188__backfill_cbweek2026_general_passes.sql");
+      expect(backfillIndex).toBeGreaterThan(
+        migrations.indexOf("db/migrations/V092__provision_cbweek_general_passes.sql"),
+      );
+    }
+  });
+  it("applies the CBWeek official migrations on the BSL development profile after their dependencies", () => {
+    const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups["bsl-development"] ?? [])];
+    const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+    const at = (file: string) => migrations.indexOf(`db/migrations/${file}.sql`);
+    for (const file of [
+      "V181__seed_cbweek2026_official_speakers",
+      "V183__event_scoped_speaker_claims",
+      "V184__cbweek2026_official_schedule",
+      "V185__event_scoped_speaker_admin_roles",
+      "V186__event_agenda_duration_minutes",
+      "V187__cbweek2026_chat_room",
+      "V188__backfill_cbweek2026_general_passes",
+    ]) {
+      expect(at(file)).toBeGreaterThan(-1);
+    }
+    expect(at("V183__event_scoped_speaker_claims")).toBeGreaterThan(at("V132__speaker_claim_email_verification"));
+    expect(at("V185__event_scoped_speaker_admin_roles")).toBeGreaterThan(at("V108__enforce_event_scoped_speaker_admin_roles"));
+    expect(at("V184__cbweek2026_official_schedule")).toBeGreaterThan(at("V089__seed_cbweek2026_demo_programme"));
+  });
 });

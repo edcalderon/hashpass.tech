@@ -534,6 +534,57 @@ describe('event schedule screens', () => {
     await act(async () => renderer!.unmount());
   });
 
+  it('shows the Mamba Negra and InterContinental photos on the CBWeek 2026 event blocks', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'cbweek2026',
+      tour: { city: 'Medellín', country: 'Colombia', venue: 'Hotel InterContinental Medellín' },
+      speakers: [],
+    };
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: {
+        data: path === 'events/cbweek2026/agenda'
+          ? [
+            {
+              id: 'welcome-drink',
+              day: '1',
+              time: '2026-12-11T19:30:00-05:00',
+              duration_minutes: 270,
+              title: 'Welcome Drink Night',
+              type: 'networking',
+              location: 'Mamba Negra Rooftop · El Poblado, Medellín',
+            },
+            {
+              id: 'main-day',
+              day: '2',
+              time: '2026-12-12T07:30:00-05:00',
+              duration_minutes: 630,
+              title: 'Main Day · Colombia Blockchain Week',
+              type: 'networking',
+              location: 'Hotel InterContinental Medellín · Calle 16, Variante #28-51',
+            },
+          ]
+          : [],
+      },
+    }));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const sources = renderer!.root
+      .findAllByProps({ testID: 'agenda-card-venue-welcome-drink' })
+      .concat(renderer!.root.findAllByProps({ testID: 'agenda-card-venue-main-day' }))
+      .map((node) => node.props.source?.uri);
+    expect(sources.some((uri) => String(uri).endsWith('/mamba-negra-rooftop.webp'))).toBe(true);
+
+    await act(async () => renderer!.unmount());
+  });
+
   it('uses speaker media, time footer, and the published venue in agenda cards', async () => {
     mockActiveEvent = {
       ...mockEvent,

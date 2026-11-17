@@ -139,4 +139,30 @@ describe('/api/admin/speaker-roles', () => {
     expect(speakerEq).toHaveBeenCalledWith('event_id', 'chile2026');
     expect(claimIn).toHaveBeenCalledWith('speaker_id', ['edward-calderon']);
   });
+
+  it('lists event-scoped speakers from the speakers table for non-BSL events', async () => {
+    const speakerLimit = jest.fn().mockResolvedValue({
+      data: [
+        { id: 'sp-1', name: 'Daniel Acosta', title: 'Director', company: 'Binance', image_url: 'https://x/a.webp', user_id: null, metadata: { is_active: true } },
+        { id: 'sp-2', name: 'Maria Pesca', title: null, company: 'XS.com', image_url: null, user_id: actorId, metadata: { is_active: true, is_accepting_meetings: false } },
+      ],
+      error: null,
+    });
+    const speakerEq = jest.fn(() => ({ order: () => ({ limit: speakerLimit }) }));
+    mockFrom.mockImplementation((table: string) => table === 'speakers'
+      ? { select: () => ({ eq: speakerEq }) }
+      : { select: () => { throw new Error(`unexpected table ${table}`); } });
+
+    const response = await get('cbweek2026');
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: [
+        expect.objectContaining({ id: 'sp-1', imageUrl: 'https://x/a.webp', userId: null, isActive: false, claim: null }),
+        expect.objectContaining({ id: 'sp-2', userId: actorId, isActive: true, isAcceptingMeetings: false, claim: null }),
+      ],
+    });
+    expect(speakerEq).toHaveBeenCalledWith('event_id', 'cbweek2026');
+    expect(mockFrom).not.toHaveBeenCalledWith('bsl_speakers');
+  });
 });

@@ -30,6 +30,9 @@ export interface AgendaItem {
     | "meal"
     | "registration";
   location?: string;
+  // Length of the session in minutes; when absent the client falls back to a
+  // default per agenda type (e.g. 30 min for networking).
+  duration_minutes?: number;
   // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
   // for multi-day events. Without it, the agenda screen falls back to
   // positionally slicing the flat item list into groups of 4 to guess at
