@@ -74,6 +74,7 @@
     "support-system",
     "contacts-network",
     "marketing-campaigns",
+    "contact-messaging",
     "speaker-directory-status"
   ],
   "profileGroups": {
@@ -96,7 +97,8 @@
       "chat-key-backup",
       "meeting-chat-api-security",
       "event-public-flags",
-      "admin-notifications"
+      "admin-notifications",
+      "cbweek-official-speakers"
     ],
     "core-production": [
       "hashpass-auth-qr",
@@ -112,7 +114,8 @@
       "event-scoped-speakers",
       "bsl-speaker-identity-claims",
       "pending-speaker-eligibility",
-      "admin-notifications"
+      "admin-notifications",
+      "cbweek-official-speakers"
     ],
     "better-auth-development": [
       "better-auth-mcp-oauth",
@@ -126,6 +129,9 @@
   "groups": {
     "contacts-network": [
       "db/migrations/V127__contacts_network.sql"
+    ],
+    "contact-messaging": [
+      "db/migrations/V180__contact_messaging.sql"
     ],
     "better-auth-mcp-oauth": [
       "db/migrations/V106__better_auth_mcp_oauth.sql"
@@ -377,6 +383,11 @@
     ],
     "event-public-flags": [
       "db/migrations/V109__add_event_agenda_speakers_public_flags.sql"
+    ],
+    "cbweek-official-speakers": [
+      "db/migrations/V181__seed_cbweek2026_official_speakers.sql",
+      "db/migrations/V182__cbweek2026_square_speaker_avatars.sql",
+      "db/migrations/V183__event_scoped_speaker_claims.sql"
     ]
   }
 }

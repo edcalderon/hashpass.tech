@@ -20,22 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.226)
+## 📋 Latest Changes (v1.9.227)
 
 ### Features
 
-* **wallet:** polish native PIN keypad ([#622](https://github.com/hashpass-tech/hashpass.tech/issues/622)) ([0115444](https://github.com/hashpass-tech/hashpass.tech/commit/0115444f79296d0bd0353aeca626bb8382e5acae))
+* **db:** seed official CBWeek 2026 speakers and register contact messaging ([6fb6a33](https://github.com/hashpass-tech/hashpass.tech/commit/6fb6a333eb8384b22e134faf66c1fe837c4a1b29))
+### Release Highlights
+- seed official CBWeek 2026 speakers and register contact messaging
+
 ### Release scope
-- Compared with: `v1.9.225` (the previous global release tag)
+- Compared with: `v1.9.226` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Shared UI
 - Database migrations
-- Documentation
-
-### Release Highlights
-- polish native PIN keypad (#622); add contact messaging and pending-reply notifications; secure messaging and oauth sessions
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

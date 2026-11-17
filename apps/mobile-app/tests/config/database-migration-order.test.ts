@@ -96,4 +96,41 @@ describe("CBWeek migration plans", () => {
       ).toHaveLength(1);
     },
   );
+
+  it.each(["core-development", "core-production"])(
+    "plans contact messaging after the identity-mode wrappers it extends in %s",
+    (profile) => {
+      const plan = execFileSync(process.execPath, [
+        "packages/tools/scripts/migrate-tenant-db.mjs",
+        "--profile", profile, "--dry-run",
+      ], { cwd: root, encoding: "utf8" });
+      const files = plan.split("\n").filter((line) => line.trim().startsWith("- db/"));
+      const position = (version: string) => files.findIndex((line) => line.includes(`/${version}__`));
+
+      expect(position("V180")).toBeGreaterThan(position("V134"));
+      expect(position("V180")).toBeGreaterThan(position("V135"));
+    },
+  );
+
+  it("lets event-scoped speakers use the verified-email claim flow", () => {
+    const migration = readFileSync(
+      path.join(root, "db/migrations/V183__event_scoped_speaker_claims.sql"),
+      "utf8",
+    );
+    for (const fn of [
+      "submit_speaker_profile_claim",
+      "verify_speaker_claim_email",
+      "list_speaker_claim_requests",
+      "review_speaker_profile_claim",
+    ]) {
+      expect(migration).toContain(`FUNCTION public.${fn}(`);
+    }
+    expect(migration).toContain("FROM public.speakers");
+    expect(migration).toContain("UPDATE public.speakers");
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      expect(migrations).toContain("db/migrations/V183__event_scoped_speaker_claims.sql");
+    }
+  });
 });
