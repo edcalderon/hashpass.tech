@@ -156,4 +156,21 @@ describe("CBWeek migration plans", () => {
       expect(migrations).toContain("db/migrations/V185__event_scoped_speaker_admin_roles.sql");
     }
   });
+  it("registers the cbweek2026 chat room for production as well as development", () => {
+    const room = readFileSync(
+      path.join(root, "db/migrations/V187__cbweek2026_chat_room.sql"),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    expect(room).toContain("INSERT INTO public.event_chat_rooms");
+    expect(room).toContain("'cbweek2026'");
+    expect(room).not.toMatch(/colombia2026/);
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      expect(migrations).toContain("db/migrations/V187__cbweek2026_chat_room.sql");
+      expect(migrations.indexOf("db/migrations/V187__cbweek2026_chat_room.sql")).toBeGreaterThan(
+        migrations.indexOf("db/migrations/V073__event_chat_room_registry.sql"),
+      );
+    }
+  });
 });

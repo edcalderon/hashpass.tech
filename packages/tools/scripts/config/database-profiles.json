@@ -390,7 +390,8 @@
       "db/migrations/V183__event_scoped_speaker_claims.sql",
       "db/migrations/V184__cbweek2026_official_schedule.sql",
       "db/migrations/V185__event_scoped_speaker_admin_roles.sql",
-      "db/migrations/V186__event_agenda_duration_minutes.sql"
+      "db/migrations/V186__event_agenda_duration_minutes.sql",
+      "db/migrations/V187__cbweek2026_chat_room.sql"
     ]
   }
 }
