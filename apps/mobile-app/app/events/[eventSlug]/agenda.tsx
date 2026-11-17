@@ -143,16 +143,32 @@ const EXTERNADO_VENUE_IMAGES = {
   panel: require('../../../assets/images/venues/externado-panel-central.jpg'),
 } as const;
 
+const CBWEEK_MEDIA = 'https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/cbweek2026/venues';
+const CBWEEK_VENUE_IMAGES = {
+  mamba: { uri: `${CBWEEK_MEDIA}/mamba-negra-rooftop.webp` },
+  hotel: { uri: `${CBWEEK_MEDIA}/hotel-intercontinental-medellin.webp` },
+} as const;
+
 const resolveAgendaVenueImage = (
   eventId: string | undefined,
   eventVenue: string,
   location: string,
 ): ImageSourcePropType | null => {
+  const normalizedLocation = location.toLocaleLowerCase();
+
+  // Colombia Blockchain Week (cbweek2026) is a different event from BSL
+  // Colombia (colombia2026): its venues are the Mamba Negra rooftop (Welcome
+  // Drink) and the Hotel InterContinental Medellin (Main Day).
+  if (eventId === 'cbweek2026') {
+    if (normalizedLocation.includes('mamba')) return CBWEEK_VENUE_IMAGES.mamba;
+    if (normalizedLocation.includes('intercontinental')) return CBWEEK_VENUE_IMAGES.hotel;
+    return null;
+  }
+
   const isExternadoProgramme = eventId === 'colombia2026'
     || eventVenue.toLocaleLowerCase().includes('externado');
   if (!isExternadoProgramme) return null;
 
-  const normalizedLocation = location.toLocaleLowerCase();
   if (normalizedLocation.includes('panel central')) return EXTERNADO_VENUE_IMAGES.panel;
   if (normalizedLocation.includes('hall principal')) return EXTERNADO_VENUE_IMAGES.hall;
   if (normalizedLocation.includes('auditorio')) return EXTERNADO_VENUE_IMAGES.auditorium;
