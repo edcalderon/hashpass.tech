@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611170028, // Updated to current timestamp
+  buildNumber: 202611171731, // Updated to current timestamp
   releaseDate: '2026-11-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'polish native PIN keypad (#622)',
-    'add contact messaging and pending-reply notifications'
+    'seed official CBWeek 2026 speakers and register contact messaging'
   ],
   bugfixes: [
-    'secure messaging and oauth sessions'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'polish native PIN keypad (#622); add contact messaging and pending-reply notifications; secure messaging and oauth sessions'
+  notes: 'seed official CBWeek 2026 speakers and register contact messaging'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.227': {
+    version: '1.9.227',
+    buildNumber: 202611171731,
+    releaseDate: '2026-11-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'seed official CBWeek 2026 speakers and register contact messaging'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'seed official CBWeek 2026 speakers and register contact messaging'
+  },
   '1.9.226': {
     version: '1.9.226',
     buildNumber: 202611162349,

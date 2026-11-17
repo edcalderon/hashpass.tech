@@ -1,3 +1,20 @@
+## [1.9.227](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.226...v1.9.227) (2026-11-17)
+
+
+### Features
+
+* **db:** seed official CBWeek 2026 speakers and register contact messaging ([6fb6a33](https://github.com/hashpass-tech/hashpass.tech/commit/6fb6a333eb8384b22e134faf66c1fe837c4a1b29))
+### Release Highlights
+- seed official CBWeek 2026 speakers and register contact messaging
+
+### Release scope
+- Compared with: `v1.9.226` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Database migrations
+- Release tooling
+
 ## [1.9.226](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.225...v1.9.226) (2026-11-16)
 
 
