@@ -173,4 +173,20 @@ describe("CBWeek migration plans", () => {
       );
     }
   });
+  it("backfills general CBWeek passes in production after the pass trigger and tiers exist", () => {
+    const backfill = readFileSync(
+      path.join(root, "db/migrations/V188__backfill_cbweek2026_general_passes.sql"),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    expect(backfill).toContain("create_default_pass(v_user.id::text, 'general', 'cbweek2026')");
+    expect(backfill).not.toMatch(/colombia2026/);
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      const backfillIndex = migrations.indexOf("db/migrations/V188__backfill_cbweek2026_general_passes.sql");
+      expect(backfillIndex).toBeGreaterThan(
+        migrations.indexOf("db/migrations/V092__provision_cbweek_general_passes.sql"),
+      );
+    }
+  });
 });
