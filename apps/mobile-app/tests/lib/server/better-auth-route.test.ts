@@ -52,6 +52,38 @@ describe('better-auth-route', () => {
     );
   });
 
+  it('allows credentialed session probes from configured tenant origins', async () => {
+    mockBetterAuthHandler.mockResolvedValueOnce(Response.json(null));
+
+    const { GET } = require('../../../lib/server/better-auth-route');
+    const response = await GET(
+      new Request('https://api.hashpass.tech/api/auth/get-session', {
+        headers: { origin: 'https://cbweek2026.hashpass.tech' },
+      })
+    );
+
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek2026.hashpass.tech');
+    expect(response.headers.get('access-control-allow-credentials')).toBe('true');
+    expect(response.headers.get('vary')).toBe('Origin');
+  });
+
+  it('answers credentialed CORS preflight requests for configured tenant origins', async () => {
+    const { OPTIONS } = require('../../../lib/server/better-auth-route');
+    const response = OPTIONS(
+      new Request('https://api.hashpass.tech/api/auth/get-session', {
+        method: 'OPTIONS',
+        headers: {
+          origin: 'https://cbweek2026.hashpass.tech',
+          'access-control-request-method': 'GET',
+        },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek2026.hashpass.tech');
+    expect(response.headers.get('access-control-allow-credentials')).toBe('true');
+  });
+
   it('forwards Apple form_post callback fields as a Better Auth GET callback', async () => {
     mockBetterAuthHandler.mockResolvedValueOnce(new Response(null, { status: 204 }));
 

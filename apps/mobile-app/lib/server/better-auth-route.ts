@@ -3,8 +3,10 @@ import {
   createBetterAuthErrorRedirect,
   rewriteBetterAuthErrorRedirect,
 } from './better-auth-error-redirect';
+import { createCorsPreflightResponse, withCors } from '../cors';
 
 const betterAuthHandler = getAuthHandler();
+const BETTER_AUTH_CORS_OPTIONS = { allowCredentials: true } as const;
 const APPLE_CALLBACK_FIELDS = [
   'code',
   'error',
@@ -61,17 +63,25 @@ const normalizeAppleFormPostCallback = async (request: Request): Promise<Request
 };
 
 const handler: typeof betterAuthHandler = async (...args: Parameters<typeof betterAuthHandler>) => {
-  const request = await normalizeAppleFormPostCallback(args[0] as Request);
+  const originalRequest = args[0] as Request;
+  const request = await normalizeAppleFormPostCallback(originalRequest);
   const errorRedirect = createBetterAuthErrorRedirect(request);
-  if (errorRedirect) return errorRedirect;
+  if (errorRedirect) return withCors(errorRedirect, originalRequest, BETTER_AUTH_CORS_OPTIONS);
 
   const response = await betterAuthHandler(
     request,
     ...args.slice(1),
   );
-  return rewriteBetterAuthErrorRedirect(request, response);
+  return withCors(
+    rewriteBetterAuthErrorRedirect(request, response),
+    originalRequest,
+    BETTER_AUTH_CORS_OPTIONS,
+  );
 };
+
+const options = (request: Request): Response =>
+  createCorsPreflightResponse(request, BETTER_AUTH_CORS_OPTIONS);
 
 // OAUTH_METADATA_GET is re-exported by the RFC 8414 issuer-path discovery
 // route; keeping one handler preserves identical host/origin validation.
-export { handler as GET, handler as POST, handler as OAUTH_METADATA_GET };
+export { handler as GET, handler as POST, handler as OAUTH_METADATA_GET, options as OPTIONS };
