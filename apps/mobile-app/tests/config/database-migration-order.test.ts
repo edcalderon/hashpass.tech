@@ -189,4 +189,23 @@ describe("CBWeek migration plans", () => {
       );
     }
   });
+  it("applies the CBWeek official migrations on the BSL development profile after their dependencies", () => {
+    const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups["bsl-development"] ?? [])];
+    const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+    const at = (file: string) => migrations.indexOf(`db/migrations/${file}.sql`);
+    for (const file of [
+      "V181__seed_cbweek2026_official_speakers",
+      "V183__event_scoped_speaker_claims",
+      "V184__cbweek2026_official_schedule",
+      "V185__event_scoped_speaker_admin_roles",
+      "V186__event_agenda_duration_minutes",
+      "V187__cbweek2026_chat_room",
+      "V188__backfill_cbweek2026_general_passes",
+    ]) {
+      expect(at(file)).toBeGreaterThan(-1);
+    }
+    expect(at("V183__event_scoped_speaker_claims")).toBeGreaterThan(at("V132__speaker_claim_email_verification"));
+    expect(at("V185__event_scoped_speaker_admin_roles")).toBeGreaterThan(at("V108__enforce_event_scoped_speaker_admin_roles"));
+    expect(at("V184__cbweek2026_official_schedule")).toBeGreaterThan(at("V089__seed_cbweek2026_demo_programme"));
+  });
 });

@@ -2461,7 +2461,7 @@ export const EVENTS: Record<string, EventConfig> = {
       },
     ],
     color: "#FCD116",
-    eventStartDate: "2026-12-12T08:30:00-05:00",
+    eventStartDate: "2026-12-11T19:30:00-05:00",
     eventEndDate: "2026-12-12T18:00:00-05:00",
     eventDateString: "December 11-12, 2026 • Medellín, Colombia",
     series: "Blockchain Week",

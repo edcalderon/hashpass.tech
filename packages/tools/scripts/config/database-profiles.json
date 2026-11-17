@@ -84,7 +84,8 @@
       "business-invite-campaigns",
       "event-scoped-speakers",
       "bsl-speaker-identity-claims",
-      "meeting-chat-api-security"
+      "meeting-chat-api-security",
+      "cbweek-official-speakers"
     ],
     "core-development": [
       "hashpass-auth-qr",

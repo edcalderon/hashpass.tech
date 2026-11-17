@@ -13,6 +13,17 @@ type DemoSpeaker = {
 describe('CBWeek 2026 demo programme', () => {
   const event = EVENTS.cbweek2026;
 
+  it('anchors eventStartDate to day 1 so day N maps to each block\'s real calendar date', () => {
+    const start = event.eventStartDate.match(/^(\d{4})-(\d{2})-(\d{2})/)!;
+    for (const item of event.agenda ?? []) {
+      const dayNumber = parseInt(String(item.day), 10);
+      const expected = new Date(Number(start[1]), Number(start[2]) - 1, Number(start[3]) + dayNumber - 1);
+      const iso = String(item.time).match(/^(\d{4})-(\d{2})-(\d{2})/)!;
+      expect([expected.getFullYear(), expected.getMonth() + 1, expected.getDate()])
+        .toEqual([Number(iso[1]), Number(iso[2]), Number(iso[3])]);
+    }
+  });
+
   it('lists only the officially published Welcome Drink and Main Day hours (Colombia time)', () => {
     expect(event.dayThemes?.['1']?.es).toContain('Welcome Drink');
     expect(event.dayThemes?.['2']?.es).toContain('Main Day');
