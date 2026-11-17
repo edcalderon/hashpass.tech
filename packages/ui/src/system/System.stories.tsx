@@ -165,6 +165,26 @@ function Catalog({ mode = "light" }: { mode?: ColorMode }) {
         <ActionButton mode={mode} label="Saving" loading />
         <ActionButton mode={mode} label="Unavailable" disabled />
       </View>
+      <View style={{ width: 320, maxWidth: "100%", gap: uiTokens.space.sm }}>
+        <Text style={{ color: palette.muted, fontSize: uiTokens.type.label, fontWeight: "700" }}>
+          Numeric keypad keys
+        </Text>
+        {[["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "⌫"]].map((row, rowIndex) => (
+          <View key={rowIndex} style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
+            {row.map((label, columnIndex) => label ? (
+              <ActionButton
+                key={label}
+                mode={mode}
+                variant="secondary"
+                label={label}
+                accessibilityLabel={label === "⌫" ? "Delete last digit" : label}
+                labelStyle={{ fontSize: uiTokens.type.title, lineHeight: 30, fontWeight: "700" }}
+                style={{ width: "30%", minHeight: 60, paddingHorizontal: 0, paddingVertical: uiTokens.space.sm }}
+              />
+            ) : <View key={`${rowIndex}-${columnIndex}`} style={{ width: "30%", minHeight: 60 }} />)}
+          </View>
+        ))}
+      </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: uiTokens.space.sm }}>
         {onFillPairs.map(([fill, on]) => (
           <View

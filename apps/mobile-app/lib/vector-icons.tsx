@@ -493,6 +493,8 @@ function WebIonicons({ name, ...props }: IconProps) {
 
 // Keep web rendering off the Expo font path so the browser never requests TTF assets.
 export const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
+  send: "send",
+  "paper-plane-outline": "send",
   "alert-circle": "error-outline",
   "alert-circle-outline": "error-outline",
   "arrow-back": "arrow-back",

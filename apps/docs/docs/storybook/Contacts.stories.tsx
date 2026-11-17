@@ -1,3 +1,7 @@
+import { ToastProvider } from '../../../mobile-app/contexts/ToastContext';
+import { ThemeContext } from '../../../mobile-app/types/theme';
+import { lightColors, darkColors } from '../../../mobile-app/lib/theme';
+import { ContactMessagingContext } from '../../../mobile-app/contexts/ContactMessagingContext';
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import ContactsExperience from '../../../mobile-app/components/contacts/ContactsExperience';
@@ -20,6 +24,7 @@ const snapshot: ContactsSnapshot = {
 const meta = {
   title: 'Product/Contacts', component: ContactsExperience,
   parameters: { layout: 'fullscreen' },
+  decorators: [(Story, { args }) => <ThemeContext.Provider value={{ theme: args.mode, isDark: args.mode === 'dark', colors: args.mode === 'dark' ? darkColors : lightColors, isReady: true, setTheme: async () => {}, toggleTheme: () => {} }}><ToastProvider><Story /></ToastProvider></ThemeContext.Provider>],
   args: { snapshot, signedIn: true, standalone: true, mode: 'dark', onAction: async () => true, onRetry: () => {}, onSignIn: () => {}, onDashboard: () => {}, onStandalone: () => {} },
 } satisfies Meta<typeof ContactsExperience>;
 export default meta;
@@ -30,3 +35,13 @@ export const Mobile: Story = { parameters: { viewport: { defaultViewport: 'mobil
 export const Empty: Story = { args: { snapshot: { ...snapshot, contacts: [], incoming: [], leaderboard: [], profile: { ...snapshot.profile!, points: 60, connections: 0 } } } };
 export const Guest: Story = { args: { signedIn: false, snapshot: null } };
 export const Unavailable: Story = { args: { snapshot: null, error: 'unavailable' } };
+
+export const MessagesLight: Story = {
+  args: { initialTab: 'messages', mode: 'light', snapshot: { ...snapshot, handle: 'your_handle' } },
+  decorators: [(Story) => <ContactMessagingContext.Provider value={{
+    account: 'catalog', loading: false, error: null, refreshVersion: 0, changed: () => {}, reload: async () => {},
+    snapshot: { self: 'me', conversations: people.map((person, index) => ({ ...person, handle: `contact_${index}`, needs_reply: index < 2, preview: index < 2 ? 'Great to connect! Are you available after the talk?' : null, updated_at: null })) },
+  }}><Story /></ContactMessagingContext.Provider>],
+};
+export const MessagesDark: Story = { ...MessagesLight, args: { ...MessagesLight.args, mode: 'dark' } };
+export const MessagesMobile: Story = { ...MessagesLight, parameters: { viewport: { defaultViewport: 'mobile1' } } };

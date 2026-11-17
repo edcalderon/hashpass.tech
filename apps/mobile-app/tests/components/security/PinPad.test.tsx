@@ -53,7 +53,7 @@ describe('PinPad', () => {
     await act(async () => { view = create(<PinPad mode="light" title="t" busy onComplete={onComplete} />); });
     await tap(view, '1');
     expect(progress(view)).toBe('0 of 4 digits entered');
-    expect(key(view, '1').props.accessibilityState).toEqual({ disabled: true });
+    expect(key(view, '1').props.accessibilityState).toMatchObject({ disabled: true });
     await act(async () => { view.update(<PinPad mode="light" title="t" disabled error="Too many tries" hint="hint" onComplete={onComplete} />); });
     await tap(view, '1', 'Delete last digit');
     expect(progress(view)).toBe('0 of 4 digits entered');

@@ -2,6 +2,7 @@ import { hasAuthenticatorAccess } from './authenticator-api';
 import { verifyStepUpProof } from './pin-auth';
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { isResolveIdentityError, resolveNotificationIdentity } from './resolve-notification-identity';
+import { CONTACT_HANDLE } from '../contact-messaging';
 import { CONTACT_TOPICS, MAX_CONTACT_TOPICS } from '../contacts';
 import type { ContactsAction } from '../../types/contacts';
 
@@ -12,6 +13,7 @@ const reply = (data: unknown, status = 200) => Response.json(data, { status, hea
 export function validContactsAction(value: unknown): value is ContactsAction {
   if (!value || typeof value !== 'object') return false;
   const body = value as Record<string, unknown>;
+  if (body.action === 'handle' || body.action === 'request_handle') return typeof body.handle === 'string' && CONTACT_HANDLE.test(body.handle);
   if (body.action === 'request') return typeof body.card === 'string' && uuid.test(body.card);
   if (['accept', 'decline', 'cancel'].includes(String(body.action))) return typeof body.requestId === 'string' && uuid.test(body.requestId);
   if (body.action !== 'profile' || !body.profile || typeof body.profile !== 'object') return false;
@@ -46,8 +48,8 @@ export async function contactsRequest(request: Request, write = false) {
     });
     if (error) {
       console.error('[contacts] contact_network rpc error:', { code: error.code, message: error.message });
-      const status = error.code === 'P0001' ? 409 : error.code === '42501' ? 403 : 503;
-      return reply({ error: status === 409 ? 'This request is no longer available. Refresh your network.' : 'Contacts are temporarily unavailable. Please try again.' }, status);
+      const status = ['P0001', '23505'].includes(error.code) ? 409 : error.code === '42501' ? 403 : 503;
+      return reply({ error: status === 409 ? 'This handle or request is unavailable. Check the exact @handle or refresh your network.' : 'Contacts are temporarily unavailable. Please try again.' }, status);
     }
     return reply({ data });
   } catch {

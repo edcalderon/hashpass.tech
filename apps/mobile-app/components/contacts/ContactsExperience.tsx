@@ -1,3 +1,5 @@
+import ContactMessages from '../messages/ContactMessages';
+import { useContactMessaging } from '../../contexts/ContactMessagingContext';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Modal, ScrollView, Share, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -14,15 +16,19 @@ import { Ionicons } from '../../lib/vector-icons';
 import type { ContactGrouping, ContactIdentityMode, ContactProfile, ContactProfileDraft, ContactsExperienceProps, ContactsTab } from '../../types/contacts';
 import ContactsGraph from './ContactsGraph';
 
-export default function ContactsExperience({ snapshot, loading = false, busy = false, error, signedIn, standalone, mode, authenticating = false, onAction, onRetry, onSignIn, onDashboard, onStandalone }: ContactsExperienceProps) {
+export default function ContactsExperience({ initialTab, initialPeer, snapshot, loading = false, busy = false, error, signedIn, standalone, mode, authenticating = false, onAction, onRetry, onSignIn, onDashboard, onStandalone }: ContactsExperienceProps) {
   const { t } = useTranslation('contacts');
   const palette = uiPalette(mode);
   const { width } = useWindowDimensions();
   const wide = width >= 1000;
-  const [tab, setTab] = useState<ContactsTab>('network');
+  const [tab, setTab] = useState<ContactsTab>(initialTab ?? 'network');
+  const messaging = useContactMessaging();
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab]);
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<string | null>(null);
   const [grouping, setGrouping] = useState<ContactGrouping>('topic');
+  const [messagePeer, setMessagePeer] = useState<string | undefined>(initialPeer);
+  useEffect(() => setMessagePeer(initialPeer), [initialPeer]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -190,6 +196,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
     <View style={styles.toolbar}>
       <View style={styles.search}><FormField mode={mode} label={t('search', 'Search your network')} value={query} onChangeText={setQuery} placeholder={t('searchPlaceholder', 'People, companies, topics')} autoCorrect={false} /></View>
       <SegmentedTabs mode={mode} value={tab} onChange={setTab} accessibilityLabel={t('views', 'Contacts views')} tabs={[
+        { id: 'messages', label: t('messages.title', 'Messages'), count: messaging?.snapshot?.conversations.filter(item => item.needs_reply).length || undefined },
         { id: 'network', label: t('network', 'Network') }, { id: 'directory', label: t('directory', 'Directory') },
         { id: 'incoming', label: t('incoming', 'Incoming'), count: snapshot?.incoming.length || undefined },
         { id: 'leaderboard', label: t('leaderboard', 'Leaderboard') },
@@ -212,6 +219,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
         </Surface>
       </View>}
       <View style={styles.workspace}>
+        {tab === 'messages' && signedIn && profile && <ContactMessages mode={mode} peer={messagePeer ?? initialPeer} handle={snapshot?.handle} onContactAction={onAction} onRefreshContacts={onRetry} />}
         {tab === 'network' && <Surface mode={mode} style={styles.graphPanel}>
           <View style={styles.graphHeader}>
             {heading(t('networkTitle', 'Your living network'), t('networkCount', '{count} connections · built one conversation at a time', { count: contacts.length }))}
@@ -226,6 +234,7 @@ export default function ContactsExperience({ snapshot, loading = false, busy = f
         {selected && tab === 'network' && <Surface mode={mode} style={styles.stack}>
           <View style={styles.between}>{heading(t('contactDetails', 'Connection details'))}<IconButton mode={mode} label={t('close', 'Close')} onPress={() => setSelectedId(null)}><Ionicons name="close" size={20} color={palette.text} /></IconButton></View>
           {person(selected)}
+          <ActionButton mode={mode} label={t('messages.title', 'Messages')} onPress={() => { setMessagePeer(selected.id); setTab('messages'); }} />
           <Text style={styles.body}>{t('sharedInterests', 'Shared interests')}</Text>
           <View style={styles.wrap}>{selected.topics.filter(value => topics.includes(value)).map(value => <Badge key={value} mode={mode}>{t(`topics.${value}`, value)}</Badge>)}</View>
           {!selected.topics.some(value => topics.includes(value)) && <Text style={styles.caption}>{t('differentInterests', 'Different interests, a new perspective.')}</Text>}

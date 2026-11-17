@@ -22,6 +22,7 @@ export interface ContactRequest {
 
 export interface ContactsSnapshot {
   profile: ContactProfile | null;
+  handle?: string | null;
   contacts: ContactProfile[];
   incoming: ContactRequest[];
   outgoing: string[];
@@ -45,13 +46,16 @@ export interface ContactProfileDraft {
 export type ContactsAction =
   | { action: 'profile'; profile: ContactProfileDraft }
   | { action: 'request'; card: string }
+  | { action: 'request_handle' | 'handle'; handle: string }
   | { action: 'accept' | 'decline' | 'cancel'; requestId: string };
 
-export type ContactsTab = 'network' | 'directory' | 'incoming' | 'leaderboard';
+export type ContactsTab = 'network' | 'directory' | 'incoming' | 'leaderboard' | 'messages';
 export type ContactGrouping = 'topic' | 'company';
 
 export interface ContactsExperienceProps {
   snapshot: ContactsSnapshot | null;
+  initialTab?: ContactsTab;
+  initialPeer?: string;
   loading?: boolean;
   busy?: boolean;
   error?: string | null;

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActionButton } from '@hashpass/ui/primitives';
 import { uiPalette, uiTokens } from '@hashpass/ui/tokens';
 import type { ColorMode } from '@hashpass/ui/tokens';
 import { useTranslation } from '../../i18n/i18n';
@@ -61,10 +62,10 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
   }, [press, erase]);
 
   const key = (label: string, onPress: () => void, accessibilityLabel = label) => (
-    <Pressable key={accessibilityLabel} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ disabled: blocked }}
-      disabled={blocked} onPress={onPress} style={({ pressed }) => [styles.key, { opacity: blocked ? 0.45 : pressed ? 0.75 : 1 }]}>
-      <Text style={styles.keyLabel}>{label}</Text>
-    </Pressable>
+    <ActionButton key={accessibilityLabel} mode={mode} variant="secondary" label={label}
+      labelStyle={styles.keyLabel} accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: blocked }} disabled={blocked} onPress={onPress}
+      style={styles.key} />
   );
 
   return (
@@ -99,17 +100,17 @@ export default function PinPad({ mode, title, hint, error, busy = false, disable
 const makeStyles = (mode: ColorMode) => {
   const p = uiPalette(mode);
   return StyleSheet.create({
-    root: { alignItems: 'center', gap: uiTokens.space.sm, width: '100%', maxWidth: 360, alignSelf: 'center', minWidth: 0 },
+    root: { alignItems: 'center', gap: uiTokens.space.md, width: '100%', maxWidth: 360, alignSelf: 'center', minWidth: 0 },
     title: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '700', textAlign: 'center' },
     hint: { color: p.muted, fontSize: uiTokens.type.label, lineHeight: 22, textAlign: 'center' },
     dots: { flexDirection: 'row', gap: uiTokens.space.md, paddingVertical: uiTokens.space.xs },
     dot: { width: 16, height: 16, borderRadius: uiTokens.radius.circle, borderWidth: 2, borderColor: p.border },
     status: { minHeight: 28, justifyContent: 'center', alignItems: 'center' },
     error: { color: p.danger, fontSize: uiTokens.type.label, textAlign: 'center' },
-    grid: { width: '100%', gap: uiTokens.space.xs, minWidth: 0 },
-    keyRow: { flexDirection: 'row', gap: uiTokens.space.xs, width: '100%', minWidth: 0 },
-    key: { flex: 1, minWidth: 0, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: uiTokens.radius.card, backgroundColor: p.raised, borderWidth: uiTokens.control.borderWidth, borderColor: p.border },
-    keyPlaceholder: { flex: 1, minWidth: 0, minHeight: 48 },
-    keyLabel: { color: p.text, fontSize: uiTokens.type.title, fontWeight: '600' },
+    grid: { width: '100%', maxWidth: 320, alignSelf: 'center', gap: uiTokens.space.md, minWidth: 0 },
+    keyRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', minWidth: 0 },
+    key: { width: '30%', minWidth: 0, minHeight: 60, paddingHorizontal: 0, paddingVertical: uiTokens.space.sm, borderRadius: uiTokens.radius.pill },
+    keyPlaceholder: { width: '30%', minWidth: 0, minHeight: 60 },
+    keyLabel: { fontSize: uiTokens.type.title, lineHeight: 30, fontWeight: '700' },
   });
 };

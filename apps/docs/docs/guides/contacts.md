@@ -10,6 +10,25 @@ Contacts is a global, account-scoped experience in the mobile/PWA app:
 
 The network graph, searchable directory, incoming requests and leaderboard use the existing HASHPASS primitives and theme tokens. Cards contain a display name, role, company and up to five interests. Email and phone numbers are never returned by the Contacts API. Graphs show up to 80 contacts; the directory remains available for the full network. Topic groups use each contact's first selected interest; company grouping is also available. Animations are intentionally static, including under reduced motion.
 
+## Messaging with wallet contacts
+
+Send a contact request by entering the other person's exact `@handle`. Handles are
+case-insensitive and must be 3–30 letters, numbers or underscores. Messaging is
+available after both people are connected; accepting a meeting invitation also
+creates that mutual connection.
+
+The floating Messages action appears when a conversation needs a reply. While the
+wallet is locked, it shows only contact names, avatars and pending-reply state.
+Unlock Wallet & Contacts with the configured PIN and authenticator when enabled to
+read conversation history or send a message. Opening a conversation does not clear
+its pending state; only a successfully saved reply does.
+
+The inbox refreshes every 15 seconds while the app is active and when it resumes.
+Conversation history loads in pages of 50, and messages can contain up to 4,000
+characters. Retrying a failed send reuses its message ID to prevent duplicate
+messages. The repository's `docs/architecture/contact-messaging.md` describes the
+data model and server-side authorization boundary for maintainers.
+
 ## Persistence and consent
 
 `GET /api/contacts` and `POST /api/contacts` use the existing authenticated API client and canonical registry identity resolver. They never accept the actor identity from the request body. The server-only `contact_network` RPC uses `public.user.id`, supporting provider-linked accounts rather than assuming a Supabase auth UUID.

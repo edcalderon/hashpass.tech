@@ -1,3 +1,4 @@
+import { useContactMessaging } from '../../contexts/ContactMessagingContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import AuthenticatorFlow from '../security/AuthenticatorFlow';
@@ -19,10 +20,16 @@ export default function ContactsScreen({ standalone = false }) {
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const { isDark } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ card?: string }>();
+  const params = useLocalSearchParams<{ card?: string; tab?: string; peer?: string }>();
   const card = typeof params.card === 'string' ? params.card : undefined;
   const network = useContacts(authLoading ? null : user?.id ?? null, card);
-  const act = network.act;
+  const messaging = useContactMessaging();
+  useEffect(() => { if (messaging?.refreshVersion) void network.reload(); }, [messaging?.refreshVersion]);
+  const act = useCallback(async (action: ContactsAction) => {
+    const saved = await network.act(action);
+    if (saved) messaging?.changed();
+    return saved;
+  }, [network.act, messaging?.changed]);
   const accountId = authLoading ? null : dbUserId ?? null;
   const setup = useSetup(accountId);
   const pin = usePin(accountId);
@@ -72,6 +79,8 @@ export default function ContactsScreen({ standalone = false }) {
     {gated ? <SetupWizard mode={mode} view={setup.view!} context={setup.context!} send={setup.send} pin={pin} /> : <>
       <ContactsExperience
         key={user?.id ?? 'guest'}
+        initialTab={params.tab === 'messages' ? 'messages' : undefined}
+        initialPeer={typeof params.peer === 'string' ? params.peer : undefined}
         snapshot={network.snapshot}
         loading={authLoading || network.loading}
         busy={network.busy}

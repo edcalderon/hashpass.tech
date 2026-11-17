@@ -60,6 +60,22 @@ export type ControlSkin = {
   border: string;
 };
 
+export type ActionButtonProps = Omit<PressableProps, 'children'> & {
+  mode?: 'light' | 'dark';
+  label: string;
+  labelStyle?: StyleProp<TextStyle>;
+  /** Limit the visible label without changing the accessible name. */
+  labelNumberOfLines?: number;
+  /** Optional native/web tooltip for a truncated visible label. */
+  tooltipText?: string;
+  leadingIcon?: ReactNode;
+  trailingIcon?: ReactNode;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  loading?: boolean;
+  /** Brand colours for a product that keeps the shared geometry. */
+  skin?: ControlSkin;
+};
+
 export type BadgeProps = PropsWithChildren<
   { mode?: 'light' | 'dark' } & {
     tone?: "accent" | "neutral" | "onMedia";

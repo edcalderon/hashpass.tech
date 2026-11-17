@@ -72,12 +72,12 @@ const config: StorybookConfig = {
       },
     });
 
-    // Contacts renders production Expo controls and QR codes. These packages
-    // publish JSX (and expo-modules-core publishes TS), so compile their web
-    // implementations rather than replacing them with catalog-only mocks.
+    // Contacts and the PIN pad render production Expo controls. These packages
+    // publish JSX and TypeScript, so compile their web implementations rather
+    // than replacing them with catalog-only mocks.
     config.module.rules.push({
       test: /\.[jt]sx?$/,
-      include: /node_modules[\\/](?:@expo[\\/]vector-icons|expo-modules-core|expo-clipboard|expo-localization|expo-font|react-native-qrcode-svg)[\\/]/,
+      include: /node_modules[\\/](?:@expo[\\/]vector-icons|expo-modules-core|expo-clipboard|expo-localization|expo-font|expo-haptics|react-native-qrcode-svg)[\\/]/,
       use: {
         loader: 'babel-loader',
         options: {
