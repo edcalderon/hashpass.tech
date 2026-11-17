@@ -76,9 +76,12 @@ same-origin default causes the flow to finish at `/auth/callback` with
 “Authentication completed but no Better Auth session was found.”
 
 The browser callback remains `http://localhost:8081/auth/callback`; Google
-still returns to the Better Auth API callback first. If this error reappears,
-confirm that the dev API allows the localhost origin with credentials and that
-the browser has not blocked the API's secure session cookie. A local API
+still returns to the Better Auth API callback first. The Better Auth route
+must return credentialed CORS headers for every configured browser origin on
+both session responses and preflight requests. This includes local Expo and
+tenant origins such as `https://cbweek2026.hashpass.tech`. If this error
+reappears, confirm that the API allows the browser origin with credentials and
+that the browser has not blocked the API's secure session cookie. A local API
 serving Better Auth directly needs its own localhost Google redirect URI and
 does not use the shared dev API cookie.
 

@@ -344,8 +344,11 @@ export class EventApiClient {
     
     const requestHeaders = { ...this.defaultHeaders, ...headers };
     const securedPath = path.replace(/^\//, '');
-    if (!options.skipAuth && /^(wallet(?:\/|$)|contacts(?:\?|$))/.test(securedPath)) {
-      const proof = method === 'GET' ? (activeAuthenticatorProof('access') ?? activeAuthenticatorProof('critical')) : activeAuthenticatorProof('critical');
+    const messagingPath = /^contact-messages(?:[/?]|$)/.test(securedPath);
+    if (!options.skipAuth && /^(wallet(?:\/|$)|contacts(?:[/?]|$)|contact-messages(?:[/?]|$))/.test(securedPath)) {
+      const proof = method === 'GET' || messagingPath
+        ? (activeAuthenticatorProof('access') ?? activeAuthenticatorProof('critical'))
+        : activeAuthenticatorProof('critical');
       if (proof) requestHeaders[AUTHENTICATOR_HEADER] = proof;
       const pinProof = activeStepUpProof();
       if (pinProof && !requestHeaders[STEP_UP_HEADER]) requestHeaders[STEP_UP_HEADER] = pinProof;
