@@ -74,6 +74,7 @@
     "support-system",
     "contacts-network",
     "marketing-campaigns",
+    "contact-messaging",
     "speaker-directory-status"
   ],
   "profileGroups": {
@@ -127,7 +128,9 @@
   },
   "groups": {
     "contacts-network": [
-      "db/migrations/V127__contacts_network.sql",
+      "db/migrations/V127__contacts_network.sql"
+    ],
+    "contact-messaging": [
       "db/migrations/V180__contact_messaging.sql"
     ],
     "better-auth-mcp-oauth": [
@@ -383,7 +386,8 @@
     ],
     "cbweek-official-speakers": [
       "db/migrations/V181__seed_cbweek2026_official_speakers.sql",
-      "db/migrations/V182__cbweek2026_square_speaker_avatars.sql"
+      "db/migrations/V182__cbweek2026_square_speaker_avatars.sql",
+      "db/migrations/V183__event_scoped_speaker_claims.sql"
     ]
   }
 }
