@@ -133,4 +133,27 @@ describe("CBWeek migration plans", () => {
       expect(migrations).toContain("db/migrations/V183__event_scoped_speaker_claims.sql");
     }
   });
+
+  it("registers the CBWeek schedule and event-scoped speaker role migrations", () => {
+    const schedule = readFileSync(
+      path.join(root, "db/migrations/V184__cbweek2026_official_schedule.sql"),
+      "utf8",
+    );
+    expect(schedule).toContain("2026-12-11T19:30:00-05:00");
+    expect(schedule).toContain("2026-12-12T07:30:00-05:00");
+    expect(schedule.replace(/^--.*$/gm, "")).not.toMatch(/colombia2026/);
+    const roles = readFileSync(
+      path.join(root, "db/migrations/V185__event_scoped_speaker_admin_roles.sql"),
+      "utf8",
+    );
+    expect(roles).toContain("FUNCTION public.admin_manage_speaker_role(");
+    expect(roles).toContain("FROM public.speakers");
+    expect(roles).toContain("UPDATE public.speakers");
+    for (const profile of ["core-development", "core-production"]) {
+      const names = [...migrationConfig.defaultGroups, ...(migrationConfig.profileGroups[profile] ?? [])];
+      const migrations = names.flatMap((group: string) => migrationConfig.groups[group] ?? []);
+      expect(migrations).toContain("db/migrations/V184__cbweek2026_official_schedule.sql");
+      expect(migrations).toContain("db/migrations/V185__event_scoped_speaker_admin_roles.sql");
+    }
+  });
 });

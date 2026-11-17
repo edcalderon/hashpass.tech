@@ -4,6 +4,8 @@ import { authorizeEventAdmin } from '@/lib/server/event-admin';
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const SPEAKER_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,127}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Same set as events/[eventId]/speakers+api.ts: these events use bsl_speakers.
+const LEGACY_BSL_EVENT_PATTERN = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i;
 const ACTIONS = new Set(['grant', 'revoke', 'activate', 'deactivate']);
 
 type SpeakerClaim = {
@@ -32,20 +34,43 @@ export async function GET(request: Request) {
   const authorization = await authorizeEventAdmin(request, eventId);
   if ('response' in authorization) return authorization.response;
 
-  const { data: speakers, error: speakersError } = await authorization.supabase
-    .from('bsl_speakers')
-    .select('id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings')
-    .eq('event_id', eventId)
-    .order('name')
-    .limit(500);
+  // Mirrors the public directory (events/[eventId]/speakers+api.ts): the legacy
+  // BSL events live in bsl_speakers, every other event (e.g. cbweek2026) in the
+  // event-scoped speakers table, where account/active state is in metadata.
+  const usesLegacyBslDirectory = LEGACY_BSL_EVENT_PATTERN.test(eventId);
+  const { data: rows, error: speakersError } = usesLegacyBslDirectory
+    ? await authorization.supabase
+        .from('bsl_speakers')
+        .select('id, name, title, company, imageurl, user_id, is_active, is_accepting_meetings')
+        .eq('event_id', eventId)
+        .order('name')
+        .limit(500)
+    : await authorization.supabase
+        .from('speakers')
+        .select('id, name, title, company, image_url, user_id, metadata')
+        .eq('event_id', eventId)
+        .order('name')
+        .limit(500);
   if (speakersError) {
     console.error('Failed to list speaker assignments:', speakersError.message);
     return Response.json({ error: 'Unable to list speakers' }, { status: 500 });
   }
+  const speakers = (rows || []).map((row: any) => usesLegacyBslDirectory ? row : {
+    id: row.id,
+    name: row.name,
+    title: row.title,
+    company: row.company,
+    imageurl: row.image_url,
+    user_id: row.user_id,
+    is_active: row.metadata?.is_active === true,
+    is_accepting_meetings: row.metadata?.is_accepting_meetings !== false,
+  });
 
-  const speakerIds = (speakers || []).map((speaker: { id: string }) => String(speaker.id));
+  const speakerIds = speakers.map((speaker: { id: string }) => String(speaker.id));
   const claimsBySpeakerId = new Map<string, SpeakerClaim>();
-  if (speakerIds.length) {
+  // Event-scoped speakers are linked on speakers.user_id; the global
+  // speaker_identity_claims ledger only tracks the legacy BSL directory.
+  if (usesLegacyBslDirectory && speakerIds.length) {
     const { data: claims, error: claimsError } = await authorization.supabase
       .from('speaker_identity_claims')
       .select('speaker_id, email_normalized, status, claimed_user_id, claim_error')
@@ -58,7 +83,7 @@ export async function GET(request: Request) {
   }
 
   return Response.json({
-    data: (speakers || []).map((speaker: any) => ({
+    data: speakers.map((speaker: any) => ({
       id: String(speaker.id),
       name: speaker.name,
       title: speaker.title || null,

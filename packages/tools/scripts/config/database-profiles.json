@@ -387,7 +387,9 @@
     "cbweek-official-speakers": [
       "db/migrations/V181__seed_cbweek2026_official_speakers.sql",
       "db/migrations/V182__cbweek2026_square_speaker_avatars.sql",
-      "db/migrations/V183__event_scoped_speaker_claims.sql"
+      "db/migrations/V183__event_scoped_speaker_claims.sql",
+      "db/migrations/V184__cbweek2026_official_schedule.sql",
+      "db/migrations/V185__event_scoped_speaker_admin_roles.sql"
     ]
   }
 }
