@@ -20,18 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.231)
+## 📋 Latest Changes (v1.9.232)
 
-### Released
-- Version 1.9.231 release
+### Bug Fixes
+
+* **ios:** pin the fmt pod to C++17 for Xcode 26 ([f8c67c0](https://github.com/hashpass-tech/hashpass.tech/commit/f8c67c0258121351e3c9dab895557e915d430860))
+### Release Highlights
+- pin the fmt pod to C++17 for Xcode 26
 
 ### Release scope
-- Compared with: `v1.9.230` (the previous global release tag)
+- Compared with: `v1.9.231` (the previous global release tag)
 
 ### Affected products & packages
 - Mobile app
-- Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

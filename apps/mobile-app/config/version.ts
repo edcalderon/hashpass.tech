@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611182145, // Updated to current timestamp
+  buildNumber: 202611182208, // Updated to current timestamp
   releaseDate: '2026-11-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'pin the fmt pod to C++17 for Xcode 26'
   ],
   breakingChanges: [],
-  notes: 'Version 1.9.231 release'
+  notes: 'pin the fmt pod to C++17 for Xcode 26'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.232': {
+    version: '1.9.232',
+    buildNumber: 202611182208,
+    releaseDate: '2026-11-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'pin the fmt pod to C++17 for Xcode 26'
+    ],
+    breakingChanges: [],
+    notes: 'pin the fmt pod to C++17 for Xcode 26'
+  },
   '1.9.231': {
     version: '1.9.231',
     buildNumber: 202611182145,
