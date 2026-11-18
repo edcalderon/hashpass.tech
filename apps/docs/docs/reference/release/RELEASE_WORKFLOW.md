@@ -86,7 +86,7 @@ Temporary release posture: while the app is under active development, keep Andro
 
 ## iOS TestFlight Release
 
-iOS builds run on GitHub-hosted `macos-15`; do not provision an AWS Mac for this
+iOS builds run on GitHub-hosted `macos-26` (Xcode 26.x, the iOS 26 SDK that App Store Connect requires); do not provision an AWS Mac for this
 workflow. The `production` GitHub Environment is intentionally restricted to a
 protected release ref, so a build from `develop` is rejected before a runner can
 access production configuration or signing credentials.
