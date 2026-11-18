@@ -178,6 +178,11 @@ def ios_workspace
 end
 
 def sync_ios_signing(readonly:)
+  # On CI this creates and unlocks a temporary keychain for Match. Importing the
+  # certificate into the runner's login keychain makes codesign wait forever for
+  # a UI permission prompt that nobody can answer.
+  setup_ci
+
   match(
     type: 'appstore',
     app_identifier: APP_STORE_BUNDLE_ID,
