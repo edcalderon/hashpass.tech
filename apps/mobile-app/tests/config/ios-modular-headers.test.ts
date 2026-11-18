@@ -18,3 +18,36 @@ describe('iOS modular headers config plugin', () => {
     expect(addModularHeaders(bare)).toBe(bare);
   });
 });
+
+describe('iOS fmt C++17 pin (Xcode 26 consteval)', () => {
+  const { pinFmtToCxx17 } = require('../../plugins/withIosModularHeaders');
+  const podfile = [
+    "target 'HASHPASS' do",
+    '  post_install do |installer|',
+    '    react_native_post_install(',
+    '      installer,',
+    '      config[:reactNativePath],',
+    '      :mac_catalyst_enabled => false,',
+    '    )',
+    '',
+    '    # keep signing off for resource bundles',
+    '  end',
+    'end',
+    '',
+  ].join('\n');
+
+  it('pins only the fmt target to C++17 right after react_native_post_install, once', () => {
+    const updated = pinFmtToCxx17(podfile);
+
+    expect(updated).toContain("    )\n    # hashpass: pin fmt to C++17 for Xcode 26\n");
+    expect(updated).toContain("next unless target.name == 'fmt'");
+    expect(updated).toContain("build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'");
+    expect(pinFmtToCxx17(updated)).toBe(updated);
+  });
+
+  it('leaves a Podfile without react_native_post_install untouched', () => {
+    const bare = "platform :ios, '15.1'\n";
+
+    expect(pinFmtToCxx17(bare)).toBe(bare);
+  });
+});
