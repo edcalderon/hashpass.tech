@@ -64,7 +64,7 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: git@github.com:hashpass-tech/hashpass-ios-signing.git
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_READONLY: 'false'
           GIT_SSH_COMMAND: ssh -i ${{ runner.temp }}/hashpass-ios-match-bootstrap -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
         run: bundle exec fastlane ios bootstrap_signing

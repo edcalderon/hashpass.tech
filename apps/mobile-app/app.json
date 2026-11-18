@@ -130,9 +130,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow HASHPASS to access your photos so you can choose a profile picture.",
-          "cameraPermission": false,
-          "microphonePermission": false
+          "photosPermission": "Allow HASHPASS to access your photos so you can choose a profile picture."
         }
       ],
       [

@@ -15,7 +15,8 @@ describe('iOS signing bootstrap', () => {
 
     expect(workflow).toContain('MATCH_GIT_SSH_PRIVATE_KEY');
     expect(workflow).toContain('MATCH_READONLY: \'false\'');
-    expect(workflow).toContain('git@github.com:hashpass-tech/hashpass-ios-signing.git');
+    // The signing repo location lives in a secret so it can move without a workflow change.
+    expect(workflow).toContain('MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}');
     expect(workflow).toContain('bundle exec fastlane ios bootstrap_signing');
   });
 

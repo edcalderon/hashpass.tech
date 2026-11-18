@@ -104,16 +104,22 @@ jobs:
           APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_SSH_PRIVATE_KEY: ${{ secrets.MATCH_GIT_SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          for name in APP_STORE_CONNECT_API_KEY_P8 APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID MATCH_PASSWORD MATCH_GIT_SSH_PRIVATE_KEY; do
+          for name in APP_STORE_CONNECT_API_KEY_P8 APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID MATCH_GIT_URL MATCH_PASSWORD MATCH_GIT_SSH_PRIVATE_KEY; do
             if [ -z "${!name}" ]; then
               echo "Missing required GitHub Actions secret: $name" >&2
               exit 1
             fi
           done
+          # The signing repo is read over an SSH deploy key, so the URL must be SSH.
+          case "$MATCH_GIT_URL" in
+            git@*:*) ;;
+            *) echo "MATCH_GIT_URL must be an SSH URL (git@github.com:org/repo.git)" >&2; exit 1 ;;
+          esac
 
       # Match reads the signing repository over a read-only deploy key. HTTPS
       # basic auth was rejected (HTTP 400) when the credential was malformed.
@@ -135,7 +141,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          MATCH_GIT_URL: git@github.com:hashpass-tech/hashpass-ios-signing.git
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_READONLY: 'true'
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
