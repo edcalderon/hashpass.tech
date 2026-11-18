@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611180345, // Updated to current timestamp
+  buildNumber: 202611182145, // Updated to current timestamp
   releaseDate: '2026-11-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,18 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'use a temporary CI keychain for signing and cap the job at 60 minutes',
-    'make RecaptchaInterop modular for AppCheckCore',
-    'scope modular headers to the Swift pod dependencies',
-    'use manual signing with the Match profile for the app target',
-    'resolve Expo workspace and IPA paths from the app root'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'use a temporary CI keychain for signing and cap the job at 60 minutes; make RecaptchaInterop modular for AppCheckCore; scope modular headers to the Swift pod dependencies; use manual signing with the Match profile for the app target; resolve Expo workspace and IPA paths from the app root'
+  notes: 'Version 1.9.231 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.231': {
+    version: '1.9.231',
+    buildNumber: 202611182145,
+    releaseDate: '2026-11-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.9.231 release'
+  },
   '1.9.230': {
     version: '1.9.230',
     buildNumber: 202611180345,
