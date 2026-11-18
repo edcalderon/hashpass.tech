@@ -24,6 +24,7 @@ jobs:
   testflight:
     runs-on: macos-15
     environment: production
+    timeout-minutes: 60
     env:
       EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
       EXPO_OWNER: hashpasss-team

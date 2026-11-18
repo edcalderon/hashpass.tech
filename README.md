@@ -20,20 +20,23 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.229)
+## 📋 Latest Changes (v1.9.230)
 
-### Features
+### Bug Fixes
 
-* **ios:** add image picker usage string, push production mode, and export-compliance flag ([474f297](https://github.com/hashpass-tech/hashpass.tech/commit/474f297cb53bd9692ac5a342bcee59abf363c8b4))
+* **ios:** make RecaptchaInterop modular for AppCheckCore ([7de4a24](https://github.com/hashpass-tech/hashpass.tech/commit/7de4a24c1d874d2810f3402213ec89819fe31f96))
+* **ios:** resolve Expo workspace and IPA paths from the app root ([3a51e0a](https://github.com/hashpass-tech/hashpass.tech/commit/3a51e0a51ffc5cd67d16035098d1b8d5a706c30a))
+* **ios:** scope modular headers to the Swift pod dependencies ([55b2dbf](https://github.com/hashpass-tech/hashpass.tech/commit/55b2dbfe4d4a27b81a3d4d729eb9638d4c26ade4))
+* **ios:** use a temporary CI keychain for signing and cap the job at 60 minutes ([7f0928d](https://github.com/hashpass-tech/hashpass.tech/commit/7f0928de35ac2db79f9780fc09798840a6fe5e06))
+* **ios:** use manual signing with the Match profile for the app target ([5eaab02](https://github.com/hashpass-tech/hashpass.tech/commit/5eaab02e693825dae6d33747f97851efedb6d74d))
 ### Release Highlights
-- add image picker usage string, push production mode, and export-compliance flag
+- use a temporary CI keychain for signing and cap the job at 60 minutes; make RecaptchaInterop modular for AppCheckCore; scope modular headers to the Swift pod dependencies; use manual signing with the Match profile for the app target; resolve Expo workspace and IPA paths from the app root
 
 ### Release scope
-- Compared with: `v1.9.228` (the previous global release tag)
+- Compared with: `v1.9.229` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
-- Documentation
+- Mobile app
 - Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)

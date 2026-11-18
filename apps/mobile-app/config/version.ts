@@ -22,22 +22,45 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611180055, // Updated to current timestamp
+  buildNumber: 202611180345, // Updated to current timestamp
   releaseDate: '2026-11-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add image picker usage string, push production mode, and export-compliance flag'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'use a temporary CI keychain for signing and cap the job at 60 minutes',
+    'make RecaptchaInterop modular for AppCheckCore',
+    'scope modular headers to the Swift pod dependencies',
+    'use manual signing with the Match profile for the app target',
+    'resolve Expo workspace and IPA paths from the app root'
   ],
   breakingChanges: [],
-  notes: 'add image picker usage string, push production mode, and export-compliance flag'
+  notes: 'use a temporary CI keychain for signing and cap the job at 60 minutes; make RecaptchaInterop modular for AppCheckCore; scope modular headers to the Swift pod dependencies; use manual signing with the Match profile for the app target; resolve Expo workspace and IPA paths from the app root'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.230': {
+    version: '1.9.230',
+    buildNumber: 202611180345,
+    releaseDate: '2026-11-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'use a temporary CI keychain for signing and cap the job at 60 minutes',
+      'make RecaptchaInterop modular for AppCheckCore',
+      'scope modular headers to the Swift pod dependencies',
+      'use manual signing with the Match profile for the app target',
+      'resolve Expo workspace and IPA paths from the app root'
+    ],
+    breakingChanges: [],
+    notes: 'use a temporary CI keychain for signing and cap the job at 60 minutes; make RecaptchaInterop modular for AppCheckCore; scope modular headers to the Swift pod dependencies; use manual signing with the Match profile for the app target; resolve Expo workspace and IPA paths from the app root'
+  },
   '1.9.229': {
     version: '1.9.229',
     buildNumber: 202611180055,

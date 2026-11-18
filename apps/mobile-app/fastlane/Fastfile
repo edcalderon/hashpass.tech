@@ -166,14 +166,23 @@ def app_store_connect_api_key_from_env
   )
 end
 
+# Fastlane runs lanes from the `fastlane/` directory, while Expo prebuild
+# generates `ios/` and the IPA output beside it in the app root.
+IOS_APP_ROOT = File.expand_path('..', __dir__).freeze
+
 def ios_workspace
-  workspace = Dir.glob(File.join('ios', '*.xcworkspace')).sort.first
+  workspace = Dir.glob(File.join(IOS_APP_ROOT, 'ios', '*.xcworkspace')).sort.first
   UI.user_error!('No iOS workspace found. Run Expo prebuild before Fastlane.') unless workspace
 
   workspace
 end
 
 def sync_ios_signing(readonly:)
+  # On CI this creates and unlocks a temporary keychain for Match. Importing the
+  # certificate into the runner's login keychain makes codesign wait forever for
+  # a UI permission prompt that nobody can answer.
+  setup_ci
+
   match(
     type: 'appstore',
     app_identifier: APP_STORE_BUNDLE_ID,
@@ -182,14 +191,34 @@ def sync_ios_signing(readonly:)
   )
 end
 
+# Expo prebuild generates the Xcode project with automatic signing and no team.
+# Switch the app target to manual signing with the profile Match just installed;
+# Match exports the team and profile name as environment variables.
+def apply_ios_manual_signing
+  profile_prefix = "sigh_#{APP_STORE_BUNDLE_ID}_appstore"
+  team_id = ENV.fetch("#{profile_prefix}_team-id")
+  profile_name = ENV.fetch("#{profile_prefix}_profile-name")
+
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path: Dir.glob(File.join(IOS_APP_ROOT, 'ios', '*.xcodeproj')).sort.first,
+    team_id: team_id,
+    targets: [ENV.fetch('IOS_SCHEME', 'HASHPASS')],
+    code_sign_identity: 'Apple Distribution',
+    profile_name: profile_name,
+    bundle_identifier: APP_STORE_BUNDLE_ID,
+  )
+end
+
 def build_ios_ipa
   sync_ios_signing(readonly: ENV.fetch('MATCH_READONLY', 'true') == 'true')
+  apply_ios_manual_signing
 
   build_app(
     workspace: ios_workspace,
     scheme: ENV.fetch('IOS_SCHEME', 'HASHPASS'),
     export_method: 'app-store',
-    output_directory: File.join('build', 'ios'),
+    output_directory: File.join(IOS_APP_ROOT, 'build', 'ios'),
     output_name: 'HASHPASS.ipa',
     clean: true,
   )
