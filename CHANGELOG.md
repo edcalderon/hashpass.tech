@@ -1,3 +1,18 @@
+## [1.9.232](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.231...v1.9.232) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ios:** pin the fmt pod to C++17 for Xcode 26 ([f8c67c0](https://github.com/hashpass-tech/hashpass.tech/commit/f8c67c0258121351e3c9dab895557e915d430860))
+### Release Highlights
+- pin the fmt pod to C++17 for Xcode 26
+
+### Release scope
+- Compared with: `v1.9.231` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.231](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.230...v1.9.231) (2026-11-18)
 ### Released
 - Version 1.9.231 release
