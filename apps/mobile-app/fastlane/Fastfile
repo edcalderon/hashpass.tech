@@ -186,8 +186,28 @@ def sync_ios_signing(readonly:)
   )
 end
 
+# Expo prebuild generates the Xcode project with automatic signing and no team.
+# Switch the app target to manual signing with the profile Match just installed;
+# Match exports the team and profile name as environment variables.
+def apply_ios_manual_signing
+  profile_prefix = "sigh_#{APP_STORE_BUNDLE_ID}_appstore"
+  team_id = ENV.fetch("#{profile_prefix}_team-id")
+  profile_name = ENV.fetch("#{profile_prefix}_profile-name")
+
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path: Dir.glob(File.join(IOS_APP_ROOT, 'ios', '*.xcodeproj')).sort.first,
+    team_id: team_id,
+    targets: [ENV.fetch('IOS_SCHEME', 'HASHPASS')],
+    code_sign_identity: 'Apple Distribution',
+    profile_name: profile_name,
+    bundle_identifier: APP_STORE_BUNDLE_ID,
+  )
+end
+
 def build_ios_ipa
   sync_ios_signing(readonly: ENV.fetch('MATCH_READONLY', 'true') == 'true')
+  apply_ios_manual_signing
 
   build_app(
     workspace: ios_workspace,
