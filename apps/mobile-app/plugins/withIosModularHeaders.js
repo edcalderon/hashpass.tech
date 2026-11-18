@@ -3,7 +3,7 @@ const { withPodfile } = require('expo/config-plugins');
 // A global `use_modular_headers!` makes React Native's own pods redefine the
 // `react_runtime` module (RN 0.79), so only the Objective-C dependencies of the
 // Swift AppCheckCore pod (via Google Sign-In) are made modular.
-const MODULAR_PODS = ['PromisesObjC', 'GoogleUtilities'];
+const MODULAR_PODS = ['PromisesObjC', 'GoogleUtilities', 'RecaptchaInterop'];
 
 function addModularHeaders(contents) {
   const missing = MODULAR_PODS.filter((pod) => !contents.includes(`pod '${pod}', :modular_headers => true`));
