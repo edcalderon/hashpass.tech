@@ -166,8 +166,12 @@ def app_store_connect_api_key_from_env
   )
 end
 
+# Fastlane runs lanes from the `fastlane/` directory, while Expo prebuild
+# generates `ios/` and the IPA output beside it in the app root.
+IOS_APP_ROOT = File.expand_path('..', __dir__).freeze
+
 def ios_workspace
-  workspace = Dir.glob(File.join('ios', '*.xcworkspace')).sort.first
+  workspace = Dir.glob(File.join(IOS_APP_ROOT, 'ios', '*.xcworkspace')).sort.first
   UI.user_error!('No iOS workspace found. Run Expo prebuild before Fastlane.') unless workspace
 
   workspace
@@ -189,7 +193,7 @@ def build_ios_ipa
     workspace: ios_workspace,
     scheme: ENV.fetch('IOS_SCHEME', 'HASHPASS'),
     export_method: 'app-store',
-    output_directory: File.join('build', 'ios'),
+    output_directory: File.join(IOS_APP_ROOT, 'build', 'ios'),
     output_name: 'HASHPASS.ipa',
     clean: true,
   )
