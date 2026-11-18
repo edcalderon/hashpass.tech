@@ -1,3 +1,23 @@
+## [1.9.230](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.229...v1.9.230) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ios:** make RecaptchaInterop modular for AppCheckCore ([7de4a24](https://github.com/hashpass-tech/hashpass.tech/commit/7de4a24c1d874d2810f3402213ec89819fe31f96))
+* **ios:** resolve Expo workspace and IPA paths from the app root ([3a51e0a](https://github.com/hashpass-tech/hashpass.tech/commit/3a51e0a51ffc5cd67d16035098d1b8d5a706c30a))
+* **ios:** scope modular headers to the Swift pod dependencies ([55b2dbf](https://github.com/hashpass-tech/hashpass.tech/commit/55b2dbfe4d4a27b81a3d4d729eb9638d4c26ade4))
+* **ios:** use a temporary CI keychain for signing and cap the job at 60 minutes ([7f0928d](https://github.com/hashpass-tech/hashpass.tech/commit/7f0928de35ac2db79f9780fc09798840a6fe5e06))
+* **ios:** use manual signing with the Match profile for the app target ([5eaab02](https://github.com/hashpass-tech/hashpass.tech/commit/5eaab02e693825dae6d33747f97851efedb6d74d))
+### Release Highlights
+- use a temporary CI keychain for signing and cap the job at 60 minutes; make RecaptchaInterop modular for AppCheckCore; scope modular headers to the Swift pod dependencies; use manual signing with the Match profile for the app target; resolve Expo workspace and IPA paths from the app root
+
+### Release scope
+- Compared with: `v1.9.229` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+- Release tooling
+
 ## [1.9.229](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.228...v1.9.229) (2026-11-18)
 
 
