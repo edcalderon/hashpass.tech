@@ -22,8 +22,10 @@ describe('mobile release tag workflow', () => {
       'utf8',
     );
 
-    expect(workflow).toContain('MATCH_GIT_BASIC_AUTHORIZATION');
-    expect(workflow).toContain('secrets.MATCH_GIT_BASIC_AUTHORIZATION');
+    expect(workflow).toContain('secrets.MATCH_GIT_SSH_PRIVATE_KEY');
+    expect(workflow).toContain('secrets.MATCH_GIT_URL');
+    expect(workflow).toContain('GIT_SSH_COMMAND=');
+    expect(workflow).not.toContain('MATCH_GIT_BASIC_AUTHORIZATION');
     expect(workflow).toContain('Missing required GitHub Actions secret: $name');
   });
 

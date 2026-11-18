@@ -1,3 +1,20 @@
+## [1.9.229](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.228...v1.9.229) (2026-11-18)
+
+
+### Features
+
+* **ios:** add image picker usage string, push production mode, and export-compliance flag ([474f297](https://github.com/hashpass-tech/hashpass.tech/commit/474f297cb53bd9692ac5a342bcee59abf363c8b4))
+### Release Highlights
+- add image picker usage string, push production mode, and export-compliance flag
+
+### Release scope
+- Compared with: `v1.9.228` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Documentation
+- Release tooling
+
 ## [1.9.228](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.227...v1.9.228) (2026-11-17)
 
 

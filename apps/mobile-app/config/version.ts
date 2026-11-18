@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611171931, // Updated to current timestamp
-  releaseDate: '2026-11-17',
+  buildNumber: 202611180055, // Updated to current timestamp
+  releaseDate: '2026-11-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'venue photos, real durations and official day labels for the agenda',
-    'publish official Welcome Drink and Main Day hours and let admins manage event speakers'
+    'add image picker usage string, push production mode, and export-compliance flag'
   ],
   bugfixes: [
-    'backfill general CBWeek 2026 passes for every verified account',
-    'register the cbweek2026 chat room in production'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'venue photos, real durations and official day labels for the agenda; publish official Welcome Drink and Main Day hours and let admins manage event speakers; backfill general CBWeek 2026 passes for every verified account; register the cbweek2026 chat room in production'
+  notes: 'add image picker usage string, push production mode, and export-compliance flag'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.229': {
+    version: '1.9.229',
+    buildNumber: 202611180055,
+    releaseDate: '2026-11-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add image picker usage string, push production mode, and export-compliance flag'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add image picker usage string, push production mode, and export-compliance flag'
+  },
   '1.9.228': {
     version: '1.9.228',
     buildNumber: 202611171931,

@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.9.228",
+    "version": "1.9.229",
     "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -21,7 +21,8 @@
       "bundleIdentifier": "tech.hashpass.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses."
+        "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -30,7 +31,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 11377,
+      "versionCode": 11378,
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -120,7 +121,18 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HASHPASS to access your photos so you can choose a profile picture."
+        }
+      ],
       [
         "expo-camera",
         {
