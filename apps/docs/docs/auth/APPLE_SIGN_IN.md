@@ -12,7 +12,7 @@ key, account ID, or issuer ID belongs in this repository.
 
 ## What exists today
 
-- The Expo app has the iOS bundle identifier `com.hashpass.tech`.
+- The Expo app has the iOS bundle identifier `tech.hashpass.app`.
 - App Store Connect contains **HASHPASS APP**, with iOS version **1.0** in
   *Prepare for Submission* according to the supplied console screenshot.
 - The repository release version is maintained by the release scripts. Keep
@@ -80,11 +80,11 @@ Sign in with Apple uses the existing iOS App ID as its primary app and a
 separate **Services ID** for browser and Android-browser OAuth.
 
 1. In the Apple Developer account, open **Certificates, Identifiers &
-   Profiles → Identifiers**, select the App ID for `com.hashpass.tech`, enable
+   Profiles → Identifiers**, select the App ID for `tech.hashpass.app`, enable
    **Sign in with Apple**, and save it. Do not create a second App ID.
 2. Create a Services ID with a new, reverse-domain identifier chosen by the
    account owner (for example, a unique `com.hashpass...web` identifier). Turn
-   on Sign in with Apple and associate it with `com.hashpass.tech` as its
+   on Sign in with Apple and associate it with `tech.hashpass.app` as its
    primary App ID.
 3. Register the production web domain and callback exactly:
 

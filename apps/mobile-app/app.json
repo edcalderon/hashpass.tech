@@ -21,7 +21,8 @@
       "bundleIdentifier": "tech.hashpass.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses."
+        "NSCameraUsageDescription": "This app needs camera access to scan QR codes for tickets and wallet addresses.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -120,7 +121,20 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HASHPASS to access your photos so you can choose a profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-camera",
         {
