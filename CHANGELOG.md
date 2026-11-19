@@ -1,3 +1,18 @@
+## [1.9.233](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.232...v1.9.233) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ios:** improve social icon contrast, header safe area and pass back layout ([435e460](https://github.com/hashpass-tech/hashpass.tech/commit/435e46002458b28ab37dde58b22164798977541f))
+### Release Highlights
+- improve social icon contrast, header safe area and pass back layout
+
+### Release scope
+- Compared with: `v1.9.232` (the previous global release tag)
+
+### Affected products & packages
+- Mobile app
+
 ## [1.9.232](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.231...v1.9.232) (2026-11-18)
 
 
