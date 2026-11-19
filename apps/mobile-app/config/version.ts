@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611182208, // Updated to current timestamp
-  releaseDate: '2026-11-18',
+  buildNumber: 202611191712, // Updated to current timestamp
+  releaseDate: '2026-11-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'pin the fmt pod to C++17 for Xcode 26'
+    'improve social icon contrast, header safe area and pass back layout'
   ],
   breakingChanges: [],
-  notes: 'pin the fmt pod to C++17 for Xcode 26'
+  notes: 'improve social icon contrast, header safe area and pass back layout'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.233': {
+    version: '1.9.233',
+    buildNumber: 202611191712,
+    releaseDate: '2026-11-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'improve social icon contrast, header safe area and pass back layout'
+    ],
+    breakingChanges: [],
+    notes: 'improve social icon contrast, header safe area and pass back layout'
+  },
   '1.9.232': {
     version: '1.9.232',
     buildNumber: 202611182208,
