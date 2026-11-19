@@ -881,6 +881,13 @@ export default function AuthScreen({
     }
   }, [busyAction, t]);
 
+  // Apple and X marks are monochrome. Desktop buttons are filled with the
+  // text token, so the mark inverts to canvas; the compact icon circles use the
+  // neutral surface, so the mark must use the text token to stay visible in
+  // both light and dark mode.
+  const brandMonoIconColor = isDesktopLayout
+    ? uiPalette(isDark).canvas
+    : uiPalette(isDark).text;
   const renderOAuthButton = ({
     label,
     onPress,
@@ -3121,13 +3128,15 @@ export default function AuthScreen({
                           label: appleOAuthButtonLabel,
                           onPress: () => void handleAppleSignIn(),
                           redirecting: isAppleOAuthRedirecting,
-                          iconColor: uiPalette(isDark).canvas,
-                          brandingStyle: styles.appleOauthButton,
+                          iconColor: brandMonoIconColor,
+                          brandingStyle: isDesktopLayout
+                            ? styles.appleOauthButton
+                            : undefined,
                           icon: (
                             <Ionicons
                               name="logo-apple"
                               size={24}
-                              color={uiPalette(isDark).canvas}
+                              color={brandMonoIconColor}
                             />
                           ),
                         })}
@@ -3144,10 +3153,12 @@ export default function AuthScreen({
                         label: xOAuthButtonLabel,
                         onPress: () => void handleXSignIn(),
                         redirecting: isXOAuthRedirecting,
-                        iconColor: uiPalette(isDark).canvas,
-                        brandingStyle: styles.appleOauthButton,
+                        iconColor: brandMonoIconColor,
+                        brandingStyle: isDesktopLayout
+                          ? styles.appleOauthButton
+                          : undefined,
                         icon: (
-                          <XIcon size={20} color={uiPalette(isDark).canvas} />
+                          <XIcon size={24} color={brandMonoIconColor} />
                         ),
                       })}
                     </View>

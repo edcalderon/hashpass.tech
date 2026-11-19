@@ -1922,6 +1922,12 @@ function AuthenticatedDashboardLayout() {
     );
   };
 
+  // The custom header (iOS and web) is drawn by us, not by the native stack, so
+  // it must reserve the top safe-area inset itself or the clock, badge and
+  // status icons collide with the Dynamic Island / notch. Android keeps its
+  // native header, which already handles the inset.
+  const customHeaderTopInset = Platform.OS === "ios" ? insets.top : 0;
+
   // Screen component with header
   const ScreenWithHeader = () => {
     return (
@@ -1929,7 +1935,8 @@ function AuthenticatedDashboardLayout() {
         style={[
           styles.headerContainer,
           {
-            height: ANDROID_DASHBOARD_HEADER_HEIGHT,
+            height: ANDROID_DASHBOARD_HEADER_HEIGHT + customHeaderTopInset,
+            paddingTop: customHeaderTopInset,
             backgroundColor: isDark
               ? "rgba(18, 18, 18, 0.95)"
               : "rgba(255, 255, 255, 0.95)",
@@ -1947,7 +1954,9 @@ function AuthenticatedDashboardLayout() {
   const customDrawerHeaderOptions = {
     headerShown: true,
     header: () => <ScreenWithHeader />,
-    headerStyle: { height: ANDROID_DASHBOARD_HEADER_HEIGHT },
+    headerStyle: {
+      height: ANDROID_DASHBOARD_HEADER_HEIGHT + customHeaderTopInset,
+    },
   };
 
   const getDrawerHeaderOptions = (navigation: DrawerNavigation) => {

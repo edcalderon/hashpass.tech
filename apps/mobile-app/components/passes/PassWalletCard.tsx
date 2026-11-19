@@ -666,18 +666,18 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           }
         : { flex: 1, padding: uiTokens.space.md, paddingTop: uiTokens.space.sm, paddingBottom: uiTokens.control.minHeight }}>
         <View style={isNative
-          ? { height: Math.round(PASS_CARD_HEIGHT * 0.58) - 56 - uiTokens.space.sm, flexGrow: 0, flexShrink: 0 }
+          ? { height: Math.round(PASS_CARD_HEIGHT * 0.58) - 56 - uiTokens.space.sm, flexGrow: 0, flexShrink: 0, overflow: 'hidden' }
           : undefined}>
         <View style={{ marginBottom: uiTokens.space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: uiTokens.space.xs }}>
             <MaterialIcons name="event" size={14} color={colors.text.secondary} />
-            <Text style={{ flex: 1, minWidth: 0, fontSize: uiTokens.type.caption, color: colors.text.secondary, marginLeft: uiTokens.space.sm }}>
+            <Text numberOfLines={2} style={{ flex: 1, minWidth: 0, fontSize: uiTokens.type.caption, color: colors.text.secondary, marginLeft: uiTokens.space.sm }}>
               {passEventShortName}{passEventDate ? ` • ${passEventDate}` : ''}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <MaterialIcons name="label" size={14} color={colors.text.secondary} />
-            <Text style={{ flex: 1, minWidth: 0, fontSize: uiTokens.type.caption, color: colors.text.secondary, marginLeft: uiTokens.space.sm }}>
+            <Text numberOfLines={2} style={{ flex: 1, minWidth: 0, fontSize: uiTokens.type.caption, color: colors.text.secondary, marginLeft: uiTokens.space.sm }}>
               {getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })} • {(pass.status || '').toUpperCase()}
             </Text>
           </View>
@@ -695,7 +695,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           }}>
             {translate('accessIncluded', {})}
           </Text>
-          <Text style={{
+          <Text numberOfLines={isNative ? 4 : undefined} style={{
             fontSize: uiTokens.type.caption,
             color: colors.text.secondary,
           }}>
