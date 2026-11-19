@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { IconButton } from "@hashpass/ui/primitives";
-import { uiTokens } from "@hashpass/ui/tokens";
+import { uiPalette, uiTokens } from "@hashpass/ui/tokens";
+import { Ionicons } from "../../lib/vector-icons";
+import { XIcon } from "../../components/icons/XIcon";
 import AuthScreen from "../../app/(shared)/auth";
 
 // Coverage instrumentation makes the large auth render occasionally exceed
@@ -549,6 +551,51 @@ describe("passwordless email reset", () => {
       // A dismissed sheet returns no session: no false "Login successful".
       expect(mockShowSuccess).not.toHaveBeenCalled();
       expect(button("Continue with X")).toBeDefined();
+    }
+  });
+
+  it("keeps the monochrome Apple and X marks visible in both the compact and desktop layouts", async () => {
+    const palette = uiPalette(false);
+    const markColors = () => ({
+      apple: renderer.root
+        .findAllByType(Ionicons)
+        .find((node) => node.props.name === "logo-apple")?.props.color,
+      x: renderer.root.findAllByType(XIcon)[0]?.props.color,
+    });
+
+    // Compact phone: the marks sit on a neutral circle, so they use the text token.
+    expect(markColors()).toEqual({ apple: palette.text, x: palette.text });
+
+    // Wide web: the buttons are filled with the text token, so the marks invert.
+    Platform.OS = "web";
+    const originalAdd = window.addEventListener;
+    const originalRemove = window.removeEventListener;
+    Object.defineProperty(window, "addEventListener", {
+      configurable: true,
+      value: jest.fn(),
+    });
+    Object.defineProperty(window, "removeEventListener", {
+      configurable: true,
+      value: jest.fn(),
+    });
+    const dimensions = jest
+      .spyOn(require("react-native"), "useWindowDimensions")
+      .mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    try {
+      await act(async () => renderer.update(<AuthScreen key="desktop-marks" />));
+      expect(markColors()).toEqual({ apple: palette.canvas, x: palette.canvas });
+    } finally {
+      dimensions.mockRestore();
+      await act(async () => renderer.update(<AuthScreen key="restore-marks" />));
+      Platform.OS = "ios";
+      Object.defineProperty(window, "addEventListener", {
+        configurable: true,
+        value: originalAdd,
+      });
+      Object.defineProperty(window, "removeEventListener", {
+        configurable: true,
+        value: originalRemove,
+      });
     }
   });
 
