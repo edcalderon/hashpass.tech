@@ -1,3 +1,20 @@
+## [1.9.236](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.235...v1.9.236) (2026-11-24)
+
+
+### Features
+
+* **attending:** add CBWeek artwork routes ([63f3dc3](https://github.com/hashpass-tech/hashpass.tech/commit/63f3dc3c1cfb44ea491ab0fa6a8266a530e7998c))
+### Release Highlights
+- add CBWeek artwork routes
+
+### Release scope
+- Compared with: `v1.9.235` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Infrastructure
+- Release tooling
+
 ## [1.9.235](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.234...v1.9.235) (2026-11-24)
 
 

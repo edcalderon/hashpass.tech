@@ -40,6 +40,9 @@ export function getAttendingEventUrl(eventSlug: string): string {
   // bsl.hashpass.tech already serves the BSL event app at `/`; keep that
   // homepage intact and host its artwork builder in the app's route space.
   if (subdomain === 'bsl') return `https://${subdomain}.hashpass.tech/attending/bsl/`;
+  // The public CBWeek tenant keeps the year-qualified hostname. Its short
+  // campaign URL remains an alias and its artwork builder lives below the app.
+  if (subdomain === 'cbweek') return 'https://cbweek2026.hashpass.tech/attending/cbweek/';
   return `https://${subdomain}.hashpass.tech/`;
 }
 
@@ -60,7 +63,9 @@ export function getAttendingEventHref(
   linkOrigin: AttendingEventLinkOrigin = 'tenant',
 ): string {
   const subdomain = getAttendingEventSubdomain(eventSlug);
-  if (linkOrigin === 'club' && subdomain === 'bsl') return `/attendings/${subdomain}`;
+  if (linkOrigin === 'club' && (subdomain === 'bsl' || subdomain === 'cbweek')) {
+    return `/attendings/${subdomain}`;
+  }
   if (process.env.NODE_ENV === 'development') return `/attending/${subdomain}/`;
   return getAttendingEventUrl(subdomain);
 }

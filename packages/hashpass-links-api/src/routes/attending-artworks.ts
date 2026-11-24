@@ -256,8 +256,15 @@ export async function createAttendingArtwork(request: Request): Promise<Response
   const isCommunityEvent = body.eventSlug === 'community'
     && eventUrl.hostname === 'hashpass.club'
     && eventPath === '/attendings';
-  const expectedPath = body.eventSlug === 'bsl' ? `/attending/${body.eventSlug}` : '';
-  const expectedHost = `${body.eventSlug}.hashpass.tech`;
+  // CBWeek's tenant has a year-qualified public hostname and keeps the
+  // artwork builder under its app route. Its short cbweek.hashpass.tech URL
+  // remains an alias, but published artwork should use the canonical tenant.
+  const expectedPath = body.eventSlug === 'bsl' || body.eventSlug === 'cbweek'
+    ? `/attending/${body.eventSlug}`
+    : '';
+  const expectedHost = body.eventSlug === 'cbweek'
+    ? 'cbweek2026.hashpass.tech'
+    : `${body.eventSlug}.hashpass.tech`;
   const isConfiguredEvent = eventUrl.hostname === expectedHost && eventPath === expectedPath;
   if (!isCommunityEvent && !isConfiguredEvent) {
     return apiError('Event URL must match the selected event');

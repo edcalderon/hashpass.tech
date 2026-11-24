@@ -5,6 +5,17 @@ All notable changes to the HashPass Club web app will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project follows Semantic Versioning.
 
+## [1.0.67] - 2026-11-24
+
+### Stable
+- Add CBWeek attending artwork routes
+
+### Technical Details
+- Version: 1.0.67
+- Release Type: stable
+- Build Number: 20261124163426
+- Release Date: 2026-11-24
+
 ## [1.0.66] - 2026-11-17
 
 ### Stable

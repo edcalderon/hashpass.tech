@@ -61,9 +61,12 @@
         var eventRoute = path.match(/^\/attending\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
         var shortRoute = path.match(/^\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
         var requestedSlug = eventRoute ? eventRoute[1] : shortRoute ? shortRoute[1] : null;
+        var cbweekAttendingAlias = subdomain === 'cbweek2026'
+          && eventRoute
+          && eventRoute[1].toLowerCase() === 'cbweek';
         if (path === '/attending' || path === '/attending/') {
           target = 'https://' + host + '/' + search + hash;
-        } else if (eventRoute && requestedSlug === subdomain) {
+        } else if (eventRoute && (requestedSlug === subdomain || cbweekAttendingAlias)) {
           // Static hosting rewrites the event subdomain root to this page.
         } else if (requestedSlug) {
           var encodedEvent = encodeURIComponent(requestedSlug.toLowerCase());

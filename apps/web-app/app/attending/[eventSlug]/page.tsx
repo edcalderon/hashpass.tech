@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { AttendingExperience } from '../AttendingExperience';
 import { ATTENDING_EVENT_SLUGS, makeAttendingEventData, makeAttendingMetadata, resolveAttendingEvent } from '../event-data';
 import type { AttendingRoutePageProps } from '../types/attending.types';
+import { getAttendingEventUrl } from '../../../lib/attending-url';
 
 export const dynamicParams = false;
 
@@ -25,6 +26,9 @@ export default async function AttendingPage({ params }: AttendingRoutePageProps)
     <AttendingExperience
       event={makeAttendingEventData(event, eventSlug)}
       {...(eventSlug === 'bsl' ? { brandHref: '/attending/', footerHref: '/attending/' } : {})}
+      {...(eventSlug === 'cbweek'
+        ? { brandHref: '/', eventPageUrl: getAttendingEventUrl(eventSlug) }
+        : {})}
     />
   );
 }

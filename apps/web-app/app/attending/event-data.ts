@@ -32,8 +32,16 @@ const BSL_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
   xHandle: '@BlockSummitLA',
 };
 
+const CBWEEK_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
+  accentColor: '#FCD116',
+  secondaryAccentColor: '#003893',
+  flagColors: ['#FCD116', '#003893', '#CE1126'],
+  hashtags: ['#cbweek2026', '#cbw2026'],
+};
+
 const ARTWORK_TEMPLATE_OVERRIDES: Record<string, Partial<AttendingArtworkTemplate>> = {
   colombia2026: BSL_COLOMBIA_ARTWORK_TEMPLATE,
+  cbweek2026: CBWEEK_COLOMBIA_ARTWORK_TEMPLATE,
 };
 
 export const ATTENDING_EVENT_SLUGS = Array.from(
@@ -111,6 +119,7 @@ export function makeAttendingEventData(event: EventConfig, eventSlug: string): A
     hashtags: [`#${shortName.replace(/\s+/g, '')}`],
     poweredByLogoSrc: POWERED_BY_LOGO,
     ...ARTWORK_TEMPLATE_OVERRIDES[event.id],
+    ...(event.id === 'cbweek2026' ? { backgroundSrc: event.heroPoster || null } : {}),
   };
 
   return {
