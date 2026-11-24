@@ -20,19 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.237)
+## 📋 Latest Changes (v1.9.238)
 
-### Bug Fixes
+### Features
 
-* **ci:** validate CBWeek production build config ([d8050cc](https://github.com/hashpass-tech/hashpass.tech/commit/d8050cca3a3dd8eec6c7e4f73fb68e7e4ca8c765)), closes [#524](https://github.com/hashpass-tech/hashpass.tech/issues/524)
+* **club:** polish CBWeek attendee artwork ([#524](https://github.com/hashpass-tech/hashpass.tech/issues/524)) ([27c62bc](https://github.com/hashpass-tech/hashpass.tech/commit/27c62bc8cc502cb0476efc78715ba1adc0843765))
 ### Release Highlights
-- validate CBWeek production build config
+- polish CBWeek attendee artwork (#524)
 
 ### Release scope
-- Compared with: `v1.9.236` (the previous global release tag)
+- Compared with: `v1.9.237` (the previous global release tag)
 
 ### Affected products & packages
-- Release tooling
+- Club web
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

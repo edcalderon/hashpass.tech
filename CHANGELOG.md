@@ -1,3 +1,18 @@
+## [1.9.238](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.237...v1.9.238) (2026-11-24)
+
+
+### Features
+
+* **club:** polish CBWeek attendee artwork ([#524](https://github.com/hashpass-tech/hashpass.tech/issues/524)) ([27c62bc](https://github.com/hashpass-tech/hashpass.tech/commit/27c62bc8cc502cb0476efc78715ba1adc0843765))
+### Release Highlights
+- polish CBWeek attendee artwork (#524)
+
+### Release scope
+- Compared with: `v1.9.237` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+
 ## [1.9.237](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.236...v1.9.237) (2026-11-24)
 
 
