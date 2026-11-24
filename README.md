@@ -20,19 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.235)
+## 📋 Latest Changes (v1.9.236)
 
-### Bug Fixes
+### Features
 
-* **cbweek:** resolve event config in Storybook ([bb6c6cd](https://github.com/hashpass-tech/hashpass.tech/commit/bb6c6cd9126ea1fa5b29062ec512f22e43092587))
+* **attending:** add CBWeek artwork routes ([63f3dc3](https://github.com/hashpass-tech/hashpass.tech/commit/63f3dc3c1cfb44ea491ab0fa6a8266a530e7998c))
 ### Release Highlights
-- resolve event config in Storybook
+- add CBWeek artwork routes
 
 ### Release scope
-- Compared with: `v1.9.234` (the previous global release tag)
+- Compared with: `v1.9.235` (the previous global release tag)
 
 ### Affected products & packages
-- Documentation
+- Club web
+- Infrastructure
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
