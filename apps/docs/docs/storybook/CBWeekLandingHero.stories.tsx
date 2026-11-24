@@ -1,6 +1,6 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { EVENTS } from "@hashpass/config";
+import { EVENTS } from "../../../mobile-app/config/events";
 import { useSharedValue } from "react-native-reanimated";
 import CBWeekLandingHero from "../../../mobile-app/components/CBWeekLandingHero";
 import type { EventInfo } from "../../../mobile-app/lib/event-detector";
