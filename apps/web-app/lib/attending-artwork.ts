@@ -812,9 +812,15 @@ function drawCbweekEditorialArtwork(
   context.fillStyle = gold;
   context.fillRect(left, 176, right - left, 2);
 
+  const headlineWords = getAttendingArtworkHeadline(options).trim().split(/\s+/).filter(Boolean);
+  const headlineSplit = Math.max(1, headlineWords.length - 1);
+  const headlineLines = [headlineWords.slice(0, headlineSplit).join(' '), headlineWords.slice(headlineSplit).join(' ')]
+    .filter(Boolean);
   context.fillStyle = white;
-  drawFittedTextHorizontally(context, 'I AM', left + 8, 272, 850, 900, 'Manrope, sans-serif', 92, 92, 1.3, 2.4);
-  drawFittedTextHorizontally(context, 'ATTENDING', left + 8, 360, 850, 900, 'Manrope, sans-serif', 84, 84, 1.3, 2.4);
+  drawFittedTextHorizontally(context, headlineLines[0], left + 8, 272, 850, 900, 'Manrope, sans-serif', 92, 72, 1.3, 2.4);
+  if (headlineLines[1]) {
+    drawFittedTextHorizontally(context, headlineLines[1], left + 8, 360, 850, 900, 'Manrope, sans-serif', 84, 64, 1.3, 2.4);
+  }
   context.fillStyle = gold;
   context.fillRect(left, 389, 144, 3);
   context.fillStyle = 'rgba(252, 209, 22, 0.38)';
@@ -880,49 +886,53 @@ function drawCbweekEditorialArtwork(
     drawContainedImage(context, companyLogo, companyLabel ? 430 : 58, 1150, companyLabel ? 300 : 340, 66);
   }
 
+  const hasSocialHandles = !!(options.attendeeSocialHandles.x || options.attendeeSocialHandles.instagram);
+  const footerOffset = hasSocialHandles ? 22 : 0;
+  if (hasSocialHandles) drawSocialHandles(context, options, 1218, white);
+
   context.fillStyle = gold;
-  context.fillRect(left, 1236, right - left, 2);
+  context.fillRect(left, 1236 + footerOffset, right - left, 2);
   context.fillStyle = '#c9c9c9';
   context.font = '600 14px "IBM Plex Mono", monospace';
-  context.fillText('ORGANIZADO POR:', left + 10, 1292);
+  context.fillText('ORGANIZADO POR:', left + 10, 1292 + footerOffset);
   if (organizerLogo) {
-    drawContainedImage(context, organizerLogo, 238, 1255, 142, 78);
+    drawContainedImage(context, organizerLogo, 238, 1255 + footerOffset, 142, hasSocialHandles ? 68 : 78);
   } else {
     context.fillStyle = white;
     context.font = '800 15px Manrope, sans-serif';
-    context.fillText('LATAM', 238, 1266);
-    context.fillText('BLOCKCHAIN', 238, 1283);
-    context.fillText('EVENTS', 238, 1300);
+    context.fillText('LATAM', 238, 1266 + footerOffset);
+    context.fillText('BLOCKCHAIN', 238, 1283 + footerOffset);
+    context.fillText('EVENTS', 238, 1300 + footerOffset);
     context.font = '700 8px Manrope, sans-serif';
-    context.fillText('LLC.', 302, 1300);
+    context.fillText('LLC.', 302, 1300 + footerOffset);
   }
 
-  drawRoundRect(context, 590, 1261, 434, 66, 32);
+  drawRoundRect(context, 590, 1261 + footerOffset, 434, 66, 32);
   context.fillStyle = '#111111';
   context.fill();
   context.strokeStyle = '#8d8d8d';
   context.lineWidth = 2;
   context.stroke();
   context.beginPath();
-  context.arc(625, 1294, 20, 0, Math.PI * 2);
+  context.arc(625, 1294 + footerOffset, 20, 0, Math.PI * 2);
   context.strokeStyle = white;
   context.lineWidth = 2;
   context.stroke();
   context.beginPath();
-  context.ellipse(625, 1294, 9, 20, 0, 0, Math.PI * 2);
+  context.ellipse(625, 1294 + footerOffset, 9, 20, 0, 0, Math.PI * 2);
   context.stroke();
   context.beginPath();
-  context.moveTo(606, 1294);
-  context.lineTo(644, 1294);
-  context.moveTo(610, 1284);
-  context.lineTo(640, 1284);
-  context.moveTo(610, 1304);
-  context.lineTo(640, 1304);
+  context.moveTo(606, 1294 + footerOffset);
+  context.lineTo(644, 1294 + footerOffset);
+  context.moveTo(610, 1284 + footerOffset);
+  context.lineTo(640, 1284 + footerOffset);
+  context.moveTo(610, 1304 + footerOffset);
+  context.lineTo(640, 1304 + footerOffset);
   context.stroke();
   context.fillStyle = white;
   context.font = '600 16px "IBM Plex Mono", monospace';
   context.textAlign = 'left';
-  drawFittedText(context, websiteHost, 660, 1296, 340, 600, '"IBM Plex Mono", monospace', 16, 11);
+  drawFittedText(context, websiteHost, 660, 1296 + footerOffset, 340, 600, '"IBM Plex Mono", monospace', 16, 11);
 }
 
 export async function drawAttendingArtwork(
