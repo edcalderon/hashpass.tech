@@ -5,7 +5,7 @@ import { makeAttendingEventData, makeAttendingMetadata, resolveAttendingEvent } 
 import type { AttendingRoutePageProps } from '../../attending/types/attending.types';
 import { getAttendingClubEventUrl } from '../../../lib/attending-url';
 
-const CLUB_ATTENDING_EVENT_SLUGS = ['bsl'] as const;
+const CLUB_ATTENDING_EVENT_SLUGS = ['bsl', 'cbweek'] as const;
 
 export const dynamicParams = false;
 

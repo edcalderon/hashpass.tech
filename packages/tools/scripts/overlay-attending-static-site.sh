@@ -30,6 +30,7 @@ ATTENDING_EXPORT="${ROOT_DIR}/apps/web-app/out"
 for required_file in \
   "${ATTENDING_EXPORT}/attending/index.html" \
   "${ATTENDING_EXPORT}/attending/bsl/index.html" \
+  "${ATTENDING_EXPORT}/attending/cbweek/index.html" \
   "${ATTENDING_EXPORT}/canonical-redirect.js" \
   "${ATTENDING_EXPORT}/theme-init.js" \
   "${ATTENDING_EXPORT}/sw-register.js" \

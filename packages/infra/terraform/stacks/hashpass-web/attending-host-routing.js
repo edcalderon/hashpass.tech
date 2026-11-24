@@ -69,8 +69,11 @@ function handler(event) {
   }
 
   var eventRoute = uri.match(/^\/attending\/([a-z0-9][a-z0-9-]{0,79})\/?$/i);
-  if (eventRoute && eventRoute[1].toLowerCase() === eventSlug) {
-    request.uri = '/attending/' + eventSlug + '/index.html';
+  var cbweekAttendingAlias = eventSlug === 'cbweek2026'
+    && eventRoute
+    && eventRoute[1].toLowerCase() === 'cbweek';
+  if (eventRoute && (eventRoute[1].toLowerCase() === eventSlug || cbweekAttendingAlias)) {
+    request.uri = '/attending/' + eventRoute[1].toLowerCase() + '/index.html';
   }
 
   return request;
