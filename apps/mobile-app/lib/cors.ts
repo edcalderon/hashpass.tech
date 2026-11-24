@@ -14,8 +14,8 @@ export const DEFAULT_CORS_ALLOWED_ORIGINS = [
   'https://bsl2025.hashpass.tech',
   'https://blockchainsummit.hashpass.lat',
   'https://blockchainsummit-dev.hashpass.lat',
+  'https://cbweek-dev.hashpass.tech',
   'https://cbweek2026.hashpass.tech',
-  'https://cbweek.hashpass.tech',
   'https://companion.hashpass.tech',
   'https://companion-dev.hashpass.tech',
 ] as const;

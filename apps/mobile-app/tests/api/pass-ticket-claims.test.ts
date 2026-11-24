@@ -85,7 +85,7 @@ describe("/api/pass-ticket-claims", () => {
 
   it("selects the event profile from the API host for an unscoped claims list", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/pass-ticket-claims", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     mockFrom.mockReturnValueOnce(chain({ data: [] }));
 
@@ -283,7 +283,7 @@ describe("/api/admin/pass-ticket-claims", () => {
 
   it("uses the API host profile for the unscoped review queue, not Origin", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-claims", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     mockFrom.mockReturnValueOnce(chain({ data: [] }));
 

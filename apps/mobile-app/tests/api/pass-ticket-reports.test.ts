@@ -133,7 +133,7 @@ describe("/api/admin/pass-ticket-reports", () => {
 
   it("uses the API host profile for the unscoped review queue, not Origin", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-reports", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     mockFrom.mockReturnValueOnce(chain({ data: [] }));
 
@@ -179,7 +179,7 @@ describe("/api/admin/pass-ticket-reports", () => {
   it("uses the API-host-selected authorization client for an opaque report ID", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/admin/pass-ticket-reports", {
       method: "POST",
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
       body: JSON.stringify({ reportId, action: "confirm" }),
     });
     mockRpc.mockResolvedValueOnce({ data: { id: reportId, status: "confirmed" }, error: null });

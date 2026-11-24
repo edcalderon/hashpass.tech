@@ -20,19 +20,25 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.233)
+## 📋 Latest Changes (v1.9.234)
 
-### Bug Fixes
+### Features
 
-* **ios:** improve social icon contrast, header safe area and pass back layout ([435e460](https://github.com/hashpass-tech/hashpass.tech/commit/435e46002458b28ab37dde58b22164798977541f))
+* **cbweek:** add production tenant landing ([c562847](https://github.com/hashpass-tech/hashpass.tech/commit/c562847da43e926a9d752543855adb628f7080bc))
 ### Release Highlights
-- improve social icon contrast, header safe area and pass back layout
+- add production tenant landing
 
 ### Release scope
-- Compared with: `v1.9.232` (the previous global release tag)
+- Compared with: `v1.9.233` (the previous global release tag)
 
 ### Affected products & packages
+- Club web
+- Companion
 - Mobile app
+- QR links API
+- Infrastructure
+- Documentation
+- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

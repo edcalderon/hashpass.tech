@@ -72,7 +72,7 @@ describe("GET /api/qr/lookup", () => {
 
   it("selects the event profile for opaque QR lookups from the API host", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/qr/lookup?id=q", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     mockFrom.mockReturnValueOnce(chain({ data: { id: "q", user_id: userId } }));
 
@@ -161,7 +161,7 @@ describe("POST /api/qr/pass", () => {
   it("selects the event profile for opaque pass ids from the API host", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/qr/pass", {
       method: "POST",
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
       body: JSON.stringify({ passId: "p1" }),
     });
     mockFrom.mockReturnValueOnce(activePass());
@@ -233,7 +233,7 @@ describe("POST /api/qr/validate", () => {
   it("selects the event profile for opaque scanner tokens from the API host", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/qr/validate", {
       method: "POST",
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
       body: JSON.stringify({ token: "t" }),
     });
     mockRpc.mockResolvedValueOnce({ data: { valid: true }, error: null });
@@ -365,7 +365,7 @@ describe("POST /api/qr/validate", () => {
 describe("GET /api/qr/admin", () => {
   it("selects the event profile by API host for the global QR queue", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/qr/admin", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     const query = chain({ data: [] });
     mockFrom.mockReturnValueOnce(query);

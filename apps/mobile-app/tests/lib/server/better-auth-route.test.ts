@@ -58,11 +58,11 @@ describe('better-auth-route', () => {
     const { GET } = require('../../../lib/server/better-auth-route');
     const response = await GET(
       new Request('https://api.hashpass.tech/api/auth/get-session', {
-        headers: { origin: 'https://cbweek2026.hashpass.tech' },
+        headers: { origin: 'https://cbweek-dev.hashpass.tech' },
       })
     );
 
-    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek2026.hashpass.tech');
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek-dev.hashpass.tech');
     expect(response.headers.get('access-control-allow-credentials')).toBe('true');
     expect(response.headers.get('vary')).toBe('Origin');
   });
@@ -73,14 +73,14 @@ describe('better-auth-route', () => {
       new Request('https://api.hashpass.tech/api/auth/get-session', {
         method: 'OPTIONS',
         headers: {
-          origin: 'https://cbweek2026.hashpass.tech',
+          origin: 'https://cbweek-dev.hashpass.tech',
           'access-control-request-method': 'GET',
         },
       })
     );
 
     expect(response.status).toBe(204);
-    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek2026.hashpass.tech');
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://cbweek-dev.hashpass.tech');
     expect(response.headers.get('access-control-allow-credentials')).toBe('true');
   });
 

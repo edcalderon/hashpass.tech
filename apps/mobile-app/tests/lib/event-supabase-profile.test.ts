@@ -8,7 +8,7 @@ import {
 } from "../../lib/supabase-server";
 
 describe("event Supabase profile selection", () => {
-  it.each(["api-dev.hashpass.tech", "cbweek2026.hashpass.tech"])(
+  it.each(["api-dev.hashpass.tech", "cbweek-dev.hashpass.tech"])(
     "keeps CBWeek development requests on the BSL development profile through %s",
     (host) => {
       expect(getEventSupabaseProfileId(
@@ -28,7 +28,7 @@ describe("event Supabase profile selection", () => {
     },
   );
 
-  it.each(["api.hashpass.tech", "cbweek.hashpass.tech"])(
+  it.each(["api.hashpass.tech", "cbweek2026.hashpass.tech"])(
     "uses core production for CBWeek production requests through %s",
     (host) => {
       expect(getEventSupabaseProfileId(
@@ -39,9 +39,9 @@ describe("event Supabase profile selection", () => {
   );
 
   it.each([
-    ["https://api.hashpass.tech/api/pass-shares?token=opaque", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/pass-shares?token=opaque", "https://cbweek.hashpass.tech", "bsl-development"],
-    ["http://localhost:8081/api/pass-shares?token=opaque", "https://cbweek.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/pass-shares?token=opaque", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/pass-shares?token=opaque", "https://cbweek2026.hashpass.tech", "bsl-development"],
+    ["http://localhost:8081/api/pass-shares?token=opaque", "https://cbweek2026.hashpass.tech", "bsl-development"],
   ] as const)(
     "selects the event data profile by API host for opaque routes (%s)",
     (url, origin, profileId) => {
@@ -53,23 +53,23 @@ describe("event Supabase profile selection", () => {
 
   it("does not let a development Origin redirect production API access to development data", () => {
     expect(getEventSupabaseProfileId(new Request("https://api.hashpass.tech/api/admin/roles", {
-      headers: { origin: "https://cbweek2026.hashpass.tech" },
+      headers: { origin: "https://cbweek-dev.hashpass.tech" },
     }), "cbweek2026")).toBe("core-production");
   });
 
   it("does not let a production Origin redirect development API access to production data", () => {
     expect(getEventSupabaseProfileId(new Request("https://api-dev.hashpass.tech/api/admin/roles", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     }), "cbweek2026")).toBe("bsl-development");
   });
 
   it.each([
-    ["https://api.hashpass.tech/api/events/cbweek2026/agenda", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/events/cbweek2026/agenda", "https://cbweek.hashpass.tech", "bsl-development"],
-    ["https://api.hashpass.tech/api/bsl/agenda?eventId=cbweek2026", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/bsl/agenda?eventId=cbweek2026", "https://cbweek.hashpass.tech", "bsl-development"],
-    ["https://api.hashpass.tech/api/passes?eventIds=cbweek2026,chile2026", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/passes?eventIds=cbweek2026,chile2026", "https://cbweek.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/events/cbweek2026/agenda", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/events/cbweek2026/agenda", "https://cbweek2026.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/bsl/agenda?eventId=cbweek2026", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/bsl/agenda?eventId=cbweek2026", "https://cbweek2026.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/passes?eventIds=cbweek2026,chile2026", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/passes?eventIds=cbweek2026,chile2026", "https://cbweek2026.hashpass.tech", "bsl-development"],
   ] as const)(
     "uses the API host rather than Origin for event-route clients (%s)",
     (requestUrl, origin, profileId) => {
@@ -80,10 +80,10 @@ describe("event Supabase profile selection", () => {
   );
 
   it.each([
-    ["https://api.hashpass.tech/api/pass-transfers", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/pass-transfers", "https://cbweek.hashpass.tech", "core-development"],
-    ["https://api.hashpass.tech/api/bsl/speakers", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/bsl/speakers", "https://cbweek.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/pass-transfers", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/pass-transfers", "https://cbweek2026.hashpass.tech", "core-development"],
+    ["https://api.hashpass.tech/api/bsl/speakers", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/bsl/speakers", "https://cbweek2026.hashpass.tech", "bsl-development"],
   ] as const)(
     "uses the first-party API host for unscoped clients (%s)",
     (requestUrl, origin, profileId) => {
@@ -100,8 +100,8 @@ describe("event Supabase profile selection", () => {
   });
 
   it.each([
-    ["https://api.hashpass.tech/api/passes", "https://cbweek2026.hashpass.tech", "cbweek2026", "core-production"],
-    ["https://api-dev.hashpass.tech/api/passes", "https://cbweek.hashpass.tech", "cbweek2026", "bsl-development"],
+    ["https://api.hashpass.tech/api/passes", "https://cbweek-dev.hashpass.tech", "cbweek2026", "core-production"],
+    ["https://api-dev.hashpass.tech/api/passes", "https://cbweek2026.hashpass.tech", "cbweek2026", "bsl-development"],
   ] as const)(
     "resolves body-scoped event requests from the API host (%s)",
     (requestUrl, origin, eventId, profileId) => {

@@ -4,7 +4,7 @@ const BSL_EVENT_PATTERN = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026|cbwee
 const DEVELOPMENT_REQUEST_HOSTS = new Set([
   "api-dev.hashpass.tech",
   "bsl-dev.hashpass.tech",
-  "cbweek2026.hashpass.tech",
+  "cbweek-dev.hashpass.tech",
   "localhost",
   "127.0.0.1",
   "0.0.0.0",
@@ -13,7 +13,7 @@ const DEVELOPMENT_REQUEST_HOSTS = new Set([
 const PRODUCTION_REQUEST_HOSTS = new Set([
   "api.hashpass.tech",
   "bsl.hashpass.tech",
-  "cbweek.hashpass.tech",
+  "cbweek2026.hashpass.tech",
 ]);
 
 /**

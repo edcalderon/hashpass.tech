@@ -47,6 +47,7 @@ import EventBannerCarousel from "../components/EventBannerCarousel";
 import EventProposalModal from "../components/EventProposalModal";
 import VersionStatusIndicator from "../components/VersionStatusIndicator";
 import CrystalForgeBackground from "../components/CrystalForgeBackground";
+import CBWeekLandingHero from "../components/CBWeekLandingHero";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
 import { MorphIcon } from "../lib/morph-icon";
 import { Svg, Path } from "react-native-svg";
@@ -199,6 +200,7 @@ export default function HomeScreen() {
     windowWidth,
     windowHeight,
     footerBottomReserve,
+    currentEvent?.id === "cbweek2026",
   );
   const bgAnimation = useSharedValue(
     animationLevel === "none" || isNative ? 1 : 0,
@@ -325,21 +327,22 @@ export default function HomeScreen() {
 
   const handleScrollToFeatures = () => {
     if (!scrollRef.current) return;
-    if (Platform.OS === "web") {
+    if (Platform.OS === "web" && currentEvent?.id !== "cbweek2026") {
       const screenHeight =
         window.innerHeight || document.documentElement.clientHeight;
       scrollRef.current.scrollTo({ y: screenHeight * 0.5, animated: true });
-    } else {
-      const targetY =
-        featuresLayoutRef.current.y > 0
-          ? featuresLayoutRef.current.y
-          : windowHeight * 0.85;
-      const topClearance = isTabletLayout ? 28 : 8;
-      scrollRef.current.scrollTo({
-        y: Math.max(0, targetY - topClearance),
-        animated: true,
-      });
+      return;
     }
+
+    const targetY =
+      featuresLayoutRef.current.y > 0
+        ? featuresLayoutRef.current.y
+        : windowHeight * 0.85;
+    const topClearance = isTabletLayout ? 28 : 8;
+    scrollRef.current.scrollTo({
+      y: Math.max(0, targetY - topClearance),
+      animated: true,
+    });
   };
 
   useEffect(() => {
@@ -521,116 +524,135 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          {animationLevel === "full" && (
-            <CrystalForgeBackground
-              isDarkMode={isDark}
-              enableClickSpawn={!isPhoneLayout}
-              maxCrystals={isPhoneLayout ? 20 : 36}
-            />
-          )}
-          <Animated.View
-            style={[styles.heroTextContainer, headerAnimatedStyle]}
-          >
-            <View style={styles.logoStack}>
-              <Image
-                source={heroLogoSource}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              <View style={[styles.taglineContainer, { pointerEvents: "none" }]}>
-                {isHeroAnimationEnabled ? (
-                  <FlipWords words={words} textStyle={styles.taglineAnimated} />
-                ) : (
-                  <Text
-                    style={styles.taglineStatic}
-                    numberOfLines={1}
-                    ellipsizeMode="clip"
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.72}
-                  >
-                    <Text style={styles.taglineStaticEdge}>- </Text>
-                    {staticTaglineWords.map((word, index) => (
-                      <React.Fragment key={`${word}-${index}`}>
-                        {index > 0 ? (
-                          <Text style={styles.taglineStaticDot}> • </Text>
-                        ) : null}
-                        <Text>{word}</Text>
-                      </React.Fragment>
-                    ))}
-                    <Text style={styles.taglineStaticEdge}> -</Text>
-                  </Text>
-                )}
-              </View>
-            </View>
-          </Animated.View>
-          <View style={{ flex: 1 }} />
-          <Animated.View
-            style={[styles.scrollDownContainer, headerAnimatedStyle]}
-          >
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleScrollToFeatures}
-              style={styles.scrollDownButton}
-              hitSlop={
-                isPhoneLayout
-                  ? { top: 12, bottom: 0, left: 24, right: 24 }
-                  : { top: 30, bottom: 0, left: 40, right: 40 }
+          {currentEvent?.id === "cbweek2026" ? (
+            <CBWeekLandingHero
+              event={currentEvent}
+              isDark={isDark}
+              locale={getCurrentLocale()}
+              animationLevel={animationLevel}
+              scrollY={scrollY}
+              onExplore={() =>
+                router.push(
+                  (currentEvent.routes?.home ||
+                    "/events/cbweek2026/home") as any,
+                )
               }
+              onScrollDown={handleScrollToFeatures}
+            />
+          ) : (
+            <>
+            {animationLevel === "full" && (
+              <CrystalForgeBackground
+                isDarkMode={isDark}
+                enableClickSpawn={!isPhoneLayout}
+                maxCrystals={isPhoneLayout ? 20 : 36}
+              />
+            )}
+            <Animated.View
+              style={[styles.heroTextContainer, headerAnimatedStyle]}
             >
-              <View
-                style={[
-                  styles.scrollDownContent,
-                  isPhoneLayout && styles.scrollDownContentMobile,
-                  Platform.OS === "web" ? undefined : { pointerEvents: "box-none" },
-                ]}
+              <View style={styles.logoStack}>
+                <Image
+                  source={heroLogoSource}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+                <View style={[styles.taglineContainer, { pointerEvents: "none" }]}>
+                  {isHeroAnimationEnabled ? (
+                    <FlipWords words={words} textStyle={styles.taglineAnimated} />
+                  ) : (
+                    <Text
+                      style={styles.taglineStatic}
+                      numberOfLines={1}
+                      ellipsizeMode="clip"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.72}
+                    >
+                      <Text style={styles.taglineStaticEdge}>- </Text>
+                      {staticTaglineWords.map((word, index) => (
+                        <React.Fragment key={`${word}-${index}`}>
+                          {index > 0 ? (
+                            <Text style={styles.taglineStaticDot}> • </Text>
+                          ) : null}
+                          <Text>{word}</Text>
+                        </React.Fragment>
+                      ))}
+                      <Text style={styles.taglineStaticEdge}> -</Text>
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+            <View style={{ flex: 1 }} />
+            <Animated.View
+              style={[styles.scrollDownContainer, headerAnimatedStyle]}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleScrollToFeatures}
+                style={styles.scrollDownButton}
+                hitSlop={
+                  isPhoneLayout
+                    ? { top: 12, bottom: 0, left: 24, right: 24 }
+                    : { top: 30, bottom: 0, left: 40, right: 40 }
+                }
               >
-                <Text
-                  style={[
-                    styles.scrollDownText,
-                    isPhoneLayout && styles.scrollDownTextMobile,
-                  ]}
-                >
-                  {t("scroll", "Scroll")}
-                </Text>
                 <View
                   style={[
-                    styles.scrollIndicatorMouse,
-                    isPhoneLayout && styles.scrollIndicatorMouseMobile,
+                    styles.scrollDownContent,
+                    isPhoneLayout && styles.scrollDownContentMobile,
+                    Platform.OS === "web" ? undefined : { pointerEvents: "box-none" },
                   ]}
                 >
+                  <Text
+                    style={[
+                      styles.scrollDownText,
+                      isPhoneLayout && styles.scrollDownTextMobile,
+                    ]}
+                  >
+                    {t("scroll", "Scroll")}
+                  </Text>
+                  <View
+                    style={[
+                      styles.scrollIndicatorMouse,
+                      isPhoneLayout && styles.scrollIndicatorMouseMobile,
+                    ]}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.scrollWheel,
+                        isPhoneLayout && styles.scrollWheelMobile,
+                        wheelAnimatedStyle,
+                      ]}
+                    />
+                  </View>
                   <Animated.View
                     style={[
-                      styles.scrollWheel,
-                      isPhoneLayout && styles.scrollWheelMobile,
-                      wheelAnimatedStyle,
+                      styles.arrowDown,
+                      isPhoneLayout && styles.arrowDownMobile,
+                      arrowAnimatedStyle,
                     ]}
-                  />
-                </View>
-                <Animated.View
-                  style={[
-                    styles.arrowDown,
-                    isPhoneLayout && styles.arrowDownMobile,
-                    arrowAnimatedStyle,
-                  ]}
-                >
-                  <Svg
-                    width={isPhoneLayout ? 16 : 20}
-                    height={isPhoneLayout ? 10 : 12}
-                    viewBox="0 0 20 12"
-                    fill="none"
                   >
-                    <Path
-                      d="M2 2L10 10L18 2"
-                      stroke={heroForegroundColor}
-                      strokeWidth={isPhoneLayout ? "1.7" : "2"}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                </Animated.View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
+                    <Svg
+                      width={isPhoneLayout ? 16 : 20}
+                      height={isPhoneLayout ? 10 : 12}
+                      viewBox="0 0 20 12"
+                      fill="none"
+                    >
+                      <Path
+                        d="M2 2L10 10L18 2"
+                        stroke={heroForegroundColor}
+                        strokeWidth={isPhoneLayout ? "1.7" : "2"}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </Animated.View>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+            </>
+          )}
         </View>
 
         <HowItWorks scrollY={scrollY} />
@@ -971,6 +993,7 @@ const getStyles = (
   windowWidth = 375,
   windowHeight = 800,
   footerBottomReserve = 0,
+  isCbWeekLanding = false,
 ) => {
   // On narrow native screens, cap logo width so it never overflows with padding
   const isNative = Platform.OS !== "web";
@@ -995,8 +1018,25 @@ const getStyles = (
   const nativeHeroHeight = isNativeTablet
     ? Math.min(Math.max(windowHeight * 0.82, 680), 860)
     : Math.min(Math.max(windowHeight * 0.86, 620), 760);
-  const heroHeight = isNative ? nativeHeroHeight : isMobile ? 480 : "100%";
-  const heroMinHeight = isNative ? nativeHeroHeight : isMobile ? 480 : 520;
+  const cbWeekHeroHeight = windowWidth < 1060 ? 980 : 760;
+  const heroHeight = isNative
+    ? isCbWeekLanding
+      ? cbWeekHeroHeight
+      : nativeHeroHeight
+    : isMobile
+      ? isCbWeekLanding
+        ? cbWeekHeroHeight
+        : 480
+      : isCbWeekLanding
+        ? cbWeekHeroHeight
+        : "100%";
+  const heroMinHeight = isCbWeekLanding
+    ? cbWeekHeroHeight
+    : isNative
+      ? nativeHeroHeight
+      : isMobile
+        ? 480
+        : 520;
 
   return StyleSheet.create({
     container: {

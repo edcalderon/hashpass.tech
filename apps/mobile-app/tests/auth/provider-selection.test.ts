@@ -127,8 +127,8 @@ describe('resolveAuthProviderConfig', () => {
     setEnv('EXPO_PUBLIC_BSL_SUPABASE_URL_DEV', 'https://bsl-dev.supabase.co');
     setEnv('EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV', 'bsl-dev-key');
 
-    const production = resolveAuthProviderConfig({ hostname: 'cbweek.hashpass.tech' });
-    const development = resolveAuthProviderConfig({ hostname: 'cbweek2026.hashpass.tech' });
+    const production = resolveAuthProviderConfig({ hostname: 'cbweek2026.hashpass.tech' });
+    const development = resolveAuthProviderConfig({ hostname: 'cbweek-dev.hashpass.tech' });
 
     expect(production.provider).toBe('better-auth');
     expect(production.betterAuth?.baseURL).toBe('https://api.hashpass.tech/api/auth');

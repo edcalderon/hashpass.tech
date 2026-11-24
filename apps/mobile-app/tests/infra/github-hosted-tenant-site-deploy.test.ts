@@ -84,7 +84,7 @@ describe('free GitHub tenant builds', () => {
     const config = JSON.stringify({
       EXPO_PUBLIC_API_BASE_URL: 'https://api.hashpass.tech/api',
       EXPO_PUBLIC_EVENT_TENANT: 'cbweek2026',
-      EXPO_PUBLIC_SITE_URL: 'https://cbweek.hashpass.tech',
+      EXPO_PUBLIC_SITE_URL: 'https://cbweek2026.hashpass.tech',
       EXPO_PUBLIC_SUPABASE_PROFILE: 'core-production',
       EXPO_PUBLIC_SUPABASE_URL_PROD: 'https://fxgftanraszjjyeidvia.supabase.co',
       EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: 'public-anon-key',

@@ -1,3 +1,24 @@
+## [1.9.234](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.233...v1.9.234) (2026-11-24)
+
+
+### Features
+
+* **cbweek:** add production tenant landing ([c562847](https://github.com/hashpass-tech/hashpass.tech/commit/c562847da43e926a9d752543855adb628f7080bc))
+### Release Highlights
+- add production tenant landing
+
+### Release scope
+- Compared with: `v1.9.233` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- Companion
+- Mobile app
+- QR links API
+- Infrastructure
+- Documentation
+- Release tooling
+
 ## [1.9.233](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.232...v1.9.233) (2026-11-19)
 
 

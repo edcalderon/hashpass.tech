@@ -118,7 +118,7 @@ describe("POST /api/pass-transfers", () => {
   it("uses the API host for opaque transfer confirmation tokens, not Origin", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/pass-transfers", {
       method: "POST",
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
       body: JSON.stringify({ action: "confirm", token: "a".repeat(32) }),
     });
     mockFrom.mockReturnValueOnce(query({ data: null }));

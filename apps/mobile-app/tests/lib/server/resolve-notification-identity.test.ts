@@ -32,7 +32,7 @@ describe('resolveNotificationIdentity', () => {
 
   it('pins identity resolution to the API-selected profile despite a conflicting Origin', async () => {
     const request = new Request('https://api.hashpass.tech/api/events/cbweek2026/agenda', {
-      headers: { origin: 'https://cbweek2026.hashpass.tech' },
+      headers: { origin: 'https://cbweek-dev.hashpass.tech' },
     });
     mockGetSupabaseProfileIdForRequest.mockReturnValue('core-production');
     mockGetSupabaseServerForRequest.mockReturnValue({});

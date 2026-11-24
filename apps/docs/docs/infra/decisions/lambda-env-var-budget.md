@@ -36,7 +36,7 @@ The deploy tooling is aware of the limit and behaves defensively:
 
 Two fixes rode along with the trim:
 
-- **`bsl-development` profile chain fix** (`apps/mobile-app/config/supabase-profiles.ts`): the chain ended with `BSL_SUPABASE_SERVICE_ROLE_KEY`, so when the `_DEV` alias was missing the profile silently resolved the *retired BSL project's* key as the service-role client for `bsl-dev.hashpass.tech` / `cbweek2026.hashpass.tech`. The chain now ends with the shared-dev keys (`SUPABASE_SERVICE_ROLE_KEY_DEV`, `SUPABASE_SERVICE_ROLE_KEY`) instead, mirroring the `core-production` profile's "never fall back to a BSL-named key" rule.
+- **`bsl-development` profile chain fix** (`apps/mobile-app/config/supabase-profiles.ts`): the chain ended with `BSL_SUPABASE_SERVICE_ROLE_KEY`, so when the `_DEV` alias was missing the profile silently resolved the *retired BSL project's* key as the service-role client for `bsl-dev.hashpass.tech` / `cbweek-dev.hashpass.tech`. The chain now ends with the shared-dev keys (`SUPABASE_SERVICE_ROLE_KEY_DEV`, `SUPABASE_SERVICE_ROLE_KEY`) instead, mirroring the `core-production` profile's "never fall back to a BSL-named key" rule.
 - **`HASHPASS_PIN_PEPPER`** was set on both Lambdas (the original blocker). `deploy-api-lambda.sh` now lists it as a sync key: callers that hold it locally (repo `.env` exported) sync it; CI deploys never set it and the merge never deletes keys, so the live value survives every CI deploy untouched.
 
 **Result:** dev 2366 bytes, prod 2030 bytes — both under the 3500-byte budget

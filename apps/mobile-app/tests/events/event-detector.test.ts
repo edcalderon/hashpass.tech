@@ -160,11 +160,11 @@ describe("event tenant detection", () => {
   });
 
   it("scopes CBWeek to its own tenant and also lists the published event globally", () => {
-    const tenant = getEventTenantContext("cbweek2026.hashpass.tech");
+    const tenant = getEventTenantContext("cbweek-dev.hashpass.tech");
 
     expect(tenant.id).toBe("cbweek2026");
     expect(
-      getAvailableEvents("cbweek2026.hashpass.tech").map(
+      getAvailableEvents("cbweek-dev.hashpass.tech").map(
         (event: { id: string }) => event.id,
       ),
     ).toEqual(["cbweek2026"]);
@@ -176,14 +176,14 @@ describe("event tenant detection", () => {
   });
 
   it("maps the production CBWeek host to the same event while keeping the demo host", () => {
-    const productionTenant = getEventTenantContext("cbweek.hashpass.tech");
-    const developmentTenant = getEventTenantContext("cbweek2026.hashpass.tech");
+    const productionTenant = getEventTenantContext("cbweek2026.hashpass.tech");
+    const developmentTenant = getEventTenantContext("cbweek-dev.hashpass.tech");
 
     expect(productionTenant.id).toBe("cbweek2026");
     expect(developmentTenant.id).toBe("cbweek2026");
-    expect(getAvailableEvents("cbweek.hashpass.tech").map((event: { id: string }) => event.id))
+    expect(getAvailableEvents("cbweek2026.hashpass.tech").map((event: { id: string }) => event.id))
       .toEqual(["cbweek2026"]);
-    expect(EVENTS.cbweek2026.domain).toBe("cbweek.hashpass.tech");
+    expect(EVENTS.cbweek2026.domain).toBe("cbweek2026.hashpass.tech");
   });
 
   it("resolves route slugs to event ids for route-aware event pages", () => {
@@ -205,7 +205,7 @@ describe("event tenant detection", () => {
     });
 
     it("keeps the requesting CBWeek tenant's own event when all tenants are shown", () => {
-      const events = getAvailableEvents("cbweek2026.hashpass.tech", {
+      const events = getAvailableEvents("cbweek-dev.hashpass.tech", {
         includeAllTenants: true,
       }).map((event: { id: string }) => event.id);
 
@@ -226,12 +226,12 @@ describe("event tenant detection", () => {
 
     it("resolves a foreign tenant's event via getCurrentEvent when opted in", () => {
       expect(
-        getCurrentEvent("bsl", "cbweek2026.hashpass.tech"),
+        getCurrentEvent("bsl", "cbweek-dev.hashpass.tech"),
       ).toBeNull();
 
       const resolved = getCurrentEvent(
         "bsl",
-        "cbweek2026.hashpass.tech",
+        "cbweek-dev.hashpass.tech",
         { includeAllTenants: true },
       );
       expect(resolved?.id).toBe("bsl");
@@ -240,7 +240,7 @@ describe("event tenant detection", () => {
     it("falls back to the global default event, not the narrow tenant, when opted in with no eventId", () => {
       const resolved = getCurrentEvent(
         undefined,
-        "cbweek2026.hashpass.tech",
+        "cbweek-dev.hashpass.tech",
         { includeAllTenants: true },
       );
 

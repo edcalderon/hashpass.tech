@@ -76,7 +76,7 @@ variable "demo_events" {
   }))
   default = {
     cbweek2026 = {
-      subdomain = "cbweek2026.hashpass.tech"
+      subdomain = "cbweek-dev.hashpass.tech"
     }
   }
 }

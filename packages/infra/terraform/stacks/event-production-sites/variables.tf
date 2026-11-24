@@ -30,7 +30,7 @@ variable "event_sites" {
   }))
   default = {
     cbweek = {
-      hostname           = "cbweek.hashpass.tech"
+      hostname           = "cbweek2026.hashpass.tech"
       github_environment = "production"
     }
   }
