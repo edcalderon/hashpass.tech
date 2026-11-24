@@ -1,3 +1,18 @@
+## [1.9.237](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.236...v1.9.237) (2026-11-24)
+
+
+### Bug Fixes
+
+* **ci:** validate CBWeek production build config ([d8050cc](https://github.com/hashpass-tech/hashpass.tech/commit/d8050cca3a3dd8eec6c7e4f73fb68e7e4ca8c765)), closes [#524](https://github.com/hashpass-tech/hashpass.tech/issues/524)
+### Release Highlights
+- validate CBWeek production build config
+
+### Release scope
+- Compared with: `v1.9.236` (the previous global release tag)
+
+### Affected products & packages
+- Release tooling
+
 ## [1.9.236](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.235...v1.9.236) (2026-11-24)
 
 
