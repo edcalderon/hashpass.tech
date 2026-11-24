@@ -61,6 +61,17 @@ jobs:
           pnpm exec tsx --test apps/web-app/lib/attending-artwork.test.ts
           node --test packages/tools/scripts/build-static-site.test.mjs packages/tools/scripts/canonical-redirect.test.mjs
 
+      - name: Validate CBWeek production build configuration
+        env:
+          PUBLIC_BUILD_ENV: ${{ vars.CBWEEK_STATIC_SITE_PUBLIC_BUILD_ENV }}
+        run: |
+          pnpm exec c8 \
+            --include='packages/tools/scripts/validate-tenant-public-build-env.mjs' \
+            --reporter=lcov --reporter=text \
+            --reports-dir=coverage/tenant-public-build-env \
+            node packages/tools/scripts/validate-tenant-public-build-env.test.mjs
+          node packages/tools/scripts/validate-tenant-public-build-env.mjs cbweek-production --validate-only
+
       - name: Verify AWS deployment account guard
         run: node --test packages/tools/scripts/verify-aws-account.test.mjs
 
@@ -117,7 +128,7 @@ jobs:
         if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v7
         with:
-          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info,./packages/wallet/coverage/lcov.info,./coverage/db-backup-tools/lcov.info,./coverage/db-backup-tools/freshness.xml
+          files: ./apps/mobile-app/coverage/lcov.info,./packages/event-ingestion/coverage/lcov.info,./packages/wallet/coverage/lcov.info,./coverage/db-backup-tools/lcov.info,./coverage/db-backup-tools/freshness.xml,./coverage/tenant-public-build-env/lcov.info
           # The coverage test command above remains the required gate. Upload
           # failures are external/transient (and push + PR runs can upload the
           # same report concurrently), so they must not block a valid release.

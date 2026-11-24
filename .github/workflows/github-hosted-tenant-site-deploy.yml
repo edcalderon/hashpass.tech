@@ -106,44 +106,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           PUBLIC_BUILD_ENV: ${{ matrix.target == 'cbweek-production' && vars.CBWEEK_STATIC_SITE_PUBLIC_BUILD_ENV || (matrix.target != 'cbweek-production' && vars.STATIC_SITE_PUBLIC_BUILD_ENV) }}
-          CBWEEK_PUBLIC_BUILD_ENV: ${{ vars.CBWEEK_STATIC_SITE_PUBLIC_BUILD_ENV }}
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const config = JSON.parse(process.env.PUBLIC_BUILD_ENV || '{}');
-          if (process.env.TARGET === 'cbweek-production'
-              && (!process.env.CBWEEK_PUBLIC_BUILD_ENV || process.env.PUBLIC_BUILD_ENV !== process.env.CBWEEK_PUBLIC_BUILD_ENV)) {
-            throw new Error('Missing CBWeek production public build configuration');
-          }
-          if (process.env.TARGET === 'cbweek-production') {
-            const required = {
-              EXPO_PUBLIC_API_BASE_URL: 'https://api.hashpass.tech/api',
-              EXPO_PUBLIC_EVENT_TENANT: 'cbweek2026',
-              EXPO_PUBLIC_SITE_URL: 'https://cbweek2026.hashpass.tech',
-              EXPO_PUBLIC_SUPABASE_PROFILE: 'core-production',
-            };
-            for (const [key, value] of Object.entries(required)) {
-              if (config[key] !== value) throw new Error(`Invalid CBWeek production setting: ${key}`);
-            }
-            const coreProductionSupabaseUrl = 'https://fxgftanraszjjyeidvia.supabase.co';
-            if (config.EXPO_PUBLIC_SUPABASE_URL_PROD !== coreProductionSupabaseUrl
-                || !(config.EXPO_PUBLIC_SUPABASE_KEY_PROD || config.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD)) {
-              throw new Error('CBWeek production requires core production Supabase public credentials');
-            }
-            if (Object.keys(config).some(key => key.includes('BSL'))) {
-              throw new Error('CBWeek production cannot use BSL Supabase aliases');
-            }
-          }
-          if (!Object.keys(config).length) throw new Error('Missing public target configuration');
-          for (const [key, value] of Object.entries(config)) {
-            if (!/^(EXPO_PUBLIC_[A-Z0-9_]+|NEXT_PUBLIC_[A-Z0-9_]+|BUILD_ENV|TARGET_STAGE|SITE_URL|FRONTEND_URL)$/.test(key)
-                || /SECRET|SERVICE_ROLE|PASSWORD|PRIVATE/.test(key)
-                || typeof value !== 'string' || /[\r\n]/.test(value)) {
-              throw new Error(`Invalid public build setting: ${key}`);
-            }
-            fs.appendFileSync(process.env.GITHUB_ENV, `${key}=${value}\n`);
-          }
-          NODE
+        run: node packages/tools/scripts/validate-tenant-public-build-env.mjs "$TARGET"
       - name: Build core or event site without AWS credentials
         if: '!matrix.bsl'
         run: bash packages/tools/scripts/build-static-site.sh
