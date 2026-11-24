@@ -6,7 +6,7 @@ import { useLocale, useTranslation } from '@hashpass/i18n';
 import { ActionButton, Badge, FormField, IconButton, ModalBackdrop, Surface } from '@hashpass/ui/primitives';
 import { CaptchaWidget } from '@hashpass/ui/CaptchaWidget';
 import { SettingsToggle } from '@hashpass/ui/settings-menu';
-import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, ImagePlus, Instagram, MapPin, Share2, UserRound } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpRight, CalendarDays, Check, Copy, ImagePlus, Instagram, Linkedin, MapPin, Share2, UserRound } from 'lucide-react';
 import { drawAttendingArtwork } from '../../lib/attending-artwork';
 import { formatAttendingEventDate } from '../../lib/attending-date';
 import { getAttendingArtworkPublishEventUrl, getAttendingEventUrl, getAttendingLandingUrl, getGenericAttendingLandingHref, getGenericAttendingUrl } from '../../lib/attending-url';
@@ -34,6 +34,7 @@ import type {
 import styles from './attending.module.css';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const MAX_COMPANY_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_PUBLIC_ARTWORK_BYTES = 4 * 1024 * 1024;
 
 function metadataText(metadata: Record<string, unknown>, keys: string[]): string {
@@ -119,6 +120,7 @@ export function AttendingExperience({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const customEventLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const companyLogoInputRef = useRef<HTMLInputElement | null>(null);
   const uploadedPhotoRef = useRef<string | null>(null);
   const previousUserIdRef = useRef<string | null>(null);
 
@@ -128,8 +130,12 @@ export function AttendingExperience({
   const [customEventDate, setCustomEventDate] = useState('');
   const [customEventLocation, setCustomEventLocation] = useState('');
   const [customEventLogo, setCustomEventLogo] = useState<string | null>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [customEventTouched, setCustomEventTouched] = useState({ name: false, date: false, location: false });
   const [role, setRole] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [nameSize, setNameSize] = useState(100);
+  const [roleSize, setRoleSize] = useState(100);
   const [xProfile, setXProfile] = useState('');
   const [instagramProfile, setInstagramProfile] = useState('');
   const [photoSource, setPhotoSource] = useState<AttendeePhotoSource>('initials');
@@ -144,6 +150,8 @@ export function AttendingExperience({
   const [pastEvent, setPastEvent] = useState(false);
   const [photoExportWarning, setPhotoExportWarning] = useState(false);
   const [lastAction, setLastAction] = useState<'copy' | 'download' | null>(null);
+  const [socialCaptionOverride, setSocialCaptionOverride] = useState<string | null>(null);
+  const [socialCaptionCopied, setSocialCaptionCopied] = useState(false);
   const [shareDialogIntent, setShareDialogIntent] = useState<AttendingPublicShareIntent | null>(null);
   const [shareEmail, setShareEmail] = useState('');
   const [shareEmailError, setShareEmailError] = useState<string | undefined>();
@@ -168,6 +176,7 @@ export function AttendingExperience({
     };
   }, [baseEvent, customEvent, customEventDate, customEventLocation, customEventLogo, customEventName, t]);
   const isBslEvent = !customEvent && (event.slug === 'bsl' || event.id === 'bsl' || event.id === 'colombia2026');
+  const isCbweekArtwork = !customEvent && event.artworkTemplate.variant === 'cbweek-editorial';
   const landingHref = brandHref ?? (customEvent ? getGenericAttendingLandingHref() : getAttendingLandingUrl());
 
   useEffect(() => {
@@ -339,11 +348,16 @@ export function AttendingExperience({
     dateLabel,
     attendeeName: displayName,
     attendeeRole: role,
+    attendeeNameScale: nameSize,
+    attendeeRoleScale: roleSize,
     attendeeSocialHandles: {
       x: normalizeSocialHandle(xProfile),
       instagram: normalizeSocialHandle(instagramProfile),
     },
     logoSrc: event.logoSrc,
+    website: event.website,
+    companyName,
+    companyLogoSrc: companyLogo,
     avatarSrc: artworkPhoto,
     transparentPortrait,
     artworkTemplate: event.artworkTemplate,
@@ -354,7 +368,7 @@ export function AttendingExperience({
       past: artPast,
       emptyName: artEmptyName,
     },
-  }), [mode, eventName, event.shortName, event.logoSrc, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
+  }), [mode, eventName, event.shortName, event.logoSrc, event.website, companyName, companyLogo, event.artworkTemplate, event.venue, location, dateLabel, displayName, role, nameSize, roleSize, xProfile, instagramProfile, artworkPhoto, transparentPortrait, pastEvent, artUpcoming, artPast, artEmptyName, artPoweredBy]);
 
   useEffect(() => {
     setPublishedShare(null);
@@ -433,6 +447,47 @@ export function AttendingExperience({
     if (customEventLogoInputRef.current) customEventLogoInputRef.current.value = '';
   }
 
+  function handleCompanyLogoUpload(changeEvent: ChangeEvent<HTMLInputElement>) {
+    const file = changeEvent.currentTarget.files?.[0];
+    changeEvent.currentTarget.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      toast.error(t('uploadInvalid'));
+      return;
+    }
+    if (file.size > MAX_COMPANY_LOGO_BYTES) {
+      toast.error(t('companyLogoTooLarge'));
+      return;
+    }
+    setCompanyLogo(URL.createObjectURL(file));
+  }
+
+  function clearCompanyLogo() {
+    setCompanyLogo(null);
+    if (companyLogoInputRef.current) companyLogoInputRef.current.value = '';
+  }
+
+  useEffect(() => () => {
+    if (companyLogo) URL.revokeObjectURL(companyLogo);
+  }, [companyLogo]);
+
+  const socialCaption = socialCaptionOverride ?? event.artworkTemplate.socialCaption ?? '';
+  const xBrandIcon = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.901 1.153h3.68L14.54 11.048 24 22.847h-7.406l-5.8-7.584-6.64 7.584H.47l10.11-11.56L1.5 1.153h7.594l5.24 6.93zm-1.294 19.61h2.04L7.99 3.128H5.8z" />
+    </svg>
+  );
+
+  async function copySocialCaption() {
+    try {
+      await navigator.clipboard.writeText(socialCaption);
+      setSocialCaptionCopied(true);
+      toast.success(t('socialCopyCopied'));
+    } catch {
+      toast.error(t('socialCopyError'));
+    }
+  }
+
   async function getArtFile(): Promise<File> {
     const canvas = canvasRef.current;
     if (!canvas || !artReady) throw new Error(t('artNotReady'));
@@ -500,6 +555,46 @@ export function AttendingExperience({
       await copyPublicLink();
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
+      toast.error(t('shareError'));
+    }
+  }
+
+  async function shareToInstagram() {
+    if (!requireValidName()) return;
+
+    try {
+      const file = await getArtFile();
+      const navigatorWithShare = navigator as Navigator & {
+        canShare?: (data?: ShareData) => boolean;
+        share?: (data?: ShareData) => Promise<void>;
+      };
+      const shareData: ShareData = {
+        files: [file],
+        title: `${t('shareTitle')} ${eventName}`,
+        text: shareText,
+      };
+
+      if (navigatorWithShare.share && navigatorWithShare.canShare?.({ files: [file] })) {
+        try {
+          await navigatorWithShare.share(shareData);
+          return;
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
+          // Some browsers report file-share support but reject the image at runtime.
+          // Continue with the download-and-caption fallback below.
+        }
+      }
+
+      saveFile(file);
+      window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+      try {
+        await navigator.clipboard.writeText(shareText);
+        toast.info(t('shareInstagramFallback'));
+      } catch {
+        toast.info(t('shareFallback'));
+      }
+      setLastAction('download');
+    } catch {
       toast.error(t('shareError'));
     }
   }
@@ -804,28 +899,107 @@ export function AttendingExperience({
             </div>
 
             <div className={styles.fields}>
-              <FormField
-                mode={mode}
-                label={`${t('nameLabel')} · ${t('requiredField')}`}
-                value={name}
-                onChangeText={setName}
-                placeholder={t('namePlaceholder')}
-                maxLength={42}
-                onBlur={() => setNameTouched(true)}
-                error={nameError}
-                accessibilityLabel={`${t('nameLabel')} · ${t('requiredField')}`}
-                accessibilityHint={t('nameActionHint')}
-              />
-              <FormField
-                mode={mode}
-                label={t('roleLabel')}
-                value={role}
-                onChangeText={setRole}
-                placeholder={t('rolePlaceholder')}
-                maxLength={54}
-                accessibilityLabel={t('roleLabel')}
-              />
+              <div className={styles.fieldWithSize}>
+                <FormField
+                  mode={mode}
+                  label={`${t('nameLabel')} · ${t('requiredField')}`}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={t('namePlaceholder')}
+                  maxLength={42}
+                  onBlur={() => setNameTouched(true)}
+                  error={nameError}
+                  accessibilityLabel={`${t('nameLabel')} · ${t('requiredField')}`}
+                  accessibilityHint={t('nameActionHint')}
+                />
+                {isCbweekArtwork && (
+                  <div className={styles.textSizeControl}>
+                    <div className={styles.textSizeLabel}>
+                      <label htmlFor="attendee-name-size">{t('nameSizeLabel')}</label>
+                      <output htmlFor="attendee-name-size">{nameSize}%</output>
+                    </div>
+                    <input
+                      id="attendee-name-size"
+                      type="range"
+                      min="75"
+                      max="125"
+                      step="5"
+                      value={nameSize}
+                      onChange={(changeEvent) => setNameSize(Number(changeEvent.currentTarget.value))}
+                      aria-label={t('nameSizeLabel')}
+                      aria-valuetext={`${nameSize}%`}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className={styles.fieldWithSize}>
+                <FormField
+                  mode={mode}
+                  label={t('roleLabel')}
+                  value={role}
+                  onChangeText={setRole}
+                  placeholder={t('rolePlaceholder')}
+                  maxLength={54}
+                  accessibilityLabel={t('roleLabel')}
+                />
+                {isCbweekArtwork && (
+                  <div className={styles.textSizeControl}>
+                    <div className={styles.textSizeLabel}>
+                      <label htmlFor="attendee-role-size">{t('roleSizeLabel')}</label>
+                      <output htmlFor="attendee-role-size">{roleSize}%</output>
+                    </div>
+                    <input
+                      id="attendee-role-size"
+                      type="range"
+                      min="75"
+                      max="125"
+                      step="5"
+                      value={roleSize}
+                      onChange={(changeEvent) => setRoleSize(Number(changeEvent.currentTarget.value))}
+                      aria-label={t('roleSizeLabel')}
+                      aria-valuetext={`${roleSize}%`}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+            {isCbweekArtwork && (
+              <div className={styles.customEventLogoField}>
+                <FormField
+                  mode={mode}
+                  label={t('companyNameLabel')}
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  placeholder={t('companyNamePlaceholder')}
+                  maxLength={42}
+                  accessibilityLabel={t('companyNameLabel')}
+                />
+                <p className={styles.fieldHeading}>{t('companyLogoLabel')}</p>
+                <label className={`${styles.sourceCard} ${companyLogo ? styles.sourceActive : ''}`}>
+                  <span className={styles.sourceIcon}><ImagePlus size={19} /></span>
+                  <span>
+                    <strong>{companyLogo ? t('companyLogoReady') : t('companyLogoChoose')}</strong>
+                    <small>{t('companyLogoHint')}</small>
+                  </span>
+                  {companyLogo && <Check className={styles.sourceCheck} size={16} />}
+                  <input
+                    ref={companyLogoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className={styles.visuallyHidden}
+                    onChange={handleCompanyLogoUpload}
+                    aria-label={t('companyLogoLabel')}
+                  />
+                </label>
+                {companyLogo && (
+                  <div className={styles.customEventLogoPreview}>
+                    <img src={companyLogo} alt={t('companyLogoPreviewAlt')} />
+                    <ActionButton mode={mode} label={t('companyLogoRemove')} variant="ghost" onPress={clearCompanyLogo} />
+                  </div>
+                )}
+                <p className={styles.socialNote}>{t('companyBrandPrivacy')}</p>
+              </div>
+            )}
             <div className={styles.socialHandleFields}>
               <p className={styles.socialFieldsLabel}>{t('socialHandleLabel')}</p>
               <div className={styles.socialHandleField}>
@@ -925,18 +1099,26 @@ export function AttendingExperience({
               <span>{t('shareOn')}</span>
               <ActionButton
                 mode={mode}
-                label="X"
-                trailingIcon={<ArrowUpRight size={14} />}
+                label={t('shareXAction')}
+                leadingIcon={xBrandIcon}
                 variant="ghost"
                 onPress={() => openSocialShare('x')}
                 disabled={!isNameValid || !isCustomEventValid}
               />
               <ActionButton
                 mode={mode}
-                label="LinkedIn"
-                trailingIcon={<ArrowUpRight size={14} />}
+                label={t('shareLinkedInAction')}
+                leadingIcon={<Linkedin size={14} />}
                 variant="ghost"
                 onPress={() => openSocialShare('linkedin')}
+                disabled={!isNameValid || !isCustomEventValid}
+              />
+              <ActionButton
+                mode={mode}
+                label={t('shareInstagramAction')}
+                leadingIcon={<Instagram size={14} />}
+                variant="ghost"
+                onPress={shareToInstagram}
                 disabled={!isNameValid || !isCustomEventValid}
               />
               <ActionButton
@@ -952,6 +1134,36 @@ export function AttendingExperience({
               </div>
             </Surface>
           </aside>
+
+          {isCbweekArtwork && (
+            <section className={styles.socialCopy} aria-labelledby="cbweek-social-copy-title">
+              <div className={styles.socialCopyHeading}>
+                <h3 id="cbweek-social-copy-title">{t('socialCopyTitle')}</h3>
+                <p>{t('socialCopyDescription')}</p>
+              </div>
+              <div className={styles.socialCopyCard}>
+                <div className={styles.socialCopyToolbar}>
+                  <span>{t('socialCopyLabel')}</span>
+                  <ActionButton
+                    mode={mode}
+                    label={socialCaptionCopied ? t('socialCopyCopied') : t('socialCopyButton')}
+                    leadingIcon={socialCaptionCopied ? <Check size={16} /> : <Copy size={16} />}
+                    onPress={copySocialCaption}
+                  />
+                </div>
+                <textarea
+                  className={styles.socialCopyText}
+                  value={socialCaption}
+                  onChange={(changeEvent) => {
+                    setSocialCaptionOverride(changeEvent.currentTarget.value);
+                    setSocialCaptionCopied(false);
+                  }}
+                  aria-label={t('socialCopyTextareaLabel')}
+                  rows={14}
+                />
+              </div>
+            </section>
+          )}
         </div>
 
       </main>
@@ -1077,15 +1289,22 @@ export function AttendingExperience({
                       <ActionButton
                         mode={mode}
                         label={t('shareLinkedInAction')}
-                        trailingIcon={<ArrowUpRight size={14} />}
+                        leadingIcon={<Linkedin size={16} />}
                         onPress={() => openSocialShare('linkedin')}
                       />
                       <ActionButton
                         mode={mode}
                         label={t('shareXAction')}
-                        trailingIcon={<ArrowUpRight size={14} />}
+                        leadingIcon={xBrandIcon}
                         variant="secondary"
                         onPress={() => openSocialShare('x')}
+                      />
+                      <ActionButton
+                        mode={mode}
+                        label={t('shareInstagramAction')}
+                        leadingIcon={<Instagram size={16} />}
+                        variant="secondary"
+                        onPress={shareToInstagram}
                       />
                     </div>
                     {publishedShare.emailStatus === 'sent' && <p className={styles.shareDialogSuccess} role="status">{t('shareEmailSent')}</p>}

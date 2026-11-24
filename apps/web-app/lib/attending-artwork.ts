@@ -380,6 +380,7 @@ function drawFittedText(
   fontFamily: string,
   maxSize: number,
   minSize = 20,
+  strokeWidth = 0,
 ) {
   let size = maxSize;
   context.font = `${weight} ${size}px ${fontFamily}`;
@@ -387,7 +388,33 @@ function drawFittedText(
     size -= 2;
     context.font = `${weight} ${size}px ${fontFamily}`;
   }
+  if (strokeWidth > 0) {
+    context.lineJoin = 'round';
+    context.lineWidth = strokeWidth;
+    context.strokeStyle = context.fillStyle;
+    context.strokeText(text, x, y, maxWidth);
+  }
   context.fillText(text, x, y, maxWidth);
+}
+
+function drawFittedTextHorizontally(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  weight: number,
+  fontFamily: string,
+  maxSize: number,
+  minSize: number,
+  horizontalScale: number,
+  strokeWidth = 0,
+) {
+  context.save();
+  context.translate(x, 0);
+  context.scale(horizontalScale, 1);
+  drawFittedText(context, text, 0, y, maxWidth / horizontalScale, weight, fontFamily, maxSize, minSize, strokeWidth);
+  context.restore();
 }
 
 function drawFittedWrappedText(
@@ -728,6 +755,186 @@ function drawBslColombiaArtwork(
   context.textAlign = 'left';
 }
 
+function drawCbweekEditorialArtwork(
+  context: CanvasRenderingContext2D,
+  options: AttendingArtworkOptions,
+  assets: {
+    logo: HTMLImageElement | null;
+    avatar: HTMLImageElement | null;
+    companyLogo: HTMLImageElement | null;
+    organizerLogo: HTMLImageElement | null;
+  },
+) {
+  const { logo, avatar, companyLogo, organizerLogo } = assets;
+  const black = '#000000';
+  const white = '#f8f8f6';
+  const gold = '#fcd116';
+  const left = 56;
+  const right = ART_WIDTH - 56;
+  const websiteHost = (() => {
+    try { return `www.${new URL(options.website).hostname.replace(/^www\./, '')}`; }
+    catch { return 'colombiablockchainweek.com'; }
+  })();
+
+  context.fillStyle = black;
+  context.fillRect(0, 0, ART_WIDTH, ART_HEIGHT);
+
+  if (logo) drawContainedImage(context, logo, 58, 47, 318, 107);
+  else {
+    context.fillStyle = white;
+    context.font = '800 36px Manrope, sans-serif';
+    context.fillText(options.eventName.toLocaleUpperCase(), left, 92, 330);
+  }
+
+  context.textAlign = 'right';
+  context.fillStyle = gold;
+  context.font = '600 19px "IBM Plex Mono", monospace';
+  const posterVenue = compactVenue(options.venue)
+    .replace(/,\s*El Poblado\b/i, '')
+    .replace(/\s+Medellín\b/i, '');
+  drawFittedText(context, posterVenue || options.location, right - 52, 72, 355, 600, '"IBM Plex Mono", monospace', 19, 14);
+  if (options.venue && options.location) {
+    context.fillStyle = gold;
+    context.font = '500 15px "IBM Plex Mono", monospace';
+    const posterLocation = options.location.split(',').map((part) => part.trim()).filter(Boolean).reverse().join(', ');
+    drawFittedText(context, posterLocation, right - 52, 94, 355, 500, '"IBM Plex Mono", monospace', 15, 12);
+  }
+  drawLocationPin(context, right - 20, 65, gold, 24);
+  context.fillStyle = white;
+  context.font = '800 18px Manrope, sans-serif';
+  const headerDate = options.dateLabel.toLocaleUpperCase()
+    .replace(/,?\s*20\d{2}\s*$/, '')
+    .replace(/(\d{1,2})\s*[–-]\s*(\d{1,2})\s+DIC(?:IEMBRE)?$/, 'DICIEMBRE $1-$2');
+  drawFittedText(context, headerDate, right - 52, 143, 355, 800, 'Manrope, sans-serif', 18, 13);
+  drawCalendar(context, right - 20, 135, white, 24);
+  context.textAlign = 'left';
+
+  context.fillStyle = gold;
+  context.fillRect(left, 176, right - left, 2);
+
+  const headlineWords = getAttendingArtworkHeadline(options).trim().split(/\s+/).filter(Boolean);
+  const headlineSplit = Math.max(1, headlineWords.length - 1);
+  const headlineLines = [headlineWords.slice(0, headlineSplit).join(' '), headlineWords.slice(headlineSplit).join(' ')]
+    .filter(Boolean);
+  context.fillStyle = white;
+  drawFittedTextHorizontally(context, headlineLines[0], left + 8, 272, 850, 900, 'Manrope, sans-serif', 92, 72, 1.3, 2.4);
+  if (headlineLines[1]) {
+    drawFittedTextHorizontally(context, headlineLines[1], left + 8, 360, 850, 900, 'Manrope, sans-serif', 84, 64, 1.3, 2.4);
+  }
+  context.fillStyle = gold;
+  context.fillRect(left, 389, 144, 3);
+  context.fillStyle = 'rgba(252, 209, 22, 0.38)';
+  context.fillRect(left + 144, 389, 500, 2);
+
+  const photo = { x: 239, y: 414, width: 773, height: 820 };
+  context.save();
+  const frame = context.createLinearGradient(photo.x, photo.y, photo.x + photo.width, photo.y + photo.height);
+  frame.addColorStop(0, '#fcd116');
+  frame.addColorStop(0.35, '#ce1126');
+  frame.addColorStop(0.68, '#003893');
+  frame.addColorStop(1, '#fcd116');
+  context.strokeStyle = frame;
+  context.lineWidth = 5;
+  context.strokeRect(photo.x, photo.y, photo.width, photo.height);
+  context.beginPath();
+  context.rect(photo.x + 3, photo.y + 3, photo.width - 6, photo.height - 6);
+  context.clip();
+  context.fillStyle = '#080808';
+  context.fillRect(photo.x + 3, photo.y + 3, photo.width - 6, photo.height - 6);
+  if (avatar) {
+    const scale = Math.max(photo.width / avatar.naturalWidth, photo.height / avatar.naturalHeight);
+    const drawWidth = avatar.naturalWidth * scale;
+    const drawHeight = avatar.naturalHeight * scale;
+    const cropY = options.transparentPortrait ? 0.27 : 0.5;
+    context.drawImage(avatar, photo.x + (photo.width - drawWidth) / 2, photo.y + (photo.height - drawHeight) * cropY, drawWidth, drawHeight);
+  } else {
+    const initials = options.attendeeName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase() || '•';
+    context.fillStyle = '#242424';
+    context.font = '800 164px Manrope, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(initials, photo.x + photo.width / 2, photo.y + photo.height / 2);
+    context.textAlign = 'left';
+    context.textBaseline = 'alphabetic';
+  }
+  const fade = context.createLinearGradient(0, photo.y + 500, 0, photo.y + photo.height);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(0.42, 'rgba(0,0,0,0.45)');
+  fade.addColorStop(1, 'rgba(0,0,0,0.96)');
+  context.fillStyle = fade;
+  context.fillRect(photo.x + 3, photo.y + 400, photo.width - 6, photo.height - 403);
+  context.restore();
+
+  context.textAlign = 'left';
+  context.fillStyle = white;
+  const attendeeNameSize = Math.round(65 * options.attendeeNameScale / 100);
+  const attendeeName = (options.attendeeName.trim() || options.intentions.emptyName).toLocaleUpperCase();
+  drawFittedTextHorizontally(context, attendeeName, 58, 1096, 900, 900, 'Manrope, sans-serif', attendeeNameSize, Math.round(35 * options.attendeeNameScale / 100), 1.16, 1.2);
+  const role = options.attendeeRole.trim();
+  if (role) {
+    context.fillStyle = '#c9c9c9';
+    const roleFontSize = Math.round(36 * options.attendeeRoleScale / 100);
+    drawFittedTextHorizontally(context, role.toLocaleUpperCase(), 58, 1138, 900, 800, 'Manrope, sans-serif', roleFontSize, Math.round(25 * options.attendeeRoleScale / 100), 1.08, 0.8);
+  }
+  const companyLabel = options.companyName.trim();
+  if (companyLabel) {
+    context.fillStyle = white;
+    context.font = '800 43px Manrope, sans-serif';
+    drawFittedTextHorizontally(context, companyLabel.toLocaleUpperCase(), 58, 1194, companyLogo ? 350 : 900, 800, 'Manrope, sans-serif', 43, 24, 1.16, 1);
+  }
+  if (companyLogo) {
+    drawContainedImage(context, companyLogo, companyLabel ? 430 : 58, 1150, companyLabel ? 300 : 340, 66);
+  }
+
+  const hasSocialHandles = !!(options.attendeeSocialHandles.x || options.attendeeSocialHandles.instagram);
+  const footerOffset = hasSocialHandles ? 22 : 0;
+  if (hasSocialHandles) drawSocialHandles(context, options, 1218, white);
+
+  context.fillStyle = gold;
+  context.fillRect(left, 1236 + footerOffset, right - left, 2);
+  context.fillStyle = '#c9c9c9';
+  context.font = '600 14px "IBM Plex Mono", monospace';
+  context.fillText('ORGANIZADO POR:', left + 10, 1292 + footerOffset);
+  if (organizerLogo) {
+    drawContainedImage(context, organizerLogo, 238, 1255 + footerOffset, 142, hasSocialHandles ? 68 : 78);
+  } else {
+    context.fillStyle = white;
+    context.font = '800 15px Manrope, sans-serif';
+    context.fillText('LATAM', 238, 1266 + footerOffset);
+    context.fillText('BLOCKCHAIN', 238, 1283 + footerOffset);
+    context.fillText('EVENTS', 238, 1300 + footerOffset);
+    context.font = '700 8px Manrope, sans-serif';
+    context.fillText('LLC.', 302, 1300 + footerOffset);
+  }
+
+  drawRoundRect(context, 590, 1261 + footerOffset, 434, 66, 32);
+  context.fillStyle = '#111111';
+  context.fill();
+  context.strokeStyle = '#8d8d8d';
+  context.lineWidth = 2;
+  context.stroke();
+  context.beginPath();
+  context.arc(625, 1294 + footerOffset, 20, 0, Math.PI * 2);
+  context.strokeStyle = white;
+  context.lineWidth = 2;
+  context.stroke();
+  context.beginPath();
+  context.ellipse(625, 1294 + footerOffset, 9, 20, 0, 0, Math.PI * 2);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(606, 1294 + footerOffset);
+  context.lineTo(644, 1294 + footerOffset);
+  context.moveTo(610, 1284 + footerOffset);
+  context.lineTo(640, 1284 + footerOffset);
+  context.moveTo(610, 1304 + footerOffset);
+  context.lineTo(640, 1304 + footerOffset);
+  context.stroke();
+  context.fillStyle = white;
+  context.font = '600 16px "IBM Plex Mono", monospace';
+  context.textAlign = 'left';
+  drawFittedText(context, websiteHost, 660, 1296 + footerOffset, 340, 600, '"IBM Plex Mono", monospace', 16, 11);
+}
+
 export async function drawAttendingArtwork(
   canvas: HTMLCanvasElement,
   options: AttendingArtworkOptions,
@@ -741,11 +948,15 @@ export async function drawAttendingArtwork(
   const poweredByLogoSrc = isBslColombia && options.themeMode === 'light'
     ? LIGHT_POWERED_BY_LOGO_SRC
     : options.artworkTemplate.poweredByLogoSrc;
-  const [backgroundImage, logo, poweredByLogo, avatar] = await Promise.all([
+  const [backgroundImage, logo, poweredByLogo, avatar, companyLogo, organizerLogo] = await Promise.all([
     loadImage(options.artworkTemplate.backgroundSrc),
     loadImage(options.logoSrc),
     loadImage(poweredByLogoSrc),
     loadImage(options.avatarSrc),
+    options.artworkTemplate.variant === 'cbweek-editorial' ? loadImage(options.companyLogoSrc) : Promise.resolve(null),
+    options.artworkTemplate.variant === 'cbweek-editorial'
+      ? loadImage(options.artworkTemplate.organizerLogoSrc || null)
+      : Promise.resolve(null),
   ]);
   await document.fonts?.ready;
   if (canvasRenderIds.get(canvas) !== renderId) {
@@ -758,6 +969,11 @@ export async function drawAttendingArtwork(
 
   if (isBslColombia) {
     drawBslColombiaArtwork(context, options, { backgroundImage, logo, poweredByLogo, avatar });
+    return { avatarIncluded: !!avatar, logoIncluded: !!logo };
+  }
+
+  if (options.artworkTemplate.variant === 'cbweek-editorial') {
+    drawCbweekEditorialArtwork(context, options, { logo, avatar, companyLogo, organizerLogo });
     return { avatarIncluded: !!avatar, logoIncluded: !!logo };
   }
 

@@ -379,6 +379,50 @@
   margin-bottom: 22px;
 }
 
+.fieldWithSize {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 14px;
+}
+
+.textSizeControl {
+  display: grid;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.textSizeLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.textSizeLabel output {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.textSizeControl input[type='range'] {
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.textSizeControl input[type='range']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 .socialHandleFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -667,6 +711,88 @@
   line-height: 1.5;
 }
 
+.socialCopy {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 22px;
+  margin-top: 10px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.socialCopyHeading {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 48px);
+}
+
+.socialCopyHeading h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.socialCopyHeading > p {
+  margin: 0;
+  padding: 18px 20px;
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-surface));
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.socialCopyCard {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-surface);
+}
+
+.socialCopyToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 64px;
+  padding: 10px 16px 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.socialCopyToolbar > span {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.socialCopyText {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 370px;
+  padding: 22px 20px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.75;
+  resize: vertical;
+}
+
+.socialCopyText:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 @media (max-width: 940px) {
   .intro {
     grid-template-columns: minmax(0, 1fr) 290px;
@@ -758,6 +884,29 @@
   .fields {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .socialCopy {
+    margin-top: 4px;
+    padding-top: 22px;
+  }
+
+  .socialCopyHeading {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .socialCopyHeading h3 {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+
+  .socialCopyHeading > p {
+    padding: 16px;
+  }
+
+  .socialCopyText {
+    min-height: 420px;
+    padding: 18px 16px;
   }
 }
 

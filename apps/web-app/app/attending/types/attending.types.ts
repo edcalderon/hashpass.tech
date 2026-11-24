@@ -43,11 +43,15 @@ export interface AttendingLandingStepProps {
 }
 
 export interface AttendingArtworkTemplate {
+  variant?: 'cbweek-editorial';
+  eventLogoSrc?: string;
   backgroundSrc: string | null;
   accentColor: string;
   secondaryAccentColor: string;
   flagColors: string[];
   hashtags: string[];
+  organizerLogoSrc?: string;
+  socialCaption?: string;
   xHandle?: string;
   poweredByLogoSrc: string;
 }
@@ -78,8 +82,13 @@ export interface AttendingArtworkOptions {
   dateLabel: string;
   attendeeName: string;
   attendeeRole: string;
+  attendeeNameScale: number;
+  attendeeRoleScale: number;
   attendeeSocialHandles: AttendeeSocialHandles;
   logoSrc: string;
+  website: string;
+  companyName: string;
+  companyLogoSrc: string | null;
   avatarSrc: string | null;
   transparentPortrait: boolean;
   artworkTemplate: AttendingArtworkTemplate;

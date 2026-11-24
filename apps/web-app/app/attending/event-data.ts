@@ -33,10 +33,28 @@ const BSL_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
 };
 
 const CBWEEK_COLOMBIA_ARTWORK_TEMPLATE: Partial<AttendingArtworkTemplate> = {
+  variant: 'cbweek-editorial',
+  eventLogoSrc: '/attending/logos/cbweek-2026-wordmark.png',
   accentColor: '#FCD116',
   secondaryAccentColor: '#003893',
   flagColors: ['#FCD116', '#003893', '#CE1126'],
   hashtags: ['#cbweek2026', '#cbw2026'],
+  organizerLogoSrc: '/attending/logos/latam-blockchain-events-white.avif',
+  socialCaption: `🚀 ¡Nos vemos en Colombia Blockchain Week 2026! 🇨🇴
+
+Este 12 de diciembre estaré en Medellín para asistir a la 1ra Exclusive Edition de @Colombia Blockchain Week, el encuentro de Blockchain, Crypto & Trading en Colombia.
+
+Será una jornada para conectar con empresas, exchanges, brokers, fintechs, instituciones financieras, wallets digitales, founders, traders, builders y referentes de la industria, alrededor de Blockchain, Crypto, Trading, Forex, activos digitales, pagos, Web3 y la evolución de los mercados financieros en Latinoamérica 🌎
+
+🔥 Si también vas a estar en Medellín, conectemos durante #CBWEEK.
+
+📅 12 de diciembre de 2026 — Main Day
+📍 Hotel InterContinental Medellín ⭐⭐⭐⭐⭐
+
+Más información: www.colombiablockchainweek.com
+
+@Colombiablockchainweek
+#colombiablockchainweek`,
 };
 
 const ARTWORK_TEMPLATE_OVERRIDES: Record<string, Partial<AttendingArtworkTemplate>> = {
@@ -131,7 +149,7 @@ export function makeAttendingEventData(event: EventConfig, eventSlug: string): A
     country,
     venue: event.tour?.venue || '',
     color: event.branding?.primaryColor || event.color || '#0E7490',
-    logoSrc: getLogoSrc(event),
+    logoSrc: artworkTemplate.eventLogoSrc || getLogoSrc(event),
     startDate: event.eventStartDate || null,
     endDate: event.eventEndDate || null,
     dateFallback: event.eventDateString || null,

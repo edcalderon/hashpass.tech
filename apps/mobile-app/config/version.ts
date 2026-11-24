@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611241758, // Updated to current timestamp
+  buildNumber: 202611242142, // Updated to current timestamp
   releaseDate: '2026-11-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'polish CBWeek attendee artwork (#524)'
   ],
   bugfixes: [
-    'validate CBWeek production build config'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'validate CBWeek production build config'
+  notes: 'polish CBWeek attendee artwork (#524)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.238': {
+    version: '1.9.238',
+    buildNumber: 202611242142,
+    releaseDate: '2026-11-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'polish CBWeek attendee artwork (#524)'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'polish CBWeek attendee artwork (#524)'
+  },
   '1.9.237': {
     version: '1.9.237',
     buildNumber: 202611241758,
