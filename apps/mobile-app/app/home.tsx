@@ -327,21 +327,22 @@ export default function HomeScreen() {
 
   const handleScrollToFeatures = () => {
     if (!scrollRef.current) return;
-    if (Platform.OS === "web") {
+    if (Platform.OS === "web" && currentEvent?.id !== "cbweek2026") {
       const screenHeight =
         window.innerHeight || document.documentElement.clientHeight;
       scrollRef.current.scrollTo({ y: screenHeight * 0.5, animated: true });
-    } else {
-      const targetY =
-        featuresLayoutRef.current.y > 0
-          ? featuresLayoutRef.current.y
-          : windowHeight * 0.85;
-      const topClearance = isTabletLayout ? 28 : 8;
-      scrollRef.current.scrollTo({
-        y: Math.max(0, targetY - topClearance),
-        animated: true,
-      });
+      return;
     }
+
+    const targetY =
+      featuresLayoutRef.current.y > 0
+        ? featuresLayoutRef.current.y
+        : windowHeight * 0.85;
+    const topClearance = isTabletLayout ? 28 : 8;
+    scrollRef.current.scrollTo({
+      y: Math.max(0, targetY - topClearance),
+      animated: true,
+    });
   };
 
   useEffect(() => {

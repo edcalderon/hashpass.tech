@@ -551,8 +551,11 @@ export default function CBWeekLandingHero({
   }));
 
   const copyEntrance = useAnimatedStyle(() => {
-    const motionEnabled = animationLevel === "full";
-    const scrollProgress = motionEnabled
+    const entranceEnabled = animationLevel === "full";
+    // The mobile hero stacks its copy, prompt, and preview into a much taller
+    // layout than the viewport. Keep those items visible until they naturally
+    // leave the viewport instead of fading them at a viewport-relative offset.
+    const scrollProgress = entranceEnabled && isWide
       ? interpolate(
           scrollY.value,
           [0, Math.max(320, height * 0.62)],
@@ -560,7 +563,7 @@ export default function CBWeekLandingHero({
           Extrapolation.CLAMP,
         )
       : 0;
-    const entranceProgress = motionEnabled ? reveal.value : 1;
+    const entranceProgress = entranceEnabled ? reveal.value : 1;
 
     return {
       opacity: entranceProgress * (1 - scrollProgress),
@@ -575,8 +578,8 @@ export default function CBWeekLandingHero({
   });
 
   const stageEntrance = useAnimatedStyle(() => {
-    const motionEnabled = animationLevel === "full";
-    const scrollProgress = motionEnabled
+    const entranceEnabled = animationLevel === "full";
+    const scrollProgress = entranceEnabled && isWide
       ? interpolate(
           scrollY.value,
           [0, Math.max(320, height * 0.62)],
@@ -584,7 +587,7 @@ export default function CBWeekLandingHero({
           Extrapolation.CLAMP,
         )
       : 0;
-    const entranceProgress = motionEnabled ? reveal.value : 1;
+    const entranceProgress = entranceEnabled ? reveal.value : 1;
 
     return {
       opacity: entranceProgress * (1 - scrollProgress),
