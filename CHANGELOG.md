@@ -1,3 +1,18 @@
+## [1.9.235](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.234...v1.9.235) (2026-11-24)
+
+
+### Bug Fixes
+
+* **cbweek:** resolve event config in Storybook ([bb6c6cd](https://github.com/hashpass-tech/hashpass.tech/commit/bb6c6cd9126ea1fa5b29062ec512f22e43092587))
+### Release Highlights
+- resolve event config in Storybook
+
+### Release scope
+- Compared with: `v1.9.234` (the previous global release tag)
+
+### Affected products & packages
+- Documentation
+
 ## [1.9.234](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.233...v1.9.234) (2026-11-24)
 
 

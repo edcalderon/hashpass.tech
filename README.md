@@ -20,25 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.9.234)
+## 📋 Latest Changes (v1.9.235)
 
-### Features
+### Bug Fixes
 
-* **cbweek:** add production tenant landing ([c562847](https://github.com/hashpass-tech/hashpass.tech/commit/c562847da43e926a9d752543855adb628f7080bc))
+* **cbweek:** resolve event config in Storybook ([bb6c6cd](https://github.com/hashpass-tech/hashpass.tech/commit/bb6c6cd9126ea1fa5b29062ec512f22e43092587))
 ### Release Highlights
-- add production tenant landing
+- resolve event config in Storybook
 
 ### Release scope
-- Compared with: `v1.9.233` (the previous global release tag)
+- Compared with: `v1.9.234` (the previous global release tag)
 
 ### Affected products & packages
-- Club web
-- Companion
-- Mobile app
-- QR links API
-- Infrastructure
 - Documentation
-- Release tooling
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
