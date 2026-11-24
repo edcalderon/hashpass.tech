@@ -38,8 +38,8 @@ locals {
     [
       "https://attending.hashpass.tech",
       "https://bsl.hashpass.tech",
+      "https://cbweek-dev.hashpass.tech",
       "https://cbweek2026.hashpass.tech",
-      "https://cbweek.hashpass.tech",
     ]
   ))
 }

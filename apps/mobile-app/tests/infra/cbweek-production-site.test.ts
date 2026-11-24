@@ -21,7 +21,7 @@ describe('production event-site infrastructure', () => {
     expect(main).toContain('resource "aws_acm_certificate_validation"');
     expect(main).toContain('resource "aws_route53_record"');
     expect(main).toContain('AWS:SourceArn');
-    expect(read('terraform.tfvars.example')).toContain('cbweek.hashpass.tech');
+    expect(read('terraform.tfvars.example')).toContain('cbweek2026.hashpass.tech');
   });
 
   it('keeps production indexable and excludes API/Lambda mutation permissions', () => {
@@ -65,7 +65,7 @@ describe('production event-site infrastructure', () => {
     ];
 
     for (const file of paths) {
-      expect(fs.readFileSync(path.join(ROOT, file), 'utf8')).toContain('https://cbweek.hashpass.tech');
+      expect(fs.readFileSync(path.join(ROOT, file), 'utf8')).toContain('https://cbweek2026.hashpass.tech');
     }
   });
 

@@ -13,8 +13,8 @@ jest.mock('expo/virtual/env', () => ({
 
 describe('getSupabaseServerEnv API-host profile selection', () => {
   it.each([
-    ['https://api.hashpass.tech/api/auth/otp/verify', 'https://cbweek2026.hashpass.tech', 'core-production', 'production'],
-    ['https://api-dev.hashpass.tech/api/auth/otp/verify', 'https://cbweek.hashpass.tech', 'core-development', 'development'],
+    ['https://api.hashpass.tech/api/auth/otp/verify', 'https://cbweek-dev.hashpass.tech', 'core-production', 'production'],
+    ['https://api-dev.hashpass.tech/api/auth/otp/verify', 'https://cbweek2026.hashpass.tech', 'core-development', 'development'],
   ] as const)('keeps server config on the API-host profile (%s)', (url, origin, profileId, environment) => {
     const config = getSupabaseServerEnv(new Request(url, { headers: { origin } }));
     expect(config.profileId).toBe(profileId);
@@ -64,7 +64,7 @@ describe('resolvePublicSupabaseConfig', () => {
 
       expect(resolveSupabaseProfile({ hostname: 'bsl.hashpass.tech' }).id).toBe('core-production');
       expect(resolveSupabaseProfile({ hostname: 'bsl-dev.hashpass.tech' }).id).toBe('bsl-development');
-      expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('bsl-development');
+      expect(resolveSupabaseProfile({ hostname: 'cbweek-dev.hashpass.tech' }).id).toBe('bsl-development');
       expect(resolveSupabaseProfile({
         hostname: 'bsl.hashpass.tech',
         profileId: 'core-production',
@@ -83,8 +83,8 @@ describe('resolvePublicSupabaseConfig', () => {
 
     try {
       process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'bsl-development';
-      expect(resolveSupabaseProfile({ hostname: 'cbweek.hashpass.tech' }).id).toBe('core-production');
-      expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('bsl-development');
+      expect(resolveSupabaseProfile({ hostname: 'cbweek2026.hashpass.tech' }).id).toBe('core-production');
+      expect(resolveSupabaseProfile({ hostname: 'cbweek-dev.hashpass.tech' }).id).toBe('bsl-development');
     } finally {
       if (previousProfile === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
       else process.env.EXPO_PUBLIC_SUPABASE_PROFILE = previousProfile;

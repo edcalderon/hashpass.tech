@@ -100,8 +100,8 @@ describe("Expo Router Lambda adapter request headers", () => {
   });
 
   it.each([
+    "https://cbweek-dev.hashpass.tech",
     "https://cbweek2026.hashpass.tech",
-    "https://cbweek.hashpass.tech",
   ])("allows credentialed CORS requests from the CBWeek tenant origin %s", (origin) => {
     const { applyCorsHeaders } = loadInternals();
 

@@ -44,7 +44,7 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'https://hashpass.club',
   'https://attending.hashpass.tech',
-  'https://cbweek.hashpass.tech',
+  'https://cbweek2026.hashpass.tech',
   // The Club opens this approval screen on the HashPass app domain. The
   // browser then calls this API directly from hashpass.tech, so that origin
   // must be allowed on both the Lambda response and API Gateway's preflight

@@ -27,12 +27,12 @@ test('allows the HashPass app origin to preflight QR approval requests', async (
 test('allows CBWeek production to preflight QR approval requests', async () => {
   const response = await handler({
     version: '2.0',
-    headers: { origin: 'https://cbweek.hashpass.tech' },
+    headers: { origin: 'https://cbweek2026.hashpass.tech' },
     requestContext: { http: { method: 'OPTIONS' } },
   });
 
   assert.equal(response.statusCode, 204);
-  assert.equal(response.headers['access-control-allow-origin'], 'https://cbweek.hashpass.tech');
+  assert.equal(response.headers['access-control-allow-origin'], 'https://cbweek2026.hashpass.tech');
   assert.equal(response.headers['access-control-allow-credentials'], 'true');
 });
 

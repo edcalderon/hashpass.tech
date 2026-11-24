@@ -45,8 +45,8 @@ export const SSO_CONFIG = {
       'https://peru2026.hashpass.tech',
       'https://chile2026.hashpass.tech',
       'https://colombia2026.hashpass.tech',
+      'https://cbweek-dev.hashpass.tech',
       'https://cbweek2026.hashpass.tech',
-      'https://cbweek.hashpass.tech',
       'https://blockchainsummit.hashpass.lat',
       'https://blockchainsummit-dev.hashpass.lat',
       'https://api.hashpass.tech',
@@ -132,7 +132,7 @@ export const SSO_CONFIG = {
     'cbweek2026': {
       id: 'cbweek2026',
       name: 'Colombia Blockchain Week 2026',
-      domain: 'cbweek2026.hashpass.tech',
+      domain: 'cbweek-dev.hashpass.tech',
       slug: 'cbweek2026',
       authProvider: 'better-auth',
       apiBaseUrl: 'https://api-dev.hashpass.tech/api',
@@ -145,7 +145,7 @@ export const SSO_CONFIG = {
     'cbweek-production': {
       id: 'cbweek-production',
       name: 'Colombia Blockchain Week 2026',
-      domain: 'cbweek.hashpass.tech',
+      domain: 'cbweek2026.hashpass.tech',
       slug: 'cbweek2026',
       authProvider: 'better-auth',
       apiBaseUrl: 'https://api.hashpass.tech/api',

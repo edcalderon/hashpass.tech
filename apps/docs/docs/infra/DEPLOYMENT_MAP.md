@@ -11,8 +11,9 @@ existing S3 origins or CloudFront delivery.
 | --- | --- | --- | --- |
 | `hashpass.tech`, `www.hashpass.tech` | CloudFront + S3 static site | `hashpass` | [`github-hosted-tenant-site-deploy.yml`](../../../../.github/workflows/github-hosted-tenant-site-deploy.yml), target `production`, matching `main` pushes |
 | `dev.hashpass.tech` | CloudFront + S3 static site | `hashpass` | [`github-hosted-static-site-deploy.yml`](../../../../.github/workflows/github-hosted-static-site-deploy.yml), matching `develop` pushes |
-| CBWeek development | Existing CloudFront + S3 static site | `hashpass` | Tenant workflow, target `cbweek-development`, matching `develop` pushes |
-| `cbweek.hashpass.tech` | Dedicated CloudFront + private S3 static site | `hashpass` | Tenant workflow, explicit `cbweek-production` dispatch from `main` with `deploy=true`; uses the main-only `production` GitHub environment, builds tenant `cbweek2026` against `core-production`, and skips Lambda deployment and database migrations |
+| `cbweek-dev.hashpass.tech` | Existing CloudFront + S3 static site | `hashpass` | Tenant workflow, target `cbweek-development`, matching `develop` pushes |
+| `cbweek2026.hashpass.tech` | Dedicated CloudFront + private S3 static site | `hashpass` | Tenant workflow, explicit `cbweek-production` dispatch from `main` with `deploy=true`; uses the main-only `production` GitHub environment, builds tenant `cbweek2026` against `core-production`, and skips Lambda deployment and database migrations |
+| `cbweek.hashpass.tech` | Legacy hostname redirect | `hashpass` | Redirects to `cbweek2026.hashpass.tech`; `/auth` redirects to `cbweek-dev.hashpass.tech/auth` |
 | `api.hashpass.tech`, `api-dev.hashpass.tech` | Lambda + API Gateway, `us-east-1` | `hashpass` | Corresponding core web deploy with version-endpoint guard |
 | `bsl.hashpass.tech`, `bsl-dev.hashpass.tech` | Existing cross-account CloudFront + production-account static origins | `hashpass` for origin deployment | Tenant workflow, targets `bsl-production` / `bsl-development`, matching `main` / `develop` pushes. Since 2026-10-21 `bsl-production` is only the static-site hosting target; its build env points at core production, not the BSL project |
 | `hashpass.club` | GitHub Pages | n/a | `club-v*` release workflow |

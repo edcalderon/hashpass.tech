@@ -255,7 +255,7 @@ const PROFILES: SupabaseProfile[] = [
     tenant: 'core',
     environment: 'production',
     // bsl.hashpass.tech is a whitelabel front for the same production database.
-    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech', 'bsl.hashpass.tech', 'cbweek.hashpass.tech', 'companion.hashpass.tech'],
+    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech', 'bsl.hashpass.tech', 'cbweek2026.hashpass.tech', 'companion.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_PROD',
       'EXPO_PUBLIC_SUPABASE_URL',
@@ -278,7 +278,7 @@ const PROFILES: SupabaseProfile[] = [
     environment: 'development',
     // The tenant pipeline intentionally uses the BSL development profile.
     // Its custom-domain build supplies this same profile explicitly.
-    hosts: ['bsl-dev.hashpass.tech', 'cbweek2026.hashpass.tech'],
+    hosts: ['bsl-dev.hashpass.tech', 'cbweek-dev.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
       'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',

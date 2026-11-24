@@ -9,6 +9,7 @@ const ROUTE_EVENT_IDS: Record<string, string> = {
   bsl: 'colombia2026',
   'bsl-on-tour': 'bsl',
   cbweek: 'cbweek2026',
+  'cbweek-dev': 'cbweek2026',
 };
 
 export const FEATURED_ATTENDING_EVENT_SLUGS = ['bsl', 'cbweek'] as const;
@@ -41,6 +42,7 @@ export const ATTENDING_EVENT_SLUGS = Array.from(
     'bsl',
     'bsl-on-tour',
     'cbweek',
+    'cbweek-dev',
   ]),
 );
 

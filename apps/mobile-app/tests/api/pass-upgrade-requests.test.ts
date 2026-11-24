@@ -50,7 +50,7 @@ describe("POST /api/pass-upgrade-requests", () => {
   it("uses the API host profile when the pass event is hidden behind an id", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/pass-upgrade-requests", {
       method: "POST",
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
       body: JSON.stringify({ passId, requestedPassType: "business" }),
     });
     mockFrom.mockReturnValueOnce(query({ data: null }));

@@ -53,8 +53,8 @@ describe("/api/passes self-service provisioning", () => {
   });
 
   it.each([
-    ["https://api.hashpass.tech/api/passes", "https://cbweek2026.hashpass.tech", "core-production"],
-    ["https://api-dev.hashpass.tech/api/passes", "https://cbweek.hashpass.tech", "bsl-development"],
+    ["https://api.hashpass.tech/api/passes", "https://cbweek-dev.hashpass.tech", "core-production"],
+    ["https://api-dev.hashpass.tech/api/passes", "https://cbweek2026.hashpass.tech", "bsl-development"],
   ] as const)(
     "uses the API host for the body-selected CBWeek profile (%s)",
     async (url, origin, profileId) => {
@@ -177,7 +177,7 @@ describe("/api/passes event wallet", () => {
 
   it("selects BSL development for an unscoped pass wallet by API host", async () => {
     const request = new Request("https://api-dev.hashpass.tech/api/passes", {
-      headers: { origin: "https://cbweek.hashpass.tech" },
+      headers: { origin: "https://cbweek2026.hashpass.tech" },
     });
     /* eslint-disable-next-line @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/passes+api");

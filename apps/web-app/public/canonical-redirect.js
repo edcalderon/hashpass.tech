@@ -11,7 +11,7 @@
       bsl2025: true,
       chile2026: true,
       colombia2026: true,
-      cbweek: true,
+      'cbweek-dev': true,
       cbweek2026: true,
       'hash-poker': true,
       peru2026: true,
@@ -48,6 +48,11 @@
           search +
           hash;
       }
+    } else if (host === 'cbweek.hashpass.tech') {
+      var redirectHost = /^\/auth(?:\/|$)/i.test(path)
+        ? 'cbweek-dev.hashpass.tech'
+        : 'cbweek2026.hashpass.tech';
+      target = 'https://' + redirectHost + path + search + hash;
     } else if (host === 'bsl.hashpass.tech') {
       // Keep the existing BSL app intact; its artwork builder is nested below /attending/bsl/.
     } else if (host.endsWith(eventHostSuffix)) {

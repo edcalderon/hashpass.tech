@@ -118,7 +118,7 @@ describe("/api/pass-shares", () => {
 
     it("uses the API host for opaque share tokens, not Origin", async () => {
       const request = new Request("https://api-dev.hashpass.tech/api/pass-shares?token=" + token, {
-        headers: { origin: "https://cbweek.hashpass.tech" },
+        headers: { origin: "https://cbweek2026.hashpass.tech" },
       });
       mockFrom.mockReturnValueOnce(query({ data: null }));
 

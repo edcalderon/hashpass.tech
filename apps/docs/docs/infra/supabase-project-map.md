@@ -6,7 +6,7 @@ title: Supabase project map (core vs BSL, dev vs prod)
 
 :::info Consolidated on 2026-10-21
 Every production tenant and event uses core production; the existing
-`cbweek2026.hashpass.tech` demo remains on `bsl-development`. The production
+`cbweek-dev.hashpass.tech` demo remains on `bsl-development`. The production
 API Lambda's database URLs point at core, and the BSL project is a read-only
 backup. See
 [Decision: one core database](decisions/single-core-database.md).
@@ -31,8 +31,8 @@ needs fixing, not the other way around.
 
 | Site host | API | Supabase profile | Project |
 | --- | --- | --- | --- |
-| `cbweek.hashpass.tech` | Production API (`api.hashpass.tech`) | `core-production` | `fxgftanraszjjyeidvia` |
-| `cbweek2026.hashpass.tech` (existing demo) | Development API (`api-dev.hashpass.tech`) | `bsl-development` | `gsugeqozyeokncpbndna` |
+| `cbweek2026.hashpass.tech` | Production API (`api.hashpass.tech`) | `core-production` | `fxgftanraszjjyeidvia` |
+| `cbweek-dev.hashpass.tech` (existing demo) | Development API (`api-dev.hashpass.tech`) | `bsl-development` | `gsugeqozyeokncpbndna` |
 
 Both development profiles, `core-development` and `bsl-development`, use the
 shared dev project `gsugeqozyeokncpbndna`. For CBWeek server API calls, profile

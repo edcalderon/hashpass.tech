@@ -7,7 +7,7 @@ import test from 'node:test';
 const ORIGINS = [
   'https://companion.hashpass.tech',
   'https://companion-dev.hashpass.tech',
-  'https://cbweek.hashpass.tech',
+  'https://cbweek2026.hashpass.tech',
   'http://localhost:5173',
 ];
 const read = (path) => readFile(new URL(`../../../${path}`, import.meta.url), 'utf8');

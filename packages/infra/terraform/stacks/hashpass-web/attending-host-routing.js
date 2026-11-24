@@ -2,13 +2,38 @@ function handler(event) {
   var request = event.request;
   var host = request.headers.host ? request.headers.host.value.toLowerCase() : '';
   var uri = request.uri || '/';
+  if (host === 'cbweek.hashpass.tech') {
+    var authPath = /^\/auth(?:\/|$)/i.test(uri);
+    var targetHost = authPath ? 'cbweek-dev.hashpass.tech' : 'cbweek2026.hashpass.tech';
+    var query = request.querystring || {};
+    var queryParts = [];
+    var queryKeys = Object.keys(query);
+    for (var i = 0; i < queryKeys.length; i += 1) {
+      var key = queryKeys[i];
+      var entry = query[key];
+      var values = entry.multiValue || [entry];
+      for (var j = 0; j < values.length; j += 1) {
+        queryParts.push(encodeURIComponent(key) + '=' + encodeURIComponent(values[j].value || ''));
+      }
+    }
+    var location = 'https://' + targetHost + uri;
+    if (queryParts.length > 0) location += '?' + queryParts.join('&');
+    return {
+      statusCode: 302,
+      statusDescription: 'Found',
+      headers: {
+        location: { value: location },
+        'cache-control': { value: 'no-store' },
+      },
+    };
+  }
   var eventHosts = {
     bsl: true,
     'bsl-on-tour': true,
     bsl2025: true,
     chile2026: true,
     colombia2026: true,
-    cbweek: true,
+    'cbweek-dev': true,
     cbweek2026: true,
     'hash-poker': true,
     peru2026: true,

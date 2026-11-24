@@ -83,7 +83,7 @@ describe("/api/qr/resolve", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        origin: "https://cbweek.hashpass.tech",
+        origin: "https://cbweek2026.hashpass.tech",
       },
       body: JSON.stringify({ kind: "pass_id", passId: "pass-1", raw: "pass-1" }),
     });

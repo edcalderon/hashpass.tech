@@ -75,7 +75,7 @@ describe('GET/POST /api/qr/admin admin gate', () => {
   ])('selects the event profile for opaque %s admin requests from the API host', async (_name, method, route) => {
     const request = new Request('https://api-dev.hashpass.tech/api/qr/admin', {
       method,
-      headers: { origin: 'https://cbweek.hashpass.tech' },
+      headers: { origin: 'https://cbweek2026.hashpass.tech' },
       ...(method === 'POST' ? { body: JSON.stringify({}) } : {}),
     });
     if (_name === 'scan logs') mockQrCodesQuery({ data: [], error: null, count: 0 });

@@ -1,46 +1,75 @@
----
 id: task-cbweek-production-tenant
 type: task-spec
 status: active
-title: Provision the CBWeek production tenant site
+title: Provision CBWeek production at cbweek2026.hashpass.tech
 tags: [cbweek, production, infrastructure]
 ---
 
 ## Purpose
 
-Serve the full Colombia Blockchain Week tenant from `cbweek.hashpass.tech` as a production site. Keep the existing `cbweek2026.hashpass.tech` development/demo tenant and its noindex behavior unchanged.
+Serve Colombia Blockchain Week 2026 from `cbweek2026.hashpass.tech` as the
+production event app and keep the development/demo app at
+`cbweek-dev.hashpass.tech`. The event identity remains `cbweek2026`; production
+uses the shared `core-production` API/Supabase boundary and development keeps
+the existing shared development profile.
 
-Production event data and API calls use the documented shared `core-production` Supabase/API boundary. The event identity remains `cbweek2026`; only its production hostname and profile selection are added. Do not create a separate Supabase project or change event copy, speakers, agenda, or other event content in this task.
+This supersedes the hostname allocation previously recorded in issue #541 and
+this task's earlier draft. It does not authorize an AWS apply, DNS cutover,
+production deployment, or mutation of external OAuth/Supabase allowlists.
 
 ## Approved decisions
 
-- Provision a dedicated production static-site origin and CloudFront distribution for `cbweek.hashpass.tech`, with ACM and Route 53 managed as IaC.
-- Use GitHub-hosted build/deploy automation with least-privilege OIDC permissions; do not add an automatically triggered paid CodePipeline/CodeBuild path.
-- Keep development and production artifacts, hostnames, data profiles, and indexing behavior separate.
-- Do not apply Terraform, mutate AWS, or deploy production as part of this task. Deliver a reviewed IaC/code PR only.
-- Preserve protected-branch review/check requirements. The existing `production` GitHub environment is restricted to `main`; the active `MAIN` ruleset requires one PR approval and required checks. Reuse that environment with `CBWEEK_`-prefixed variables, and make the CBWeek production target explicit-dispatch-only so the default main-push matrix remains unchanged. The AWS OIDC trust must match the exact repository and environment subject plus the `sts.amazonaws.com` audience; enforce `main` through the GitHub environment branch policy, not an unsupported OIDC `ref` condition. Do not create an unprotected GitHub environment.
+- Provision the dedicated production static-site origin, CloudFront distribution,
+  certificate and Route 53 records for `cbweek2026.hashpass.tech` as IaC.
+- Move the existing development/demo site hostname to
+  `cbweek-dev.hashpass.tech` and retain its noindex response policy and
+  development data profile.
+- Keep production and development artifacts, hostnames, data profiles and
+  indexing behavior separate.
+- Keep the production deployment explicit-dispatch-only on `main`, using the
+  existing main-only `production` GitHub environment and `CBWEEK_` variables.
+- Use GitHub-hosted build/deploy automation with least-privilege OIDC. Do not add
+  an automatically triggered paid CodePipeline/CodeBuild path.
+- Do not apply Terraform, mutate AWS/DNS, deploy production, or update external
+  OAuth/Supabase allowlists as part of this task.
 
 ## Requirements
 
-1. Map `cbweek.hashpass.tech` to the `cbweek2026` tenant for client-side host detection, while preserving `cbweek2026.hashpass.tech` as the development host.
-2. Resolve production requests for the CBWeek event to the `core-production` profile and production API; preserve the existing development profile for `cbweek2026.hashpass.tech`.
-3. Add the required in-repository auth, CORS, trusted-origin, and callback-origin allowlists for the production hostname without removing existing CBWeek development origins. Do not mutate external OAuth/Supabase/DNS allowlists.
-4. Provision a dedicated production S3 static origin, CloudFront distribution, ACM certificate, and Route 53 A/AAAA alias records. Do not attach the demo site's noindex response-header policy to production.
-5. Add an explicitly selected `cbweek-production` target to the existing tenant workflow. Permit it only from `main`, keep it out of the default push matrix, upload only its CBWeek artifact, use `CBWEEK_`-prefixed variables in the existing `production` environment, and use an OIDC role scoped to its bucket/distribution and exact repository/environment subject. The existing `production` environment's deployment branch policy enforces `main`; do not use the unsupported OIDC `ref` claim. The role must not have Lambda permissions, and a static-site dispatch must skip core database migrations.
-6. Leave the BSL site, current CBWeek development distribution/bucket/pipeline, and all existing production resources outside this change untouched.
+1. Map `cbweek2026.hashpass.tech` to event tenant `cbweek2026` and the
+   `core-production` profile; map `cbweek-dev.hashpass.tech` to the same event
+   identity and the existing `bsl-development` profile.
+2. Update in-repository auth, CORS, trusted-origin and callback-origin allowlists
+   for both hosts without removing other event origins.
+3. Provision a dedicated production S3 origin, CloudFront distribution, ACM
+   certificate and Route 53 A/AAAA aliases at `cbweek2026.hashpass.tech`. Do not
+   attach the development noindex response-header policy to production.
+4. Move the existing development/demo static-site host and noindex behavior to
+   `cbweek-dev.hashpass.tech` without changing its shared development profile.
+5. Keep the explicit `cbweek-production` deployment target on `main`; use the
+   production API/profile and new production hostname, skip core database
+   migrations, and retain the least-privilege static-site role without Lambda
+   permissions.
+6. Render a CBWeek-branded landing hero on the CBWeek event app, using the
+   configured event logo and hero media. Keep the main HASHPASS landing hero on
+   `hashpass.tech` unchanged.
+7. Add regression coverage for hostname/profile resolution, shared API handling,
+   dispatch guards, and Terraform resource configuration.
+8. Validate the implementation and inspect the local CBWeek tenant landing page.
+   No infrastructure apply, production deploy, or external auth/DNS mutation is
+   performed here.
+9. Redirect legacy `cbweek.hashpass.tech` traffic to the new production host,
+   except `/auth` paths, which redirect to `cbweek-dev.hashpass.tech`.
 
-## Acceptance criteria
+## Operational prerequisites after code review
 
-- Regression tests prove hostname-to-tenant and production-vs-development profile resolution, including shared API request handling and resistance to Origin-based profile confusion.
-- Workflow tests prove CBWeek production can only be selected from `main`, is explicit-dispatch-only, uses its dedicated artifact/targets, skips the core database migration job, and does not weaken existing production controls or manually dispatch the BSL publishing workflow.
-- Terraform validation/tests cover the dedicated origin, CloudFront alias/certificate/DNS, scoped deploy permissions, encrypted/locked remote state, and absence of demo noindex behavior or API Lambda permissions.
-- Relevant type, build, and test checks pass; targeted ESLint reports only the pre-existing `expo/no-dynamic-env-var` error on the unchanged `process.env[name]` access in `apps/mobile-app/lib/event-detector.ts`. `git diff --check` is clean.
-- Open a protected PR linked to the CBWeek issue under epic #455. No Terraform apply, AWS mutation, production deploy, or third-party auth/DNS allowlist mutation is performed here.
-
-## Operational prerequisites after PR approval
-
-- Configure `CBWEEK_`-prefixed public build settings, site bucket/distribution outputs, and the scoped OIDC role in the existing `production` GitHub environment without committing account IDs, keys, or other credentials.
-- Verify the private `hashpass-api-target` production CORS input includes `https://cbweek.hashpass.tech`; the checked-in defaults/example are updated, but private tfvars are not inspected or changed here.
-- After separate approval, apply the updated `docs/event-media-cors-policy.json` to the existing event-media bucket.
-- Confirm any external OAuth/Supabase allowed-site, callback, or trusted-origin settings required for `cbweek.hashpass.tech` before launch.
-- Apply reviewed infrastructure and run the production deployment only after separate explicit authorization.
+- Configure `CBWEEK_` production build variables and the dedicated bucket,
+  distribution and scoped OIDC role in the existing `production` GitHub
+  environment; do not commit account IDs or credentials.
+- Verify production API CORS includes `https://cbweek2026.hashpass.tech` and
+  development API CORS includes `https://cbweek-dev.hashpass.tech`.
+- Configure the `cbweek-development` GitHub environment's public build settings
+  with `EXPO_PUBLIC_SITE_URL=https://cbweek-dev.hashpass.tech`.
+- After separate authorization, apply the event-media CORS policy to the
+  existing bucket and update external Supabase/Auth redirect origins.
+- Apply reviewed infrastructure and run the production deployment only after
+  separate explicit authorization.

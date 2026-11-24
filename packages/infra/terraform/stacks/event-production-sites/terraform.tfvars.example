@@ -4,7 +4,7 @@ github_repository = "hashpass-tech/hashpass.tech"
 
 event_sites = {
   cbweek = {
-    hostname           = "cbweek.hashpass.tech"
+    hostname           = "cbweek2026.hashpass.tech"
     github_environment = "production"
   }
 }
