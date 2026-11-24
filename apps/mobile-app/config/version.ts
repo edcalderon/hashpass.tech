@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611191712, // Updated to current timestamp
-  releaseDate: '2026-11-19',
+  buildNumber: 202611240231, // Updated to current timestamp
+  releaseDate: '2026-11-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add production tenant landing'
   ],
   bugfixes: [
-    'improve social icon contrast, header safe area and pass back layout'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'improve social icon contrast, header safe area and pass back layout'
+  notes: 'add production tenant landing'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.234': {
+    version: '1.9.234',
+    buildNumber: 202611240231,
+    releaseDate: '2026-11-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add production tenant landing'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add production tenant landing'
+  },
   '1.9.233': {
     version: '1.9.233',
     buildNumber: 202611191712,
