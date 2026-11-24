@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.66",
-    "buildNumber": 20261117203412,
-    "releaseDate": "2026-11-17",
+    "version": "1.0.67",
+    "buildNumber": 20261124163426,
+    "releaseDate": "2026-11-24",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.66 release"
+    "notes": "Add CBWeek attending artwork routes"
   },
   "versions": [
+    {
+      "version": "1.0.67",
+      "buildNumber": 20261124163426,
+      "releaseDate": "2026-11-24",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Add CBWeek attending artwork routes"
+    },
     {
       "version": "1.0.66",
       "buildNumber": 20261117203412,
