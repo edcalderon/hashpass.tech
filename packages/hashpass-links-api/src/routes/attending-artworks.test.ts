@@ -6,6 +6,7 @@ import { handleRequest } from '../router';
 import { resetAdminDbCache, setAdminDbForTesting } from '../server';
 import { createFakeSupabaseClient } from '../test-utils/fake-supabase-client';
 import { buildArtworkEmailMessage, getArtworkEmailCopy, resolveArtworkMailerConfig } from './attending-artworks';
+import { setCaptchaValidatorForTesting } from './captcha';
 
 const shareKey = 'artwork-token-' + 'a'.repeat(32);
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02]);
@@ -36,9 +37,34 @@ function useFakeDb() {
 }
 
 test.afterEach(() => {
+  setCaptchaValidatorForTesting(null);
   setAdminDbForTesting(null);
   resetAdminDbCache();
   delete process.env.PUBLIC_ARTWORK_SHARE_ORIGIN;
+});
+
+test('publishes CBWeek artwork from its canonical tenant URL', async () => {
+  const client = createFakeSupabaseClient();
+  setAdminDbForTesting(client as unknown as SupabaseClient);
+  setCaptchaValidatorForTesting(async () => true);
+
+  const response = await handleRequest(new Request('https://hpass.id/api/v1/attending-artworks', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      captchaToken: 'solved-token',
+      imageBase64: Buffer.from(PNG).toString('base64'),
+      eventSlug: 'cbweek',
+      eventName: 'Colombia Blockchain Week 2026',
+      attendeeName: 'Alex Rivera',
+      caption: 'See you in Medellín',
+      eventUrl: 'https://cbweek2026.hashpass.tech/attending/cbweek/',
+    }),
+  }));
+  const body = await response.json() as { shareUrl: string };
+
+  assert.equal(response.status, 201);
+  assert.match(body.shareUrl, /^https:\/\/cbweek2026\.hashpass\.tech\/attending\/cbweek\/a\/[A-Za-z0-9_-]{40,64}$/);
 });
 
 test('serves artwork bytes from the first-party image URL', async () => {
