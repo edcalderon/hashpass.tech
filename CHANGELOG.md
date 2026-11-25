@@ -1,3 +1,21 @@
+## [1.9.239](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.238...v1.9.239) (2026-11-25)
+
+
+### Bug Fixes
+
+* **links:** allow canonical CBWeek artwork URLs ([f990d60](https://github.com/hashpass-tech/hashpass.tech/commit/f990d603ff269dbf9c3faf6fc111623a9a157f73))
+### Release Highlights
+- allow canonical CBWeek artwork URLs
+
+### Release scope
+- Compared with: `v1.9.238` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- QR links API
+- Database migrations
+- Release tooling
+
 ## [1.9.238](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.237...v1.9.238) (2026-11-24)
 
 
