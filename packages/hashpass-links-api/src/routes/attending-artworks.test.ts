@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { handleRequest } from '../router';
@@ -10,6 +11,8 @@ import { setCaptchaValidatorForTesting } from './captcha';
 
 const shareKey = 'artwork-token-' + 'a'.repeat(32);
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02]);
+const cbweekArtworkMigration = new URL('../../../../db/migrations/V189__allow_canonical_cbweek_artwork_urls.sql', import.meta.url);
+const databaseProfiles = new URL('../../../../packages/tools/scripts/config/database-profiles.json', import.meta.url);
 
 function useFakeDb() {
   const client = createFakeSupabaseClient();
@@ -41,6 +44,19 @@ test.afterEach(() => {
   setAdminDbForTesting(null);
   resetAdminDbCache();
   delete process.env.PUBLIC_ARTWORK_SHARE_ORIGIN;
+});
+
+test('registers the canonical CBWeek artwork URL in both core database migrations', () => {
+  const migration = readFileSync(cbweekArtworkMigration, 'utf8');
+  const config = JSON.parse(readFileSync(databaseProfiles, 'utf8')) as {
+    groups: Record<string, string[]>;
+    profileGroups: Record<string, string[]>;
+  };
+
+  assert.ok(migration.includes(String.raw`event_slug = 'cbweek' AND event_url ~ '^https://cbweek2026\.hashpass\.tech/attending/cbweek/?$'`));
+  assert.ok(config.groups['hashpass-auth-qr'].includes('db/migrations/V189__allow_canonical_cbweek_artwork_urls.sql'));
+  assert.ok(config.profileGroups['core-development'].includes('hashpass-auth-qr'));
+  assert.ok(config.profileGroups['core-production'].includes('hashpass-auth-qr'));
 });
 
 test('publishes CBWeek artwork from its canonical tenant URL', async () => {
