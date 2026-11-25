@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202611250604, // Updated to current timestamp
+  buildNumber: 202611250901, // Updated to current timestamp
   releaseDate: '2026-11-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'allow canonical CBWeek artwork URLs'
+    'log artwork publish failures safely'
   ],
   breakingChanges: [],
-  notes: 'allow canonical CBWeek artwork URLs'
+  notes: 'log artwork publish failures safely'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.9.240': {
+    version: '1.9.240',
+    buildNumber: 202611250901,
+    releaseDate: '2026-11-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'log artwork publish failures safely'
+    ],
+    breakingChanges: [],
+    notes: 'log artwork publish failures safely'
+  },
   '1.9.239': {
     version: '1.9.239',
     buildNumber: 202611250604,

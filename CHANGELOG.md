@@ -1,3 +1,19 @@
+## [1.9.240](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.239...v1.9.240) (2026-11-25)
+
+
+### Bug Fixes
+
+* **links:** log artwork publish failures safely ([afee5c2](https://github.com/hashpass-tech/hashpass.tech/commit/afee5c24fbda8bfbad7916d81d651029760efc37))
+### Release Highlights
+- log artwork publish failures safely
+
+### Release scope
+- Compared with: `v1.9.239` (the previous global release tag)
+
+### Affected products & packages
+- Club web
+- QR links API
+
 ## [1.9.239](https://github.com/hashpass-tech/hashpass.tech/compare/v1.9.238...v1.9.239) (2026-11-25)
 
 
