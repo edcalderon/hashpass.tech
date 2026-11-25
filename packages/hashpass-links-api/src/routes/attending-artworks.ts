@@ -231,6 +231,29 @@ async function findShare(token: string): Promise<AttendingArtworkShareRow | null
   return data as AttendingArtworkShareRow;
 }
 
+function logArtworkPublishFailure(stage: string, error: unknown): void {
+  const diagnostics: Record<string, string> = { stage };
+  if (typeof error === 'object' && error !== null) {
+    const record = error as Record<string, unknown>;
+    for (const field of ['name', 'code', 'statusCode'] as const) {
+      const value = record[field];
+      if (typeof value === 'string' && /^[A-Za-z0-9_.-]{1,80}$/.test(value)) diagnostics[field] = value;
+      else if (typeof value === 'number' && Number.isFinite(value)) diagnostics[field] = String(value);
+    }
+
+    if (stage === 'database_insert' && typeof record.message === 'string') {
+      const constraint = record.message.match(/constraint "([A-Za-z0-9_]+)"/)?.[1];
+      const column = record.message.match(/column "([A-Za-z0-9_]+)" of relation/)?.[1];
+      if (constraint) diagnostics.constraint = constraint;
+      if (column) diagnostics.column = column;
+    }
+  }
+
+  // Do not log provider details/hints or share data; this metadata is enough
+  // to distinguish storage failures from database constraints in production.
+  console.error('attending_artwork_publish_failed', diagnostics);
+}
+
 // POST /api/v1/attending-artworks -- publish one user-created PNG after Cap verification.
 export async function createAttendingArtwork(request: Request): Promise<Response> {
   const contentLength = Number.parseInt(request.headers.get('content-length') || '0', 10);
@@ -282,7 +305,10 @@ export async function createAttendingArtwork(request: Request): Promise<Response
     cacheControl: '3600',
     upsert: false,
   });
-  if (uploadError) return apiError('Could not publish the artwork. Please try again.', 500);
+  if (uploadError) {
+    logArtworkPublishFailure('storage_upload', uploadError);
+    return apiError('Could not publish the artwork. Please try again.', 500);
+  }
 
   const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
   const row = {
@@ -298,6 +324,7 @@ export async function createAttendingArtwork(request: Request): Promise<Response
   };
   const { error: insertError } = await db.from('attending_artwork_shares').insert(row);
   if (insertError) {
+    logArtworkPublishFailure('database_insert', insertError);
     await db.storage.from(BUCKET).remove([objectPath]);
     return apiError('Could not publish the artwork. Please try again.', 500);
   }

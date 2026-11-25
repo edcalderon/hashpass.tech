@@ -83,6 +83,86 @@ test('publishes CBWeek artwork from its canonical tenant URL', async () => {
   assert.match(body.shareUrl, /^https:\/\/cbweek2026\.hashpass\.tech\/attending\/cbweek\/a\/[A-Za-z0-9_-]{40,64}$/);
 });
 
+test('logs safe database diagnostics when artwork share insertion fails', async () => {
+  const client = createFakeSupabaseClient();
+  client.from = (() => ({
+    insert: async () => ({
+      error: {
+        code: '23514',
+        message: 'new row violates check constraint "attending_artwork_shares_event_url_check"',
+        details: 'Alex Rivera: private caption',
+      },
+    }),
+  })) as unknown as typeof client.from;
+  setAdminDbForTesting(client as unknown as SupabaseClient);
+  setCaptchaValidatorForTesting(async () => true);
+
+  const logged: unknown[][] = [];
+  const originalConsoleError = console.error;
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  try {
+    const response = await handleRequest(new Request('https://hpass.id/api/v1/attending-artworks', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        captchaToken: 'solved-token',
+        imageBase64: Buffer.from(PNG).toString('base64'),
+        eventSlug: 'cbweek',
+        eventName: 'Colombia Blockchain Week 2026',
+        attendeeName: 'Alex Rivera',
+        caption: 'See you in Medellín',
+        eventUrl: 'https://cbweek2026.hashpass.tech/attending/cbweek/',
+      }),
+    }));
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { message: 'Could not publish the artwork. Please try again.' });
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.deepEqual(logged, [[
+    'attending_artwork_publish_failed',
+    { stage: 'database_insert', code: '23514', constraint: 'attending_artwork_shares_event_url_check' },
+  ]]);
+});
+
+test('logs safe storage diagnostics when artwork upload fails', async () => {
+  const client = createFakeSupabaseClient();
+  client.storage.from = (() => ({
+    upload: async () => ({ error: { name: 'StorageApiError', statusCode: '404', message: 'Bucket not found' } }),
+  })) as unknown as typeof client.storage.from;
+  setAdminDbForTesting(client as unknown as SupabaseClient);
+  setCaptchaValidatorForTesting(async () => true);
+
+  const logged: unknown[][] = [];
+  const originalConsoleError = console.error;
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  try {
+    const response = await handleRequest(new Request('https://hpass.id/api/v1/attending-artworks', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        captchaToken: 'solved-token',
+        imageBase64: Buffer.from(PNG).toString('base64'),
+        eventSlug: 'cbweek',
+        eventName: 'Colombia Blockchain Week 2026',
+        attendeeName: 'Alex Rivera',
+        caption: 'See you in Medellín',
+        eventUrl: 'https://cbweek2026.hashpass.tech/attending/cbweek/',
+      }),
+    }));
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { message: 'Could not publish the artwork. Please try again.' });
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.deepEqual(logged, [[
+    'attending_artwork_publish_failed',
+    { stage: 'storage_upload', name: 'StorageApiError', statusCode: '404' },
+  ]]);
+});
+
 test('serves artwork bytes from the first-party image URL', async () => {
   useFakeDb();
   const response = await handleRequest(new Request(`https://hpass.id/a/${shareKey}/image`));
